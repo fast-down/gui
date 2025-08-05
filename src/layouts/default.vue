@@ -5,7 +5,3 @@
 
   <AppFooter />
 </template>
-
-<script lang="ts" setup>
-  //
-</script>
