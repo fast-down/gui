@@ -10,6 +10,7 @@
             variant="text"
             icon="pi pi-pause"
             aria-label="暂停"
+            @click="emit('pause')"
           />
           <Button
             v-else
@@ -17,6 +18,7 @@
             variant="text"
             icon="pi pi-play"
             aria-label="开始"
+            @click="emit('resume')"
           />
           <Button
             size="small"
@@ -24,6 +26,7 @@
             variant="text"
             icon="pi pi-file"
             aria-label="打开"
+            @click="openFile"
           />
           <Button
             size="small"
@@ -31,6 +34,7 @@
             variant="text"
             icon="pi pi-folder-open"
             aria-label="打开文件夹"
+            @click="openFolder"
           />
           <Button
             size="small"
@@ -78,20 +82,39 @@
 </template>
 
 <script setup lang="ts">
-import { formatSize } from "../utils/format-size";
-import { formatTime } from "../utils/format-time";
+import { openPath } from '@tauri-apps/plugin-opener'
+import { formatSize } from '../utils/format-size'
+import { formatTime } from '../utils/format-time'
+import { platform } from '@tauri-apps/plugin-os'
+import { Command } from '@tauri-apps/plugin-shell'
+import { path } from '@tauri-apps/api'
 
 const props = defineProps<{
-  info: DownloadEntry;
-}>();
+  info: DownloadEntry
+}>()
 const eta = computed(
-  () => (props.info.fileSize - props.info.downloaded) / props.info.speed
-);
+  () => (props.info.fileSize - props.info.downloaded) / props.info.speed,
+)
 const bgProgress = computed(
-  () => (props.info.downloaded / props.info.fileSize) * 100 + "%"
-);
+  () => (props.info.downloaded / props.info.fileSize) * 100 + '%',
+)
 
-const emit = defineEmits(["play", "pause", "remove", "open", "open-folder"]);
+const emit = defineEmits(['resume', 'pause', 'remove'])
+
+async function openFile() {
+  await openPath(props.info.filePath)
+}
+async function openFolder() {
+  const currentPlatform = platform()
+  if (currentPlatform === 'windows') {
+    await openPath(`/select,${props.info.filePath}`, 'explorer.exe')
+  } else if (currentPlatform === 'macos') {
+    await Command.create('open-mac', ['-R', props.info.filePath]).execute()
+  } else if (currentPlatform === 'linux') {
+    const dir = await path.dirname(props.info.filePath)
+    await Command.create('open-linux', [dir]).execute()
+  }
+}
 </script>
 
 <style scoped>
@@ -114,7 +137,7 @@ const emit = defineEmits(["play", "pause", "remove", "open", "open-folder"]);
 .card {
   background-image: linear-gradient(var(--p-primary-200), var(--p-primary-200));
   background-repeat: no-repeat;
-  background-size: v-bind("bgProgress") 100%;
+  background-size: v-bind('bgProgress') 100%;
 }
 @media (prefers-color-scheme: dark) {
   .card {

@@ -1,9 +1,9 @@
 use bytes::Bytes;
-use fast_pull::{reqwest::ReqwestReader, RandReader, SeqReader};
+use fast_pull::{RandReader, SeqReader, reqwest::ReqwestReader};
 use futures::TryStream;
 use reqwest::{
-    header::{HeaderMap, HeaderValue},
     ClientBuilder, Proxy,
+    header::{HeaderMap, HeaderValue},
 };
 use std::sync::Arc;
 use url::Url;

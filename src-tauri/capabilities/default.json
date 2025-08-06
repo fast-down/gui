@@ -3,5 +3,44 @@
   "identifier": "default",
   "description": "Capability for the main window",
   "windows": ["main"],
-  "permissions": ["core:default", "dialog:default"]
+  "permissions": [
+    "core:default",
+    "dialog:default",
+    "opener:default",
+    {
+      "identifier": "opener:allow-open-path",
+      "allow": [
+        {
+          "path": "**/*",
+          "app": true
+        }
+      ]
+    },
+    "shell:default",
+    "os:default",
+    {
+      "identifier": "shell:allow-execute",
+      "allow": [
+        {
+          "name": "open-windows",
+          "cmd": "explorer.exe",
+          "args": [
+            {
+              "validator": "/select,.+"
+            }
+          ]
+        },
+        {
+          "name": "open-mac",
+          "cmd": "open",
+          "args": ["-R", "%s"]
+        },
+        {
+          "name": "open-linux",
+          "cmd": "xdg-open",
+          "args": ["%s"]
+        }
+      ]
+    }
+  ]
 }

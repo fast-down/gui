@@ -21,8 +21,8 @@ export const useAppStore = defineStore(
     const list = reactive([
       {
         url: 'https://www.example.com/file.zip',
-        filePath: '/path/to/file.zip',
-        fileName: 'file.zip',
+        filePath: 'C:\\Down load\\1GB.bin',
+        fileName: '1GB.bin',
         fileSize: 12 * 1024 * 1024,
         readProgress: [
           [

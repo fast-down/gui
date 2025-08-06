@@ -1,9 +1,9 @@
 {
   build: {
-    'Cargo.toml': 'zrRU/gMoZWwlM7jh2A/U5UqBK32lkgVXdtZkgxuKPok=',
-    'src/fmt/mod.rs': 'w7PnMdKW+G8dMFdNQU0e0bvzQcShysm9HfmfEpJWen8=',
-    'src/fmt/size.rs': 'cvJ7fGUHROuovP9sjUyew/P23zCEzBggWtnhWc3sOIA=',
-    'src/fmt/time.rs': 'bF/ENd+tn2VegWRoWozH8kEO3L8Xg/TxX3SUsc+kb5k=',
-    'src/lib.rs': '2vUblIy7N96eLZk77Bb4gdTjKff8eNwl+w9gUJBzzms=',
+    'Cargo.toml': '8aokO72qoZv1N/8vT2lpQ6Zry9tDzeHYcjTnWTbkAK0=',
+    'src\\fmt\\mod.rs': 'uIBHZJiuso0y4Ht6dg5we71Nix7p1HienxA5B7k0Ycg=',
+    'src\\fmt\\size.rs': '/sh6Ho1t5lhEd7spTShYVC5fC+UohknaP2v8hLe66Qc=',
+    'src\\fmt\\time.rs': 'j9vlSMSdXJuNbyD9lfz+xwQX8MRkYkEenGH+zVPntQs=',
+    'src\\lib.rs': '7M6v7sRFcmm6PPLnEf9jhBKTQbrMBcXSLPqBt9q0Ikg=',
   },
 }
