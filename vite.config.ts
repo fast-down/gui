@@ -1,23 +1,38 @@
-import { defineConfig } from "vite";
-import vue from "@vitejs/plugin-vue";
-import Components from "unplugin-vue-components/vite";
-import { PrimeVueResolver } from "@primevue/auto-import-resolver";
-import AutoImport from "unplugin-auto-import/vite";
+import vue from '@vitejs/plugin-vue'
+import AutoImport from 'unplugin-auto-import/vite'
+import fonts from 'unplugin-fonts/vite'
+import Components from 'unplugin-vue-components/vite'
+import { defineConfig } from 'vite'
+import { PrimeVueResolver } from '@primevue/auto-import-resolver'
+import wasm from 'vite-plugin-wasm'
 
 // @ts-expect-error process is a nodejs global
-const host = process.env.TAURI_DEV_HOST;
+const host = process.env.TAURI_DEV_HOST
 
-export default defineConfig(async () => ({
+// https://vitejs.dev/config/
+export default defineConfig({
   plugins: [
     vue(),
     Components({
       resolvers: [PrimeVueResolver()],
-      dts: "types/components.d.ts",
+      dts: 'types/components.d.ts',
     }),
     AutoImport({
-      imports: ["vue", "@vueuse/core", "pinia"],
-      dirs: ["src/stores", "src/utils"],
-      dts: "types/auto-imports.d.ts",
+      imports: ['vue', '@vueuse/core', 'pinia'],
+      dirs: ['src/stores', 'src/utils'],
+      dts: 'types/auto-imports.d.ts',
+    }),
+    wasm(),
+    fonts({
+      fontsource: {
+        families: [
+          {
+            name: 'Roboto',
+            weights: [100, 300, 400, 500, 700, 900],
+            styles: ['normal', 'italic'],
+          },
+        ],
+      },
     }),
   ],
   clearScreen: false,
@@ -27,13 +42,13 @@ export default defineConfig(async () => ({
     host: host || false,
     hmr: host
       ? {
-          protocol: "ws",
+          protocol: 'ws',
           host,
           port: 1421,
         }
       : undefined,
     watch: {
-      ignored: ["**/src-tauri/**"],
+      ignored: ['**/src-tauri/**'],
     },
   },
-}));
+})
