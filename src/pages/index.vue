@@ -1,3 +1,5 @@
+<script setup lang="ts"></script>
+
 <template>
   <div class="d-flex flex-column h-screen">
     <div class="d-flex ga-2 pa-2 overflow-x-auto">
