@@ -41,6 +41,7 @@
     "unplugin-vue-router": "^0.14.0",
     "vite": "npm:rolldown-vite@latest",
     "vite-plugin-vue-layouts-next": "^1.0.0",
+    "vite-tsconfig-paths": "^5.1.4",
     "vue-router": "^4.5.1",
     "vue-tsc": "^3.0.1"
   }

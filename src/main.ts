@@ -12,6 +12,7 @@ import { routes } from 'vue-router/auto-routes'
 import App from './App.vue';
 import 'unfonts.css';
 import './styles.scss'
+import pinia from "@/stores"
 
 const app = createApp(App);
 app.use(PrimeVue, {
@@ -23,4 +24,5 @@ app.use(createRouter({
   history: createWebHistory(),
   routes,
 }));
+app.use(pinia)
 app.mount('#app');

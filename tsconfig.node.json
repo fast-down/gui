@@ -16,9 +16,6 @@
     "moduleResolution": "Bundler",
     "types": ["node"],
 
-    "baseUrl": ".",
-    "paths": {
-      "@/*": ["./src/*"]
-    }
+    "baseUrl": "."
   }
 }
