@@ -1,6 +1,7 @@
 mod download_multi;
 mod download_single;
 mod event;
+mod format_dir;
 mod prefetch;
 mod reader;
 
@@ -21,7 +22,8 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             prefetch::prefetch,
             download_multi::download_multi,
-            download_single::download_single
+            download_single::download_single,
+            format_dir::format_dir
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

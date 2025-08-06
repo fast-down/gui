@@ -6,11 +6,12 @@ export interface DownloadEntry {
   filePath: string
   fileName: string
   fileSize: number
-  readProgress?: [number, number][]
+  speed: number
+  readProgress: [number, number][]
   writeProgress: [number, number][]
   elapsedMs: number
-  status?: 'pending' | 'downloading' | 'paused' | 'completed' | 'error'
-  etag?: string
+  status: 'pending' | 'downloading' | 'paused' | 'completed' | 'error'
+  etag: string
   lastModified?: string
 }
 
@@ -23,11 +24,17 @@ export const useAppStore = defineStore(
         filePath: '/path/to/file.zip',
         fileName: 'file.zip',
         fileSize: 1.2 * 1024 * 1024,
-        readProgress: [[0, 200]],
-        writeProgress: [[0, 100]],
+        readProgress: [
+          [0, 0.5 * 1024 * 1024],
+          [1 * 1024 * 1024, 1.2 * 1024 * 1024],
+        ],
+        writeProgress: [
+          [0, 0.5 * 1024 * 1024],
+          [1 * 1024 * 1024, 1.2 * 1024 * 1024],
+        ],
         etag: 'W/"123456789"',
         lastModified: '2022-01-01T00:00:00Z',
-        elapsedMs: 0,
+        elapsedMs: 1.3 * 1000,
         status: 'pending',
       },
       {
@@ -106,8 +113,6 @@ sec-ch-ua-platform: "Windows"`)
     return { list, threads, saveDir, headers, proxy, addEntry }
   },
   {
-    persist: {
-      omit: ['list[].status', 'list[].readProgress'],
-    },
+    persist: true,
   },
 )

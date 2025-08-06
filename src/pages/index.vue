@@ -66,10 +66,30 @@
               <v-card-subtitle> {{ item.filePath }} </v-card-subtitle>
             </v-card-item>
             <v-card-text>
-              <v-progress-linear
-                :max="item.fileSize"
-                :model-value="1 * 1024 * 1024"
-              />
+              <v-container class="pa-0">
+                <v-row>
+                  <v-col>
+                    <div>速度</div>
+                    <div>{{ formatSize(item.speed) }}/s</div>
+                  </v-col>
+                  <v-col>
+                    <div>用时</div>
+                    <div>{{ formatTime(item.elapsedMs / 1000) }}</div>
+                  </v-col>
+                  <v-col>
+                    <div>速度</div>
+                    <div>10MB/s</div>
+                  </v-col>
+                </v-row>
+                <v-row>
+                  <v-col class="py-0">
+                    <v-progress-linear
+                      :max="item.fileSize"
+                      :model-value="1 * 1024 * 1024"
+                    />
+                  </v-col>
+                </v-row>
+              </v-container>
             </v-card-text>
             <v-card-actions>
               <IconBtn
@@ -90,11 +110,21 @@
 </template>
 
 <script lang="ts" setup>
+import { invoke } from '@tauri-apps/api/core'
 import { open } from '@tauri-apps/plugin-dialog'
 import { useElementSize } from '@vueuse/core'
 import { useAppStore } from '@/stores/app'
+import { formatSize } from '@/utils/format-size'
+import { formatTime } from '@/utils/format-time'
 
 const store = useAppStore()
+for (const e of store.list) {
+  e.status = 'paused'
+  e.readProgress = []
+  e.readProgress.concat(e.writeProgress)
+  const downloaded = e.writeProgress.reduce((a, b) => a + b[1] - b[0], 0)
+  e.speed = (downloaded / e.elapsedMs) * 1000
+}
 
 const scrollRef = useTemplateRef('scrollRef')
 const { height } = useElementSize(scrollRef)
@@ -121,9 +151,17 @@ const urlRules = [
   },
 ]
 const dirRules = [
-  (value?: string) => {
+  async (value?: string) => {
     if (!value?.trim()) return '请选择一个保存目录'
-    return true
+    try {
+      const res: string | null = await invoke('format_dir', { dir: value })
+      if (!res) return '目录不存在'
+      console.log(res)
+      return true
+    } catch (error) {
+      console.error(error)
+      return '目录格式不正确'
+    }
   },
 ]
 async function selectDir() {
