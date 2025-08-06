@@ -1,0 +1,17 @@
+html {
+  overflow: hidden;
+}
+
+body {
+  margin: 0;
+}
+
+::-webkit-scrollbar {
+  display: none;
+}
+
+#app {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
