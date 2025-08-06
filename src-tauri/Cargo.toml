@@ -1,8 +1,8 @@
 [package]
 name = "app"
 version = "0.1.0"
-description = "A Tauri App"
-authors = ["you"]
+description = "fast-down 多线程下载器的 GUI 版本"
+authors = ["share121 <2854631158@qq.com>"]
 license = ""
 repository = ""
 edition = "2021"
@@ -23,3 +23,26 @@ serde = { version = "1.0", features = ["derive"] }
 log = "0.4"
 tauri = { version = "2.7.0", features = [] }
 tauri-plugin-log = "2"
+fast-pull = "2.1.5"
+reqwest = { version = "0.12.22", features = [
+  "brotli",
+  "deflate",
+  "gzip",
+  "macos-system-configuration",
+  "socks",
+  "zstd",
+  "http2",
+], default-features = false }
+bytes = "1.10.1"
+futures = "0.3.31"
+url = "2.5.4"
+tokio = { version = "1.47.1", features = ["full"] }
+thiserror = "2.0.12"
+tauri-plugin-dialog = "2"
+
+[profile.release]
+codegen-units = 1
+lto = true
+opt-level = 3
+panic = "abort"
+strip = true

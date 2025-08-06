@@ -1,0 +1,52 @@
+use std::collections::HashMap;
+
+use crate::reader;
+use fast_pull::reqwest::Prefetch;
+use serde::Serialize;
+use tauri::http::HeaderMap;
+
+#[derive(Debug, Serialize)]
+pub struct UrlInfo {
+    pub size: u64,
+    pub name: String,
+    pub supports_range: bool,
+    pub fast_download: bool,
+    pub final_url: String,
+    pub etag: Option<String>,
+    pub last_modified: Option<String>,
+}
+
+impl From<fast_pull::UrlInfo> for UrlInfo {
+    fn from(value: fast_pull::UrlInfo) -> Self {
+        Self {
+            size: value.size,
+            name: value.name,
+            supports_range: value.supports_range,
+            fast_download: value.fast_download,
+            final_url: value.final_url.to_string(),
+            etag: value.etag,
+            last_modified: value.last_modified,
+        }
+    }
+}
+
+#[tauri::command]
+pub async fn prefetch(
+    url: &str,
+    headers: HashMap<String, String>,
+    proxy: Option<String>,
+) -> Result<UrlInfo, String> {
+    let headers = headers
+        .into_iter()
+        .filter_map(|(k, v)| Some((k.parse().ok()?, v.parse().ok()?)))
+        .collect::<HeaderMap>();
+    let client = reader::build_client(&headers, &proxy).map_err(|e| e.to_string())?;
+    client
+        .prefetch(url)
+        .await
+        .map_err(|e| {
+            dbg!(&e);
+            e.to_string()
+        })
+        .map(UrlInfo::from)
+}

@@ -8,3 +8,11 @@
 // @use 'vuetify/settings' with (
 //   $color-pack: false
 // );
+
+html {
+  overflow: hidden;
+}
+
+::-webkit-scrollbar {
+  display: none;
+}
