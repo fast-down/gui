@@ -26,7 +26,7 @@ async function buildTask(root: string, shell_: string) {
     .replace(/exec@([\w-_]+)/, `${Deno.execPath()} run -A npm:$1`);
 
   console.info(`%c$ %s`, "color: gray", shell);
-  return $`sh -c ${shell}`
+  return $([shell])
     .stderr("inherit")
     .cwd(root)
     .env("PATH", `${Deno.env.get("PATH")}`)
