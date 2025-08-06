@@ -8,6 +8,7 @@ import vueRouter from 'unplugin-vue-router/vite';
 import { defineConfig } from 'vite';
 import {PrimeVueResolver} from '@primevue/auto-import-resolver';
 import layouts from 'vite-plugin-vue-layouts-next';
+import wasm from 'vite-plugin-wasm'
 
 const host = process.env.TAURI_DEV_HOST;
 
@@ -18,6 +19,7 @@ export default defineConfig({
       dts: 'src/typed-router.d.ts',
     }),
     layouts(),
+    wasm(),
     autoImport({
       imports: [
         'vue',

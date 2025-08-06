@@ -5,10 +5,11 @@
   "version": "0.0.0",
   "scripts": {
     "tauri": "tauri",
-    "dev": "vite",
+    "dev": "bun build:dkms && vite",
+    "build:dkms": "deno --node-modules-dir=none -A scripts/dkms.ts",
     "build": "run-p type-check \"build-only {@}\" --",
     "preview": "vite preview",
-    "build-only": "vite build",
+    "build-only": "build:dkms && vite build",
     "type-check": "vue-tsc --build --force",
     "lint": "eslint . --fix"
   },
@@ -41,8 +42,10 @@
     "unplugin-vue-router": "^0.14.0",
     "vite": "npm:rolldown-vite@latest",
     "vite-plugin-vue-layouts-next": "^1.0.0",
+    "vite-plugin-wasm": "^3.5.0",
     "vite-tsconfig-paths": "^5.1.4",
     "vue-router": "^4.5.1",
-    "vue-tsc": "^3.0.1"
+    "vue-tsc": "^3.0.1",
+    "wasm-pack": "^0.13.1"
   }
 }

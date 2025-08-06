@@ -13,6 +13,7 @@ import App from './App.vue';
 import 'unfonts.css';
 import './styles.scss'
 import pinia from "@/stores"
+import '@/utils/util'
 
 const app = createApp(App);
 app.use(PrimeVue, {
