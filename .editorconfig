@@ -1,0 +1,10 @@
+[*]
+end_of_line = lf
+charset = utf-8
+trim_trailing_whitespace = true
+indent_style = space
+insert_final_newline = true
+
+[*.{js,jsx,mjs,cjs,ts,tsx,mts,cts,vue}]
+indent_size = 2
+quote_type = single
