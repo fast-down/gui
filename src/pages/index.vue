@@ -1,7 +1,11 @@
+<script setup lang="ts">
+
+</script>
+
 <template>
-  <HelloWorld />
+<Button label="Hello World"/>
 </template>
 
-<script lang="ts" setup>
-//
-</script>
+<style scoped>
+
+</style>

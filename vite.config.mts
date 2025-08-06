@@ -1,22 +1,22 @@
-import { fileURLToPath, URL } from 'node:url'
-import Vue from '@vitejs/plugin-vue'
-import AutoImport from 'unplugin-auto-import/vite'
-import Fonts from 'unplugin-fonts/vite'
-import Components from 'unplugin-vue-components/vite'
-import { VueRouterAutoImports } from 'unplugin-vue-router'
-import VueRouter from 'unplugin-vue-router/vite'
-import { defineConfig } from 'vite'
-import Layouts from 'vite-plugin-vue-layouts-next'
-import Vuetify, { transformAssetUrls } from 'vite-plugin-vuetify'
+import { fileURLToPath, URL } from 'node:url';
+import vue from '@vitejs/plugin-vue';
+import autoImport from 'unplugin-auto-import/vite';
+import fonts from 'unplugin-fonts/vite';
+import components from 'unplugin-vue-components/vite';
+import { VueRouterAutoImports } from 'unplugin-vue-router';
+import vueRouter from 'unplugin-vue-router/vite';
+import { defineConfig } from 'vite';
+import {PrimeVueResolver} from '@primevue/auto-import-resolver';
+import layouts from 'vite-plugin-vue-layouts-next';
 
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [
-    VueRouter({
+    vueRouter({
       dts: 'src/typed-router.d.ts',
     }),
-    Layouts(),
-    AutoImport({
+    layouts(),
+    autoImport({
       imports: [
         'vue',
         VueRouterAutoImports,
@@ -30,20 +30,12 @@ export default defineConfig({
       },
       vueTemplate: true,
     }),
-    Components({
+    components({
+      resolvers: [PrimeVueResolver()],
       dts: 'src/components.d.ts',
     }),
-    Vue({
-      template: { transformAssetUrls },
-    }),
-    // https://github.com/vuetifyjs/vuetify-loader/tree/master/packages/vite-plugin#readme
-    Vuetify({
-      autoImport: true,
-      styles: {
-        configFile: 'src/styles/settings.scss',
-      },
-    }),
-    Fonts({
+    vue(),
+    fonts({
       fontsource: {
         families: [
           {
@@ -55,15 +47,6 @@ export default defineConfig({
       },
     }),
   ],
-  optimizeDeps: {
-    exclude: [
-      'vuetify',
-      'vue-router',
-      'unplugin-vue-router/runtime',
-      'unplugin-vue-router/data-loaders',
-      'unplugin-vue-router/data-loaders/basic',
-    ],
-  },
   define: { 'process.env': {} },
   resolve: {
     alias: {
@@ -84,4 +67,4 @@ export default defineConfig({
       },
     },
   },
-})
+});

@@ -4,11 +4,23 @@
  * Bootstraps Vuetify and other plugins then mounts the App`
  */
 
-import { createApp } from 'vue'
-import { registerPlugins } from '@/plugins'
-import App from './App.vue'
-import 'unfonts.css'
+import Aura from '@primeuix/themes/aura';
+import PrimeVue from 'primevue/config';
+import { createApp } from 'vue';
+import { createRouter, createWebHistory } from 'vue-router'
+import { routes } from 'vue-router/auto-routes'
+import App from './App.vue';
+import 'unfonts.css';
+import './styles.scss'
 
-const app = createApp(App)
-registerPlugins(app)
-app.mount('#app')
+const app = createApp(App);
+app.use(PrimeVue, {
+  theme: {
+    preset: Aura,
+  },
+});
+app.use(createRouter({
+  history: createWebHistory(),
+  routes,
+}));
+app.mount('#app');
