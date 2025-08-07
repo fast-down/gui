@@ -13,7 +13,9 @@
     "windows": [
       {
         "title": "fast-down",
-        "width": 800,
+        "minWidth": 586,
+        "width": 586,
+        "minHeight": 150,
         "height": 600
       }
     ],
