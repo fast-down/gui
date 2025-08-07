@@ -88,6 +88,8 @@ import { formatTime } from '../utils/format-time'
 import { platform } from '@tauri-apps/plugin-os'
 import { Command } from '@tauri-apps/plugin-shell'
 import { path } from '@tauri-apps/api'
+import { exists } from '@tauri-apps/plugin-fs'
+import { useToast } from 'primevue'
 
 const props = defineProps<{
   info: DownloadEntry
@@ -100,11 +102,27 @@ const bgProgress = computed(
 )
 
 const emit = defineEmits(['resume', 'pause', 'remove'])
+const toast = useToast()
+
+async function checkFileExists(filePath: string) {
+  if (!(await exists(filePath))) {
+    toast.add({
+      severity: 'error',
+      summary: '文件不存在',
+      detail: filePath,
+      life: 3000,
+    })
+    return false
+  }
+  return true
+}
 
 async function openFile() {
+  if (!(await checkFileExists(props.info.filePath))) return
   await openPath(props.info.filePath)
 }
 async function openFolder() {
+  if (!(await checkFileExists(props.info.filePath))) return
   const currentPlatform = platform()
   if (currentPlatform === 'windows') {
     await openPath(`/select,${props.info.filePath}`, 'explorer.exe')
@@ -121,7 +139,6 @@ async function openFolder() {
 .action {
   margin-left: auto;
   display: flex;
-  gap: 8px;
 }
 .title {
   display: flex;

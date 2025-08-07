@@ -6,6 +6,7 @@ import piniaPluginPersistedstate from 'pinia-plugin-persistedstate'
 import Aura from '@primeuix/themes/aura'
 import './styles/index.css'
 import 'primeicons/primeicons.css'
+import ToastService from 'primevue/toastservice'
 
 const pinia = createPinia()
 pinia.use(piniaPluginPersistedstate)
@@ -18,4 +19,5 @@ app.use(PrimeVue, {
   ripple: true,
 })
 app.use(pinia)
+app.use(ToastService)
 app.mount('#app')

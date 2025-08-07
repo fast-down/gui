@@ -41,6 +41,14 @@
           "args": ["%s"]
         }
       ]
+    },
+    {
+      "identifier": "fs:allow-exists",
+      "allow": [
+        {
+          "path": "**/*"
+        }
+      ]
     }
   ]
 }

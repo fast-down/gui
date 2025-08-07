@@ -1,6 +1,11 @@
 <template>
   <header class="header">
-    <Button label="新建任务" variant="text" icon="pi pi-plus" />
+    <Button
+      label="新建任务"
+      variant="text"
+      icon="pi pi-plus"
+      @click="createTaskVisible = true"
+    />
     <Button label="全部开始" variant="text" icon="pi pi-play" />
     <Button label="全部暂停" variant="text" icon="pi pi-pause" />
     <Button label="全部删除" variant="text" icon="pi pi-trash" />
@@ -15,6 +20,8 @@
     >
     </DownloadItem>
   </main>
+  <CreateTask v-model:visible="createTaskVisible" />
+  <Toast />
 </template>
 
 <script lang="ts" setup>
@@ -28,6 +35,8 @@ for (const e of store.list) {
   e.readProgress.concat(e.writeProgress)
   e.speed = (e.downloaded / e.elapsedMs) * 1000
 }
+
+const createTaskVisible = ref(false)
 
 const valid = ref(false)
 const rawUrls = ref('')
