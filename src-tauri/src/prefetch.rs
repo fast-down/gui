@@ -35,12 +35,20 @@ pub async fn prefetch(
     url: &str,
     headers: HashMap<String, String>,
     proxy: Option<String>,
+    accept_invalid_certs: bool,
+    accept_invalid_hostnames: bool,
 ) -> Result<UrlInfo, String> {
     let headers = headers
         .into_iter()
         .filter_map(|(k, v)| Some((k.parse().ok()?, v.parse().ok()?)))
         .collect::<HeaderMap>();
-    let client = reader::build_client(&headers, &proxy).map_err(|e| e.to_string())?;
+    let client = reader::build_client(
+        &headers,
+        &proxy,
+        accept_invalid_certs,
+        accept_invalid_hostnames,
+    )
+    .map_err(|e| e.to_string())?;
     client
         .prefetch(url)
         .await

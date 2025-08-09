@@ -32,34 +32,7 @@ for (const e of store.list) {
   e.readProgress.concat(e.writeProgress)
   e.speed = (e.downloaded / e.elapsedMs) * 1000
 }
-
 const createTaskVisible = ref(false)
-
-// function createTask(isActive: Ref<boolean>) {
-//   if (!valid.value) {
-//     return
-//   }
-//   isActive.value = false
-//   const urls = rawUrls.value.split('\n').map(e => e.trim())
-//   rawUrls.value = ''
-//   const headers: Record<string, string> = {}
-//   for (const [k, v] of store.headers
-//     .split('\n')
-//     .map(e => e.trim())
-//     .filter(Boolean)
-//     .map(e => e.split(':').map(e => e.trim()))) {
-//     headers[k] = v
-//   }
-//   for (const url of urls) {
-//     store.addEntry({
-//       url,
-//       headers,
-//       threads: store.threads,
-//       saveDir: store.saveDir,
-//       proxy: store.proxy,
-//     })
-//   }
-// }
 </script>
 
 <style scoped>
@@ -69,16 +42,13 @@ const createTaskVisible = ref(false)
   padding: 8px;
   overflow-x: auto;
 }
-
 .header > * {
   flex-shrink: 0;
 }
-
 .main {
   flex: 1;
   overflow: auto;
 }
-
 .download-item {
   margin: 8px;
 }

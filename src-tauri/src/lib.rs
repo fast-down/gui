@@ -2,6 +2,7 @@ mod download_multi;
 mod download_single;
 mod event;
 mod format_dir;
+mod gen_unique_path;
 mod prefetch;
 mod reader;
 
@@ -43,7 +44,8 @@ pub fn run() {
             prefetch::prefetch,
             download_multi::download_multi,
             download_single::download_single,
-            format_dir::format_dir
+            format_dir::format_dir,
+            gen_unique_path::gen_unique_path
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

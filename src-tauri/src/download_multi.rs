@@ -1,12 +1,8 @@
 use crate::{event::Event, reader::FastDownReader};
-#[cfg(target_pointer_width = "64")]
-use fast_pull::file::RandFileWriterMmap;
-#[cfg(not(target_pointer_width = "64"))]
-use fast_pull::file::RandFileWriterStd;
+use fast_pull::file::{FileWriterError, RandFileWriterMmap};
 use fast_pull::multi;
 use std::{collections::HashMap, num::NonZeroUsize, time::Duration};
 use tauri::{http::HeaderMap, ipc::Channel};
-use tokio::fs::OpenOptions;
 use url::Url;
 
 #[tauri::command]
@@ -21,6 +17,9 @@ pub async fn download_multi(
     download_chunks: Vec<(u64, u64)>,
     retry_gap: u64,
     headers: HashMap<String, String>,
+    multiplexing: bool,
+    accept_invalid_certs: bool,
+    accept_invalid_hostnames: bool,
     proxy: Option<String>,
     tx: Channel<Event>,
 ) -> Result<Channel<()>, Error> {
@@ -34,21 +33,18 @@ pub async fn download_multi(
         .into_iter()
         .map(|(start, end)| start..end)
         .collect();
-    let reader = FastDownReader::new(url, headers, proxy)?;
-    let file = OpenOptions::new()
-        .read(true)
-        .write(true)
-        .create(true)
-        .truncate(false)
-        .open(file_path)
-        .await?;
+    let reader = FastDownReader::new(
+        url,
+        headers,
+        proxy,
+        multiplexing,
+        accept_invalid_certs,
+        accept_invalid_hostnames,
+    )?;
     if threads == 0 {
         return Err(Error::ZeroThreads);
     }
-    #[cfg(target_pointer_width = "64")]
-    let writer = RandFileWriterMmap::new(file, file_size, write_buffer_size).await?;
-    #[cfg(not(target_pointer_width = "64"))]
-    let writer = RandFileWriterStd::new(file, file_size, write_buffer_size).await?;
+    let writer = RandFileWriterMmap::new(file_path, file_size, write_buffer_size).await?;
     let res = multi::download_multi(
         reader,
         writer,
@@ -79,7 +75,7 @@ pub async fn download_multi(
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
     #[error(transparent)]
-    Io(#[from] std::io::Error),
+    Io(#[from] FileWriterError),
     #[error(transparent)]
     UrlParse(#[from] url::ParseError),
     #[error("threads must be greater than zero")]

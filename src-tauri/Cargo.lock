@@ -1197,18 +1197,19 @@ dependencies = [
 
 [[package]]
 name = "fast-pull"
-version = "2.1.5"
+version = "2.2.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cc3f301f47beab8a55b9d411cb51836ec9e44318cec3feaf61f245d28468edc0"
+checksum = "b9f927e36f0d5bac7a8f0e0e4b7389d353b5242013844f0703b1ed77fa5f2e44"
 dependencies = [
  "bytes",
  "content_disposition",
  "fast-steal",
  "futures",
  "kanal",
- "memmap2",
+ "mmap-io",
  "reqwest",
  "sanitize-filename",
+ "thiserror 2.0.12",
  "tokio",
  "url",
  "urlencoding",
@@ -2418,9 +2419,9 @@ checksum = "32a282da65faaf38286cf3be983213fcf1d2e2a58700e808f83f4ea9a4804bc0"
 
 [[package]]
 name = "memmap2"
-version = "0.9.7"
+version = "0.7.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "483758ad303d734cec05e5c12b41d7e93e6a6390c5e9dae6bdeb7c1259012d28"
+checksum = "f49388d20533534cd19360ad3d6a7dadc885944aa802ba3995040c5ec11288c6"
 dependencies = [
  "libc",
 ]
@@ -2465,6 +2466,22 @@ dependencies = [
  "libc",
  "wasi 0.11.1+wasi-snapshot-preview1",
  "windows-sys 0.59.0",
+]
+
+[[package]]
+name = "mmap-io"
+version = "0.8.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ffc29ad1905e42e7df92d9ce49d1f06a4fbbdc3a0f144f1be14b168c8db3fe4e"
+dependencies = [
+ "anyhow",
+ "cfg-if",
+ "libc",
+ "log",
+ "memmap2",
+ "parking_lot",
+ "thiserror 1.0.69",
+ "tokio",
 ]
 
 [[package]]

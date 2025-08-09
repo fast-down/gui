@@ -6,7 +6,7 @@
     :style="{ width: '25rem' }"
     :closable="false"
   >
-    <Form v-slot="$form" :initial-values :resolver @submit="onFormSubmit">
+    <Form v-slot="$form" :formData :resolver @submit="onFormSubmit">
       <div class="fields">
         <div>
           <IftaLabel style="display: flex">
@@ -76,6 +76,7 @@
 import { Form, FormResolverOptions } from '@primevue/forms'
 import { invoke } from '@tauri-apps/api/core'
 import { open } from '@tauri-apps/plugin-dialog'
+import { buildHeaders } from '../utils/build-header'
 
 const props = defineProps<{
   visible: boolean
@@ -85,7 +86,7 @@ const emit = defineEmits<{
 }>()
 const store = useAppStore()
 
-const initialValues = reactive({
+const formData = reactive({
   url: '',
   threads: store.threads,
   saveDir: store.saveDir,
@@ -131,7 +132,24 @@ async function resolver({ values }: FormResolverOptions) {
 }
 
 function onFormSubmit({ valid }: { valid: boolean }) {
-  if (valid) emit('update:visible', false)
+  if (!valid) return
+  emit('update:visible', false)
+  const urls = formData.url.split('\n').map(e => e.trim())
+  formData.url = ''
+  store.saveDir = formData.saveDir
+  store.threads = formData.threads
+  for (const url of urls) {
+    store.addEntry({
+      url,
+      headers: buildHeaders(store.headers),
+      threads: store.threads,
+      saveDir: store.saveDir,
+      proxy: store.proxy,
+      writeBufferSize: store.writeBufferSize,
+      writeQueueCap: store.writeQueueCap,
+      retryGap: store.retryGap,
+    })
+  }
 }
 
 async function selectDir() {
@@ -139,7 +157,7 @@ async function selectDir() {
     directory: true,
     title: '选择保存文件夹',
   })
-  if (dir) initialValues.saveDir = dir
+  if (dir) formData.saveDir = dir
 }
 </script>
 

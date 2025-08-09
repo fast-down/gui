@@ -14,6 +14,9 @@ pub async fn download_single(
     write_queue_cap: usize,
     retry_gap: u64,
     headers: HashMap<String, String>,
+    multiplexing: bool,
+    accept_invalid_certs: bool,
+    accept_invalid_hostnames: bool,
     proxy: Option<String>,
     tx: Channel<Event>,
 ) -> Result<Channel<()>, Error> {
@@ -23,7 +26,14 @@ pub async fn download_single(
         .filter_map(|(k, v)| Some((k.parse().ok()?, v.parse().ok()?)))
         .collect::<HeaderMap>();
     let retry_gap = Duration::from_millis(retry_gap);
-    let reader = FastDownReader::new(url, headers, proxy)?;
+    let reader = FastDownReader::new(
+        url,
+        headers,
+        proxy,
+        multiplexing,
+        accept_invalid_certs,
+        accept_invalid_hostnames,
+    )?;
     let file = OpenOptions::new()
         .read(true)
         .write(true)
