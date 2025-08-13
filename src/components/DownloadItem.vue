@@ -107,9 +107,6 @@ const detailProgress = computed(() =>
     })),
   ),
 )
-watchEffect(() => {
-  console.log(detailProgress.value)
-})
 
 const emit = defineEmits(['resume', 'pause', 'remove'])
 const toast = useToast()
