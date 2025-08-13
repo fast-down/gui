@@ -1,11 +1,11 @@
-import { Channel } from '@tauri-apps/api/core'
+import { Channel, invoke } from '@tauri-apps/api/core'
 
-interface DownloadMulti {
+export interface DownloadMulti {
   options: DownloadMultiOptions
-  tx: Channel
+  tx: Channel<DownloadEvent>
 }
 
-interface DownloadMultiOptions {
+export interface DownloadMultiOptions {
   url: string
   filePath: string
   fileSize: number
@@ -21,4 +21,8 @@ interface DownloadMultiOptions {
   acceptInvalidHostnames: boolean
   proxy: string | null
   writeMethod: string
+}
+
+export async function downloadMulti(options: DownloadMulti) {
+  await invoke('download_multi', options as any)
 }

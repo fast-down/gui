@@ -77,8 +77,8 @@
 
 <script setup lang="ts">
 import { Form, FormResolverOptions, FormSubmitEvent } from '@primevue/forms'
-import { invoke } from '@tauri-apps/api/core'
 import { open } from '@tauri-apps/plugin-dialog'
+import { formatDir } from '../utils/format-dir'
 
 const props = defineProps<{
   visible: boolean
@@ -121,9 +121,7 @@ async function resolver({ values }: FormResolverOptions) {
     errors.saveDir = [{ message: '请选择一个保存目录' }]
   else {
     try {
-      const res: string | null = await invoke('format_dir', {
-        dir: values.saveDir,
-      })
+      const res = await formatDir(values.saveDir)
       if (!res) errors.saveDir = [{ message: '目录不存在' }]
     } catch (error) {
       console.error(error)

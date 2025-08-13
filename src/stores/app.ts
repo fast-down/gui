@@ -1,7 +1,9 @@
-import { Channel, invoke } from '@tauri-apps/api/core'
+import { Channel } from '@tauri-apps/api/core'
 import { emit } from '@tauri-apps/api/event'
-import { DownloadMulti } from '../interface/download_multi'
-import { DownloadSingle } from '../interface/download_single'
+import { prefetch } from '../utils/prefetch'
+import { genUniquePath } from '../utils/gen-unique-path'
+import { downloadMulti } from '../utils/download-multi'
+import { downloadSingle } from '../utils/download-single'
 
 export interface DownloadEntry {
   url: string
@@ -66,18 +68,15 @@ sec-ch-ua-platform: "Windows"`)
     async function add(url: string) {
       console.log(`add url: ${url}`)
       const headersObj = buildHeaders(headers.value)
-      const info: UrlInfo = await invoke('prefetch', {
+      const info = await prefetch({
         url,
         headers: headersObj,
         proxy: proxy.value,
         acceptInvalidCerts: acceptInvalidCerts.value,
         acceptInvalidHostnames: acceptInvalidHostnames.value,
-      } as Prefetch as Record<string, any>)
-      console.log(info)
-      const filePath: UniquePath = await invoke('gen_unique_path', {
-        dir: saveDir.value,
-        name: info.name,
       })
+      console.log(info)
+      const filePath = await genUniquePath(saveDir.value, info.name)
       console.log(filePath)
       await remove(filePath.path)
       const status =
@@ -111,7 +110,7 @@ sec-ch-ua-platform: "Windows"`)
         }
       })
       if (info.fastDownload) {
-        await invoke('download_multi', {
+        await downloadMulti({
           options: {
             url: info.finalUrl,
             acceptInvalidCerts: acceptInvalidCerts.value,
@@ -130,9 +129,9 @@ sec-ch-ua-platform: "Windows"`)
             writeMethod: writeMethod.value,
           },
           tx: channel,
-        } as DownloadMulti as Record<string, any>)
+        })
       } else {
-        await invoke('download_single', {
+        await downloadSingle({
           options: {
             url: info.finalUrl,
             acceptInvalidCerts: acceptInvalidCerts.value,
@@ -140,14 +139,13 @@ sec-ch-ua-platform: "Windows"`)
             headers: headersObj,
             proxy: proxy.value,
             filePath: filePath.path,
-            fileSize: info.size,
             writeBufferSize: writeBufferSize.value,
             writeQueueCap: writeQueueCap.value,
             multiplexing: multiplexing.value,
             retryGap: retryGap.value,
           },
           tx: channel,
-        } as DownloadSingle as Record<string, any>)
+        })
       }
     }
 

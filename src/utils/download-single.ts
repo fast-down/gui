@@ -1,11 +1,11 @@
-import { Channel } from '@tauri-apps/api/core'
+import { Channel, invoke } from '@tauri-apps/api/core'
 
-interface DownloadSingle {
+export interface DownloadSingle {
   options: DownloadSingleOptions
-  tx: Channel
+  tx: Channel<DownloadEvent>
 }
 
-interface DownloadSingleOptions {
+export interface DownloadSingleOptions {
   url: string
   filePath: string
   writeBufferSize: number
@@ -16,4 +16,8 @@ interface DownloadSingleOptions {
   acceptInvalidCerts: boolean
   acceptInvalidHostnames: boolean
   proxy: string | null
+}
+
+export async function downloadSingle(options: DownloadSingle) {
+  await invoke('download_single', options as any)
 }
