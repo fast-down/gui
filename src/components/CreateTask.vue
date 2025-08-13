@@ -5,6 +5,7 @@
     modal
     header="新建任务"
     :style="{ maxWidth: '25rem' }"
+    :closable="false"
   >
     <Form v-slot="$form" :initial-values :resolver @submit="onFormSubmit">
       <div class="fields">
@@ -138,8 +139,8 @@ function onFormSubmit(event: FormSubmitEvent) {
   emit('update:visible', false)
   const formData = event.states
   const urls = formData.url.value.split('\n').map((e: string) => e.trim())
-  store.saveDir = formData.saveDir.value
-  store.threads = formData.threads.value
+  initialValues.saveDir = store.saveDir = formData.saveDir.value
+  initialValues.threads = store.threads = formData.threads.value
   urls.forEach(store.add)
 }
 
@@ -152,7 +153,6 @@ async function selectDir() {
     | HTMLInputElement
     | undefined
   if (dir && saveDirInput) {
-    initialValues.saveDir = dir
     saveDirInput.value = dir
     saveDirInput.dispatchEvent(new Event('input'))
   }

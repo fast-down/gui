@@ -1,4 +1,3 @@
-use fast_pull::ProgressEntry;
 use serde::{Deserialize, Serialize};
 
 pub type WorkerId = usize;
@@ -13,9 +12,9 @@ pub type WorkerId = usize;
 pub enum Event {
     Pulling(WorkerId),
     PullError(WorkerId, String),
-    PullProgress(WorkerId, ProgressEntry),
+    PullProgress(Vec<Vec<(u64, u64)>>, u64),
     PushError(WorkerId, String),
-    PushProgress(WorkerId, ProgressEntry),
+    PushProgress(Vec<Vec<(u64, u64)>>),
     FlushError(String),
     Finished(WorkerId),
     AllFinished,
@@ -26,11 +25,10 @@ impl<RE: ToString, WE: ToString> From<fast_pull::Event<RE, WE>> for Event {
         match value {
             fast_pull::Event::Pulling(id) => Event::Pulling(id),
             fast_pull::Event::PullError(id, err) => Event::PullError(id, err.to_string()),
-            fast_pull::Event::PullProgress(id, entry) => Event::PullProgress(id, entry),
             fast_pull::Event::PushError(id, err) => Event::PushError(id, err.to_string()),
-            fast_pull::Event::PushProgress(id, entry) => Event::PushProgress(id, entry),
             fast_pull::Event::FlushError(err) => Event::FlushError(err.to_string()),
             fast_pull::Event::Finished(id) => Event::Finished(id),
+            _ => unimplemented!(),
         }
     }
 }

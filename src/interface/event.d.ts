@@ -1,8 +1,4 @@
 type WorkerId = number
-interface ProgressEntry {
-  start: number
-  end: number
-}
 interface Pulling {
   event: 'pulling'
   data: WorkerId
@@ -13,7 +9,7 @@ interface PullError {
 }
 interface PullProgress {
   event: 'pullProgress'
-  data: [WorkerId, ProgressEntry]
+  data: [[number, number][][], number]
 }
 interface PushError {
   event: 'pushError'
@@ -21,7 +17,7 @@ interface PushError {
 }
 interface PushProgress {
   event: 'pushProgress'
-  data: [WorkerId, ProgressEntry]
+  data: [number, number][][]
 }
 interface FlushError {
   event: 'flushError'

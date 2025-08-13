@@ -2,7 +2,6 @@ import { Channel, invoke } from '@tauri-apps/api/core'
 import { emit } from '@tauri-apps/api/event'
 import { DownloadMulti } from '../interface/download_multi'
 import { DownloadSingle } from '../interface/download_single'
-import { mergeProgress } from '../utils/merge-progress'
 
 export interface DownloadEntry {
   url: string
@@ -103,20 +102,10 @@ sec-ch-ua-platform: "Windows"`)
         if (res.event === 'allFinished') {
           entry.status = 'completed'
         } else if (res.event === 'pullProgress') {
-          const workerId = res.data[0]
-          const spin: [number, number] = [res.data[1].start, res.data[1].end]
-          if (!entry.readProgress[workerId]) {
-            entry.readProgress[workerId] = []
-          }
-          entry.downloaded += spin[1] - spin[0]
-          mergeProgress(entry.readProgress[workerId], spin)
+          entry.readProgress = res.data[0]
+          entry.downloaded = res.data[1]
         } else if (res.event === 'pushProgress') {
-          const workerId = res.data[0]
-          const spin: [number, number] = [res.data[1].start, res.data[1].end]
-          if (!entry.writeProgress[workerId]) {
-            entry.writeProgress[workerId] = []
-          }
-          mergeProgress(entry.writeProgress[workerId], spin)
+          entry.writeProgress = res.data
         } else {
           console.log(res)
         }

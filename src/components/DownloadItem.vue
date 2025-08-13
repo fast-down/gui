@@ -182,15 +182,11 @@ async function openFolder() {
   }
 }
 .details {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
   max-height: 300px;
   overflow: auto;
 }
 .details > div {
   position: relative;
-  border-radius: 6px;
   height: 12px;
   overflow: hidden;
 }

@@ -3,10 +3,15 @@ use crate::{
     puller::FastDownPuller,
 };
 use fast_pull::{
+    MergeProgress, ProgressEntry, Total,
     file::{FilePusherError, RandFilePusherMmap, RandFilePusherStd},
     multi,
 };
-use std::{collections::HashMap, num::NonZero, time::Duration};
+use std::{
+    collections::HashMap,
+    num::NonZero,
+    time::{Duration, Instant},
+};
 use tauri::{AppHandle, Listener, http::HeaderMap, ipc::Channel};
 use tokio::fs::OpenOptions;
 use url::Url;
@@ -153,9 +158,61 @@ pub async fn download_multi(
         }
     });
     tokio::spawn(async move {
+        let mut pull_progress = vec![vec![]; options.threads];
+        let mut push_progress = vec![vec![]; options.threads];
+        let mut last_update_time = Instant::now();
+        let mut downloaded = 0;
         while let Ok(e) = res.event_chain.recv().await {
-            tx.send(e.into()).unwrap();
+            match e {
+                fast_pull::Event::PullProgress(id, range) => {
+                    downloaded += range.total();
+                    pull_progress[id].merge_progress(range);
+                    if last_update_time.elapsed().as_millis() > 100 {
+                        last_update_time = Instant::now();
+                        let pull_progress_data = pull_progress
+                            .iter()
+                            .map(|v| v.iter().map(|r| (r.start, r.end)).collect())
+                            .collect();
+                        tx.send(Event::PullProgress(pull_progress_data, downloaded))
+                            .unwrap();
+                        let push_progress_data = push_progress
+                            .iter()
+                            .map(|v| v.iter().map(|r: &ProgressEntry| (r.start, r.end)).collect())
+                            .collect();
+                        tx.send(Event::PushProgress(push_progress_data)).unwrap();
+                    }
+                }
+                fast_pull::Event::PushProgress(id, range) => {
+                    push_progress[id].merge_progress(range);
+                    if last_update_time.elapsed().as_millis() > 100 {
+                        last_update_time = Instant::now();
+                        let pull_progress_data = pull_progress
+                            .iter()
+                            .map(|v| v.iter().map(|r| (r.start, r.end)).collect())
+                            .collect();
+                        tx.send(Event::PullProgress(pull_progress_data, downloaded))
+                            .unwrap();
+                        let push_progress_data = push_progress
+                            .iter()
+                            .map(|v| v.iter().map(|r: &ProgressEntry| (r.start, r.end)).collect())
+                            .collect();
+                        tx.send(Event::PushProgress(push_progress_data)).unwrap();
+                    }
+                }
+                _ => tx.send(e.into()).unwrap(),
+            };
         }
+        let pull_progress_data = pull_progress
+            .iter()
+            .map(|v| v.iter().map(|r| (r.start, r.end)).collect())
+            .collect();
+        tx.send(Event::PullProgress(pull_progress_data, downloaded))
+            .unwrap();
+        let push_progress_data = push_progress
+            .iter()
+            .map(|v| v.iter().map(|r: &ProgressEntry| (r.start, r.end)).collect())
+            .collect();
+        tx.send(Event::PushProgress(push_progress_data)).unwrap();
         res.join().await.unwrap();
         tx.send(Event::AllFinished).unwrap();
     });
