@@ -1,10 +1,10 @@
 <template>
   <Dialog
-    v-model:visible="props.visible"
+    :visible="props.visible"
+    @update:visible="onUpdateVisible"
     modal
     header="新建任务"
     :style="{ width: '25rem' }"
-    :closable="false"
   >
     <Form v-slot="$form" :formData :resolver @submit="onFormSubmit">
       <div class="fields">
@@ -158,6 +158,10 @@ async function selectDir() {
     title: '选择保存文件夹',
   })
   if (dir) formData.saveDir = dir
+}
+
+function onUpdateVisible(v: boolean) {
+  emit('update:visible', v)
 }
 </script>
 
