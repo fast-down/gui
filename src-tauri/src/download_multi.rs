@@ -1,6 +1,7 @@
-use crate::{event::Event, reader::FastDownReader};
-use fast_pull::file::{FileWriterError, RandFileWriterMmap};
+use crate::{event::Event, puller::FastDownPuller};
+use fast_pull::file::{FilePusherError, RandFilePusherMmap};
 use fast_pull::multi;
+use std::num::NonZero;
 use std::{collections::HashMap, num::NonZeroUsize, time::Duration};
 use tauri::{http::HeaderMap, ipc::Channel};
 use url::Url;
@@ -33,7 +34,7 @@ pub async fn download_multi(
         .into_iter()
         .map(|(start, end)| start..end)
         .collect();
-    let reader = FastDownReader::new(
+    let puller = FastDownPuller::new(
         url,
         headers,
         proxy,
@@ -44,22 +45,23 @@ pub async fn download_multi(
     if threads == 0 {
         return Err(Error::ZeroThreads);
     }
-    let writer = RandFileWriterMmap::new(file_path, file_size, write_buffer_size).await?;
+    let pusher = RandFilePusherMmap::new(file_path, file_size, write_buffer_size).await?;
     let res = multi::download_multi(
-        reader,
-        writer,
+        puller,
+        pusher,
         multi::DownloadOptions {
             download_chunks,
             concurrent: NonZeroUsize::new(threads).unwrap_or(NonZeroUsize::new(1).unwrap()),
             retry_gap,
-            write_queue_cap,
+            push_queue_cap: write_queue_cap,
+            min_chunk_size: NonZero::new(8 * 1024).unwrap(),
         },
     )
     .await;
     let res_clone = res.clone();
     let stop_channel: Channel<()> = Channel::new(move |_| {
         println!("stop download");
-        res_clone.cancel();
+        res_clone.abort();
         Ok(())
     });
     tokio::spawn(async move {
@@ -75,7 +77,7 @@ pub async fn download_multi(
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
     #[error(transparent)]
-    Io(#[from] FileWriterError),
+    Io(#[from] FilePusherError),
     #[error(transparent)]
     UrlParse(#[from] url::ParseError),
     #[error("threads must be greater than zero")]

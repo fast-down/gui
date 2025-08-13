@@ -4,7 +4,7 @@ mod event;
 mod format_dir;
 mod gen_unique_path;
 mod prefetch;
-mod reader;
+mod puller;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {

@@ -27,9 +27,9 @@
 <script lang="ts" setup>
 const store = useAppStore()
 for (const e of store.list) {
-  e.status = 'paused'
-  e.readProgress = []
-  e.readProgress.concat(e.writeProgress)
+  // e.status = 'paused'
+  // e.readProgress = []
+  // e.readProgress.concat(e.writeProgress)
   e.speed = (e.downloaded / e.elapsedMs) * 1000
 }
 const createTaskVisible = ref(false)

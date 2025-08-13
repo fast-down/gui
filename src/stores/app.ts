@@ -6,8 +6,8 @@ export interface DownloadEntry {
   fileName: string
   fileSize: number
   speed: number
-  readProgress: [number, number][]
-  writeProgress: [number, number][]
+  readProgress: [number, number][][]
+  writeProgress: [number, number][][]
   elapsedMs: number
   status: 'pending' | 'downloading' | 'paused' | 'completed' | 'error'
   downloaded: number
@@ -32,8 +32,11 @@ export const useAppStore = defineStore(
           [[1 * 1024 * 1024, 1.2 * 1024 * 1024]],
         ],
         writeProgress: [
-          [0, 0.5 * 1024 * 1024],
-          [1 * 1024 * 1024, 1.2 * 1024 * 1024],
+          [
+            [0, 0.3 * 1024 * 1024],
+            [0.4 * 1024 * 1024, 0.5 * 1024 * 1024],
+          ],
+          [[1 * 1024 * 1024, 1.2 * 1024 * 1024]],
         ],
         etag: 'W/"123456789"',
         lastModified: '2022-01-01T00:00:00Z',
@@ -47,8 +50,20 @@ export const useAppStore = defineStore(
         filePath: '/path/to/file.zip',
         fileName: 'file.zip',
         fileSize: 1.2 * 1024 * 1024,
-        readProgress: [[0, 200]],
-        writeProgress: [[0, 100]],
+        readProgress: [
+          [
+            [0, 0.3 * 1024 * 1024],
+            [0.4 * 1024 * 1024, 0.5 * 1024 * 1024],
+          ],
+          [[1 * 1024 * 1024, 1.2 * 1024 * 1024]],
+        ],
+        writeProgress: [
+          [
+            [0, 0.3 * 1024 * 1024],
+            [0.4 * 1024 * 1024, 0.5 * 1024 * 1024],
+          ],
+          [[1 * 1024 * 1024, 1.2 * 1024 * 1024]],
+        ],
         etag: 'W/"123456789"',
         lastModified: '2022-01-01T00:00:00Z',
         elapsedMs: 1.3 * 1000,
@@ -60,8 +75,20 @@ export const useAppStore = defineStore(
         filePath: '/path/to/file.zip',
         fileName: 'file.zip',
         fileSize: 1.2 * 1024 * 1024,
-        readProgress: [[0, 200]],
-        writeProgress: [[0, 100]],
+        readProgress: [
+          [
+            [0, 0.3 * 1024 * 1024],
+            [0.4 * 1024 * 1024, 0.5 * 1024 * 1024],
+          ],
+          [[1 * 1024 * 1024, 1.2 * 1024 * 1024]],
+        ],
+        writeProgress: [
+          [
+            [0, 0.3 * 1024 * 1024],
+            [0.4 * 1024 * 1024, 0.5 * 1024 * 1024],
+          ],
+          [[1 * 1024 * 1024, 1.2 * 1024 * 1024]],
+        ],
         etag: 'W/"123456789"',
         lastModified: '2022-01-01T00:00:00Z',
         elapsedMs: 1.3 * 1000,
@@ -73,8 +100,20 @@ export const useAppStore = defineStore(
         filePath: '/path/to/file.zip',
         fileName: 'file.zip',
         fileSize: 1.2 * 1024 * 1024,
-        readProgress: [[0, 200]],
-        writeProgress: [[0, 100]],
+        readProgress: [
+          [
+            [0, 0.3 * 1024 * 1024],
+            [0.4 * 1024 * 1024, 0.5 * 1024 * 1024],
+          ],
+          [[1 * 1024 * 1024, 1.2 * 1024 * 1024]],
+        ],
+        writeProgress: [
+          [
+            [0, 0.3 * 1024 * 1024],
+            [0.4 * 1024 * 1024, 0.5 * 1024 * 1024],
+          ],
+          [[1 * 1024 * 1024, 1.2 * 1024 * 1024]],
+        ],
         etag: 'W/"123456789"',
         lastModified: '2022-01-01T00:00:00Z',
         elapsedMs: 1.3 * 1000,
@@ -86,8 +125,20 @@ export const useAppStore = defineStore(
         filePath: '/path/to/file.zip',
         fileName: 'file.zip',
         fileSize: 1.2 * 1024 * 1024,
-        readProgress: [[0, 200]],
-        writeProgress: [[0, 100]],
+        readProgress: [
+          [
+            [0, 0.3 * 1024 * 1024],
+            [0.4 * 1024 * 1024, 0.5 * 1024 * 1024],
+          ],
+          [[1 * 1024 * 1024, 1.2 * 1024 * 1024]],
+        ],
+        writeProgress: [
+          [
+            [0, 0.3 * 1024 * 1024],
+            [0.4 * 1024 * 1024, 0.5 * 1024 * 1024],
+          ],
+          [[1 * 1024 * 1024, 1.2 * 1024 * 1024]],
+        ],
         etag: 'W/"123456789"',
         lastModified: '2022-01-01T00:00:00Z',
         elapsedMs: 1.3 * 1000,
@@ -166,7 +217,7 @@ sec-ch-ua-platform: "Windows"`)
           threads: options.threads,
           writeBufferSize: 1024 * 1024,
           writeQueueCap: options.writeQueueCap,
-          downloadChunks: options.downloadChunks,
+          downloadChunks: [0, info.size],
           retryGap: options.retryGap,
           headers: options.headers,
           proxy: options.proxy,

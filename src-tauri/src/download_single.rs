@@ -1,5 +1,5 @@
-use crate::{event::Event, reader::FastDownReader};
-use fast_pull::{file::SeqFileWriter, single};
+use crate::{event::Event, puller::FastDownPuller};
+use fast_pull::{file::SeqFilePusher, single};
 use std::{collections::HashMap, time::Duration};
 use tauri::{http::HeaderMap, ipc::Channel};
 use tokio::fs::OpenOptions;
@@ -26,7 +26,7 @@ pub async fn download_single(
         .filter_map(|(k, v)| Some((k.parse().ok()?, v.parse().ok()?)))
         .collect::<HeaderMap>();
     let retry_gap = Duration::from_millis(retry_gap);
-    let reader = FastDownReader::new(
+    let puller = FastDownPuller::new(
         url,
         headers,
         proxy,
@@ -35,26 +35,25 @@ pub async fn download_single(
         accept_invalid_hostnames,
     )?;
     let file = OpenOptions::new()
-        .read(true)
         .write(true)
         .create(true)
         .truncate(false)
         .open(file_path)
         .await?;
-    let writer = SeqFileWriter::new(file, write_buffer_size);
+    let pusher = SeqFilePusher::new(file, write_buffer_size);
     let res = single::download_single(
-        reader,
-        writer,
+        puller,
+        pusher,
         single::DownloadOptions {
             retry_gap,
-            write_queue_cap,
+            push_queue_cap: write_queue_cap,
         },
     )
     .await;
     let res_clone = res.clone();
     let stop_channel: Channel<()> = Channel::new(move |_| {
         println!("stop download");
-        res_clone.cancel();
+        res_clone.abort();
         Ok(())
     });
     tokio::spawn(async move {

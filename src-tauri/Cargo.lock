@@ -1197,9 +1197,9 @@ dependencies = [
 
 [[package]]
 name = "fast-pull"
-version = "2.2.3"
+version = "3.0.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b9f927e36f0d5bac7a8f0e0e4b7389d353b5242013844f0703b1ed77fa5f2e44"
+checksum = "1a07cb33d018d7c4cf5274f343cbb01068ee5c110e6423298c2ffd97a340b565"
 dependencies = [
  "bytes",
  "content_disposition",
@@ -1217,9 +1217,12 @@ dependencies = [
 
 [[package]]
 name = "fast-steal"
-version = "5.1.1"
+version = "6.0.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c62861b648d4b8a45360faa8f6f0530312aa8040fc031ef2ca2856ea99782799"
+checksum = "eee50b135c381b5faad6882143946937ceb8f5104eabe24eb33281401938a0d3"
+dependencies = [
+ "spin",
+]
 
 [[package]]
 name = "fastrand"
@@ -4244,6 +4247,12 @@ dependencies = [
  "libc",
  "system-deps",
 ]
+
+[[package]]
+name = "spin"
+version = "0.10.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d5fe4ccb98d9c292d56fec89a5e07da7fc4cf0dc11e156b41793132775d3e591"
 
 [[package]]
 name = "stable_deref_trait"

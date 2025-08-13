@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::reader;
+use crate::puller;
 use fast_pull::reqwest::Prefetch;
 use serde::Serialize;
 use tauri::http::HeaderMap;
@@ -42,7 +42,7 @@ pub async fn prefetch(
         .into_iter()
         .filter_map(|(k, v)| Some((k.parse().ok()?, v.parse().ok()?)))
         .collect::<HeaderMap>();
-    let client = reader::build_client(
+    let client = puller::build_client(
         &headers,
         &proxy,
         accept_invalid_certs,

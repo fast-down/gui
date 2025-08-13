@@ -70,12 +70,11 @@
         </tbody>
       </table>
     </template>
-    <template #footer>
+    <template #footer v-if="detailProgress.length">
       <div class="details">
-        <ProgressBar
-          :show-value="false"
-          :value="(props.info.downloaded / props.info.fileSize) * 100"
-        />
+        <div v-for="progress in detailProgress">
+          <div v-for="info in progress" :style="info"></div>
+        </div>
       </div>
     </template>
   </Card>
@@ -100,6 +99,17 @@ const eta = computed(
 const bgProgress = computed(
   () => (props.info.downloaded / props.info.fileSize) * 100 + '%',
 )
+const detailProgress = computed(() =>
+  props.info.readProgress.map(progress =>
+    progress.map(p => ({
+      width: ((p[1] - p[0]) / props.info.fileSize) * 100 + '%',
+      left: (p[0] / props.info.fileSize) * 100 + '%',
+    })),
+  ),
+)
+watchEffect(() => {
+  console.log(detailProgress.value)
+})
 
 const emit = defineEmits(['resume', 'pause', 'remove'])
 const toast = useToast()
@@ -165,7 +175,24 @@ async function openFolder() {
   }
 }
 .details {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
   max-height: 300px;
   overflow: auto;
+}
+.details > div {
+  position: relative;
+  border-radius: 6px;
+  height: 12px;
+  overflow: hidden;
+}
+.details > div > div {
+  position: absolute;
+  height: 100%;
+  background: var(--p-primary-200);
+}
+.card :deep(.p-card-caption) {
+  gap: 0;
 }
 </style>
