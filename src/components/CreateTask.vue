@@ -4,9 +4,9 @@
     @update:visible="onUpdateVisible"
     modal
     header="新建任务"
-    :style="{ width: '25rem' }"
+    :style="{ maxWidth: '25rem' }"
   >
-    <Form v-slot="$form" :formData :resolver @submit="onFormSubmit">
+    <Form v-slot="$form" :initial-values :resolver @submit="onFormSubmit">
       <div class="fields">
         <div>
           <IftaLabel style="display: flex">
@@ -19,9 +19,8 @@
             size="small"
             variant="simple"
             style="margin-top: 4px"
+            >{{ $form.url.error?.message }}</Message
           >
-            {{ $form.url.error?.message }}
-          </Message>
         </div>
         <div>
           <IftaLabel>
@@ -39,7 +38,11 @@
         <div>
           <div class="save-dir-container">
             <IftaLabel class="save-dir-label">
-              <InputText name="saveDir" class="save-dir-input" />
+              <InputText
+                name="saveDir"
+                class="save-dir-input"
+                id="save-dir-input"
+              />
               <label for="saveDir">保存目录</label>
             </IftaLabel>
             <Button
@@ -54,9 +57,8 @@
             severity="error"
             size="small"
             variant="simple"
+            >{{ $form.saveDir.error?.message }}</Message
           >
-            {{ $form.saveDir.error?.message }}
-          </Message>
         </div>
       </div>
       <div class="action">
@@ -73,10 +75,9 @@
 </template>
 
 <script setup lang="ts">
-import { Form, FormResolverOptions } from '@primevue/forms'
+import { Form, FormResolverOptions, FormSubmitEvent } from '@primevue/forms'
 import { invoke } from '@tauri-apps/api/core'
 import { open } from '@tauri-apps/plugin-dialog'
-import { buildHeaders } from '../utils/build-header'
 
 const props = defineProps<{
   visible: boolean
@@ -86,7 +87,7 @@ const emit = defineEmits<{
 }>()
 const store = useAppStore()
 
-const formData = reactive({
+const initialValues = reactive({
   url: '',
   threads: store.threads,
   saveDir: store.saveDir,
@@ -131,25 +132,15 @@ async function resolver({ values }: FormResolverOptions) {
   return { errors }
 }
 
-function onFormSubmit({ valid }: { valid: boolean }) {
-  if (!valid) return
+function onFormSubmit(event: FormSubmitEvent) {
+  console.log(event)
+  if (!event.valid) return
   emit('update:visible', false)
-  const urls = formData.url.split('\n').map(e => e.trim())
-  formData.url = ''
-  store.saveDir = formData.saveDir
-  store.threads = formData.threads
-  for (const url of urls) {
-    store.addEntry({
-      url,
-      headers: buildHeaders(store.headers),
-      threads: store.threads,
-      saveDir: store.saveDir,
-      proxy: store.proxy,
-      writeBufferSize: store.writeBufferSize,
-      writeQueueCap: store.writeQueueCap,
-      retryGap: store.retryGap,
-    })
-  }
+  const formData = event.states
+  const urls = formData.url.value.split('\n').map((e: string) => e.trim())
+  store.saveDir = formData.saveDir.value
+  store.threads = formData.threads.value
+  urls.forEach(store.add)
 }
 
 async function selectDir() {
@@ -157,7 +148,14 @@ async function selectDir() {
     directory: true,
     title: '选择保存文件夹',
   })
-  if (dir) formData.saveDir = dir
+  const saveDirInput = document.getElementById('save-dir-input') as
+    | HTMLInputElement
+    | undefined
+  if (dir && saveDirInput) {
+    initialValues.saveDir = dir
+    saveDirInput.value = dir
+    saveDirInput.dispatchEvent(new Event('input'))
+  }
 }
 
 function onUpdateVisible(v: boolean) {

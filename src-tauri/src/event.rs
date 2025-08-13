@@ -1,5 +1,5 @@
 use fast_pull::ProgressEntry;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 pub type WorkerId = usize;
 
@@ -33,4 +33,9 @@ impl<RE: ToString, WE: ToString> From<fast_pull::Event<RE, WE>> for Event {
             fast_pull::Event::Finished(id) => Event::Finished(id),
         }
     }
+}
+
+#[derive(Debug, Deserialize)]
+pub struct StopEvent {
+    pub file_path: String,
 }

@@ -1,11 +1,11 @@
-use std::collections::HashMap;
-
 use crate::puller;
 use fast_pull::reqwest::Prefetch;
 use serde::Serialize;
+use std::collections::HashMap;
 use tauri::http::HeaderMap;
 
 #[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct UrlInfo {
     pub size: u64,
     pub name: String,

@@ -2,10 +2,10 @@
   <Card class="card">
     <template #title>
       <div class="title">
-        {{ props.info.fileName }}
+        {{ props.fileName }}
         <div class="action">
           <Button
-            v-if="['pending', 'downloading'].includes(props.info.status)"
+            v-if="['pending', 'downloading'].includes(props.status)"
             size="small"
             variant="text"
             icon="pi pi-pause"
@@ -42,11 +42,12 @@
             variant="text"
             icon="pi pi-trash"
             aria-label="删除"
+            @click="emit('remove')"
           />
         </div>
       </div>
     </template>
-    <template #subtitle>{{ props.info.filePath }}</template>
+    <template #subtitle>{{ props.filePath }}</template>
     <template #content>
       <table class="table">
         <thead class="thead">
@@ -59,12 +60,12 @@
         </thead>
         <tbody>
           <tr>
-            <td>{{ formatSize(props.info.speed) }}/s</td>
-            <td>{{ formatTime(props.info.elapsedMs / 1000) }}</td>
+            <td>{{ formatSize(props.speed) }}/s</td>
+            <td>{{ formatTime(props.elapsedMs / 1000) }}</td>
             <td>{{ formatTime(eta) }}</td>
             <td>
-              {{ formatSize(props.info.downloaded) }} /
-              {{ formatSize(props.info.fileSize) }}
+              {{ formatSize(props.downloaded) }} /
+              {{ formatSize(props.fileSize) }}
             </td>
           </tr>
         </tbody>
@@ -91,21 +92,30 @@ import { exists } from '@tauri-apps/plugin-fs'
 import { useToast } from 'primevue'
 
 const props = defineProps<{
-  info: DownloadEntry
+  downloaded: number
+  elapsedMs: number
+  fileName: string
+  filePath: string
+  fileSize: number
+  readProgress: [number, number][][]
+  speed: number
+  status: 'pending' | 'downloading' | 'paused' | 'completed' | 'error'
 }>()
-const eta = computed(
-  () => (props.info.fileSize - props.info.downloaded) / props.info.speed,
+const eta = computed(() =>
+  props.speed ? (props.fileSize - props.downloaded) / props.speed : 0,
 )
-const bgProgress = computed(
-  () => (props.info.downloaded / props.info.fileSize) * 100 + '%',
+const bgProgress = computed(() =>
+  props.fileSize ? (props.downloaded / props.fileSize) * 100 + '%' : '0%',
 )
 const detailProgress = computed(() =>
-  props.info.readProgress.map(progress =>
-    progress.map(p => ({
-      width: ((p[1] - p[0]) / props.info.fileSize) * 100 + '%',
-      left: (p[0] / props.info.fileSize) * 100 + '%',
-    })),
-  ),
+  props.fileSize
+    ? props.readProgress.map(progress =>
+        progress.map(p => ({
+          width: ((p[1] - p[0]) / props.fileSize) * 100 + '%',
+          left: (p[0] / props.fileSize) * 100 + '%',
+        })),
+      )
+    : [],
 )
 
 const emit = defineEmits(['resume', 'pause', 'remove'])
@@ -125,18 +135,18 @@ async function checkFileExists(filePath: string) {
 }
 
 async function openFile() {
-  if (!(await checkFileExists(props.info.filePath))) return
-  await openPath(props.info.filePath)
+  if (!(await checkFileExists(props.filePath))) return
+  await openPath(props.filePath)
 }
 async function openFolder() {
-  if (!(await checkFileExists(props.info.filePath))) return
+  if (!(await checkFileExists(props.filePath))) return
   const currentPlatform = platform()
   if (currentPlatform === 'windows') {
-    await openPath(`/select,${props.info.filePath}`, 'explorer.exe')
+    await openPath(`/select,${props.filePath}`, 'explorer.exe')
   } else if (currentPlatform === 'macos') {
-    await Command.create('open-mac', ['-R', props.info.filePath]).execute()
+    await Command.create('open-mac', ['-R', props.filePath]).execute()
   } else if (currentPlatform === 'linux') {
-    const dir = await path.dirname(props.info.filePath)
+    const dir = await path.dirname(props.filePath)
     await Command.create('open-linux', [dir]).execute()
   }
 }
@@ -187,7 +197,7 @@ async function openFolder() {
 .details > div > div {
   position: absolute;
   height: 100%;
-  background: var(--p-primary-200);
+  background: var(--p-primary-color);
 }
 .card :deep(.p-card-caption) {
   gap: 0;

@@ -1,4 +1,8 @@
 import { Channel, invoke } from '@tauri-apps/api/core'
+import { emit } from '@tauri-apps/api/event'
+import { DownloadMulti } from '../interface/download_multi'
+import { DownloadSingle } from '../interface/download_single'
+import { mergeProgress } from '../utils/merge-progress'
 
 export interface DownloadEntry {
   url: string
@@ -11,191 +15,76 @@ export interface DownloadEntry {
   elapsedMs: number
   status: 'pending' | 'downloading' | 'paused' | 'completed' | 'error'
   downloaded: number
-  etag?: string
-  lastModified?: string
+  etag: string | null
+  lastModified: string | null
 }
 
 export const useAppStore = defineStore(
   'app',
   () => {
-    const list = reactive([
-      {
-        url: 'https://www.example.com/file.zip',
-        filePath: 'C:\\Down load\\1GB.bin',
-        fileName: '1GB.bin',
-        fileSize: 12 * 1024 * 1024,
-        readProgress: [
-          [
-            [0, 0.3 * 1024 * 1024],
-            [0.4 * 1024 * 1024, 0.5 * 1024 * 1024],
-          ],
-          [[1 * 1024 * 1024, 1.2 * 1024 * 1024]],
-        ],
-        writeProgress: [
-          [
-            [0, 0.3 * 1024 * 1024],
-            [0.4 * 1024 * 1024, 0.5 * 1024 * 1024],
-          ],
-          [[1 * 1024 * 1024, 1.2 * 1024 * 1024]],
-        ],
-        etag: 'W/"123456789"',
-        lastModified: '2022-01-01T00:00:00Z',
-        elapsedMs: 1.3 * 1000,
-        status: 'pending',
-        downloaded: 0.7 * 1024 * 1024,
-      },
-      {
-        downloaded: 0.7 * 1024 * 1024,
-        url: 'https://www.example.com/file.zip',
-        filePath: '/path/to/file.zip',
-        fileName: 'file.zip',
-        fileSize: 1.2 * 1024 * 1024,
-        readProgress: [
-          [
-            [0, 0.3 * 1024 * 1024],
-            [0.4 * 1024 * 1024, 0.5 * 1024 * 1024],
-          ],
-          [[1 * 1024 * 1024, 1.2 * 1024 * 1024]],
-        ],
-        writeProgress: [
-          [
-            [0, 0.3 * 1024 * 1024],
-            [0.4 * 1024 * 1024, 0.5 * 1024 * 1024],
-          ],
-          [[1 * 1024 * 1024, 1.2 * 1024 * 1024]],
-        ],
-        etag: 'W/"123456789"',
-        lastModified: '2022-01-01T00:00:00Z',
-        elapsedMs: 1.3 * 1000,
-        status: 'pending',
-      },
-      {
-        downloaded: 0.7 * 1024 * 1024,
-        url: 'https://www.example.com/file.zip',
-        filePath: '/path/to/file.zip',
-        fileName: 'file.zip',
-        fileSize: 1.2 * 1024 * 1024,
-        readProgress: [
-          [
-            [0, 0.3 * 1024 * 1024],
-            [0.4 * 1024 * 1024, 0.5 * 1024 * 1024],
-          ],
-          [[1 * 1024 * 1024, 1.2 * 1024 * 1024]],
-        ],
-        writeProgress: [
-          [
-            [0, 0.3 * 1024 * 1024],
-            [0.4 * 1024 * 1024, 0.5 * 1024 * 1024],
-          ],
-          [[1 * 1024 * 1024, 1.2 * 1024 * 1024]],
-        ],
-        etag: 'W/"123456789"',
-        lastModified: '2022-01-01T00:00:00Z',
-        elapsedMs: 1.3 * 1000,
-        status: 'pending',
-      },
-      {
-        downloaded: 0.7 * 1024 * 1024,
-        url: 'https://www.example.com/file.zip',
-        filePath: '/path/to/file.zip',
-        fileName: 'file.zip',
-        fileSize: 1.2 * 1024 * 1024,
-        readProgress: [
-          [
-            [0, 0.3 * 1024 * 1024],
-            [0.4 * 1024 * 1024, 0.5 * 1024 * 1024],
-          ],
-          [[1 * 1024 * 1024, 1.2 * 1024 * 1024]],
-        ],
-        writeProgress: [
-          [
-            [0, 0.3 * 1024 * 1024],
-            [0.4 * 1024 * 1024, 0.5 * 1024 * 1024],
-          ],
-          [[1 * 1024 * 1024, 1.2 * 1024 * 1024]],
-        ],
-        etag: 'W/"123456789"',
-        lastModified: '2022-01-01T00:00:00Z',
-        elapsedMs: 1.3 * 1000,
-        status: 'pending',
-      },
-      {
-        downloaded: 0.7 * 1024 * 1024,
-        url: 'https://www.example.com/file.zip',
-        filePath: '/path/to/file.zip',
-        fileName: 'file.zip',
-        fileSize: 1.2 * 1024 * 1024,
-        readProgress: [
-          [
-            [0, 0.3 * 1024 * 1024],
-            [0.4 * 1024 * 1024, 0.5 * 1024 * 1024],
-          ],
-          [[1 * 1024 * 1024, 1.2 * 1024 * 1024]],
-        ],
-        writeProgress: [
-          [
-            [0, 0.3 * 1024 * 1024],
-            [0.4 * 1024 * 1024, 0.5 * 1024 * 1024],
-          ],
-          [[1 * 1024 * 1024, 1.2 * 1024 * 1024]],
-        ],
-        etag: 'W/"123456789"',
-        lastModified: '2022-01-01T00:00:00Z',
-        elapsedMs: 1.3 * 1000,
-        status: 'pending',
-      },
-    ] as DownloadEntry[])
-
+    const list = ref<DownloadEntry[]>([])
     const threads = ref(8)
     const saveDir = ref('')
     const headers = ref(String.raw`sec-ch-ua-mobile: ?0
 User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36
 sec-ch-ua: "Not)A;Brand";v="99", "Google Chrome";v="127", "Chromium";v="127"
 sec-ch-ua-platform: "Windows"`)
-    const proxy = ref(void 0 as string | undefined)
+    const proxy = ref(null as string | null)
     const runningCount = computed(
-      () => list.filter(e => e.status === 'downloading').length,
+      () => list.value.filter(e => e.status === 'downloading').length,
     )
     const maxRunningCount = ref(3)
     const writeBufferSize = ref(8 * 1024 * 1024)
     const writeQueueCap = ref(10240)
     const retryGap = ref(500)
+    const acceptInvalidCerts = ref(false)
+    const acceptInvalidHostnames = ref(false)
+    const minChunkSize = ref(8 * 1024)
+    const multiplexing = ref(true)
+    const writeMethod = ref<'mmap' | 'std'>('mmap')
 
-    function removeEntry(filePath: string) {
-      for (let i = 0; i < list.length; i++) {
-        if (list[i].filePath === filePath) {
-          list.splice(i, 1)
+    async function remove(filePath: string) {
+      for (let i = 0; i < list.value.length; i++) {
+        if (list.value[i].filePath === filePath) {
+          list.value.splice(i, 1)
+          await pause(filePath)
           break
         }
       }
     }
 
-    async function addEntry(options: {
-      url: string
-      threads: number
-      saveDir: string
-      headers: Record<string, string>
-      writeBufferSize: number
-      writeQueueCap: number
-      retryGap: number
-      proxy?: string
-    }) {
+    function pause(filePath: string) {
+      for (let i = 0; i < list.value.length; i++) {
+        if (list.value[i].filePath === filePath) {
+          list.value[i].status = 'paused'
+        }
+      }
+      return emit('stop-download', { file_path: filePath })
+    }
+
+    function resume(filePath: string) {}
+
+    async function add(url: string) {
+      console.log(`add url: ${url}`)
+      const headersObj = buildHeaders(headers.value)
       const info: UrlInfo = await invoke('prefetch', {
-        url: options.url,
-        headers: options.headers,
-        proxy: options.proxy,
-      })
+        url,
+        headers: headersObj,
+        proxy: proxy.value,
+        acceptInvalidCerts: acceptInvalidCerts.value,
+        acceptInvalidHostnames: acceptInvalidHostnames.value,
+      } as Prefetch as Record<string, any>)
       console.log(info)
-      let filePath: UniquePath = await invoke('gen_unique_path', {
-        dir: options.saveDir,
+      const filePath: UniquePath = await invoke('gen_unique_path', {
+        dir: saveDir.value,
         name: info.name,
       })
       console.log(filePath)
-      removeEntry(filePath.path)
+      await remove(filePath.path)
       const status =
         runningCount.value < maxRunningCount.value ? 'downloading' : 'pending'
-      list.push({
-        url: options.url,
+      list.value.push({
+        url,
         filePath: filePath.path,
         fileName: filePath.name,
         fileSize: info.size,
@@ -205,26 +94,74 @@ sec-ch-ua-platform: "Windows"`)
         elapsedMs: 0,
         status,
         downloaded: 0,
+        etag: info.etag,
+        lastModified: info.lastModified,
       })
+      const entry = list.value[list.value.length - 1]
       if (status !== 'downloading') return
-      let channel = new Channel<Event>()
-      let stop_channel: Channel<void>
+      const channel = new Channel<DownloadEvent>(res => {
+        if (res.event === 'allFinished') {
+          entry.status = 'completed'
+        } else if (res.event === 'pullProgress') {
+          const workerId = res.data[0]
+          const spin: [number, number] = [res.data[1].start, res.data[1].end]
+          if (!entry.readProgress[workerId]) {
+            entry.readProgress[workerId] = []
+          }
+          entry.downloaded += spin[1] - spin[0]
+          mergeProgress(entry.readProgress[workerId], spin)
+        } else if (res.event === 'pushProgress') {
+          const workerId = res.data[0]
+          const spin: [number, number] = [res.data[1].start, res.data[1].end]
+          if (!entry.writeProgress[workerId]) {
+            entry.writeProgress[workerId] = []
+          }
+          mergeProgress(entry.writeProgress[workerId], spin)
+        } else {
+          console.log(res)
+        }
+      })
       if (info.fastDownload) {
-        stop_channel = await invoke('download_multi', {
-          url: info.finalUrl,
-          filePath: filePath.path,
-          fileSize: info.size,
-          threads: options.threads,
-          writeBufferSize: 1024 * 1024,
-          writeQueueCap: options.writeQueueCap,
-          downloadChunks: [0, info.size],
-          retryGap: options.retryGap,
-          headers: options.headers,
-          proxy: options.proxy,
+        await invoke('download_multi', {
+          options: {
+            url: info.finalUrl,
+            acceptInvalidCerts: acceptInvalidCerts.value,
+            acceptInvalidHostnames: acceptInvalidHostnames.value,
+            downloadChunks: [[0, info.size]],
+            headers: headersObj,
+            proxy: proxy.value,
+            filePath: filePath.path,
+            fileSize: info.size,
+            writeBufferSize: writeBufferSize.value,
+            writeQueueCap: writeQueueCap.value,
+            retryGap: retryGap.value,
+            minChunkSize: minChunkSize.value,
+            multiplexing: multiplexing.value,
+            threads: threads.value,
+            writeMethod: writeMethod.value,
+          },
           tx: channel,
-        })
+        } as DownloadMulti as Record<string, any>)
+      } else {
+        await invoke('download_single', {
+          options: {
+            url: info.finalUrl,
+            acceptInvalidCerts: acceptInvalidCerts.value,
+            acceptInvalidHostnames: acceptInvalidHostnames.value,
+            headers: headersObj,
+            proxy: proxy.value,
+            filePath: filePath.path,
+            fileSize: info.size,
+            writeBufferSize: writeBufferSize.value,
+            writeQueueCap: writeQueueCap.value,
+            multiplexing: multiplexing.value,
+            retryGap: retryGap.value,
+          },
+          tx: channel,
+        } as DownloadSingle as Record<string, any>)
       }
     }
+
     return {
       list,
       threads,
@@ -234,27 +171,20 @@ sec-ch-ua-platform: "Windows"`)
       writeBufferSize,
       writeQueueCap,
       retryGap,
-      addEntry,
-      removeEntry,
+      acceptInvalidCerts,
+      acceptInvalidHostnames,
+      minChunkSize,
+      multiplexing,
+      runningCount,
+      maxRunningCount,
+      writeMethod,
+      add,
+      remove,
+      resume,
+      pause,
     }
   },
   {
     persist: true,
   },
 )
-
-export interface UrlInfo {
-  size: number
-  name: string
-  supportsRange: boolean
-  fastDownload: boolean
-  finalUrl: string
-  etag: string | null
-  lastModified: string | null
-}
-
-export interface UniquePath {
-  dir: string
-  name: string
-  path: string
-}

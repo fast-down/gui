@@ -4,9 +4,9 @@ use std::path::Path;
 
 #[derive(Debug, Clone, Serialize)]
 pub struct UniquePath {
-    dir: String,
-    name: String,
-    path: String,
+    pub dir: String,
+    pub name: String,
+    pub path: String,
 }
 
 #[tauri::command]

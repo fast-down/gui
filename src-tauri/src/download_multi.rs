@@ -1,68 +1,156 @@
-use crate::{event::Event, puller::FastDownPuller};
-use fast_pull::file::{FilePusherError, RandFilePusherMmap};
-use fast_pull::multi;
-use std::num::NonZero;
-use std::{collections::HashMap, num::NonZeroUsize, time::Duration};
-use tauri::{http::HeaderMap, ipc::Channel};
+use crate::{
+    event::{Event, StopEvent},
+    puller::FastDownPuller,
+};
+use fast_pull::{
+    file::{FilePusherError, RandFilePusherMmap, RandFilePusherStd},
+    multi,
+};
+use std::{collections::HashMap, num::NonZero, time::Duration};
+use tauri::{AppHandle, Listener, http::HeaderMap, ipc::Channel};
+use tokio::fs::OpenOptions;
 use url::Url;
 
+pub enum WriteMethod {
+    Mmap,
+    Std,
+}
+
+pub enum Pusher {
+    Mmap(RandFilePusherMmap),
+    Std(RandFilePusherStd),
+}
+
+#[derive(serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DownloadOptions {
+    pub url: String,
+    pub file_path: String,
+    pub file_size: u64,
+    pub threads: usize,
+    pub write_buffer_size: usize,
+    pub write_queue_cap: usize,
+    pub min_chunk_size: u64,
+    pub retry_gap: u64,
+    pub download_chunks: Vec<(u64, u64)>,
+    pub headers: HashMap<String, String>,
+    pub multiplexing: bool,
+    pub accept_invalid_certs: bool,
+    pub accept_invalid_hostnames: bool,
+    pub proxy: Option<String>,
+    pub write_method: String,
+}
+
 #[tauri::command]
-#[allow(clippy::too_many_arguments)]
 pub async fn download_multi(
-    url: &str,
-    file_path: &str,
-    file_size: u64,
-    threads: usize,
-    write_buffer_size: usize,
-    write_queue_cap: usize,
-    download_chunks: Vec<(u64, u64)>,
-    retry_gap: u64,
-    headers: HashMap<String, String>,
-    multiplexing: bool,
-    accept_invalid_certs: bool,
-    accept_invalid_hostnames: bool,
-    proxy: Option<String>,
+    app: AppHandle,
+    options: DownloadOptions,
     tx: Channel<Event>,
-) -> Result<Channel<()>, Error> {
-    let url = Url::parse(url)?;
-    let headers = headers
+) -> Result<(), Error> {
+    let url = Url::parse(&options.url)?;
+    let headers = options
+        .headers
         .into_iter()
         .filter_map(|(k, v)| Some((k.parse().ok()?, v.parse().ok()?)))
         .collect::<HeaderMap>();
-    let retry_gap = Duration::from_millis(retry_gap);
-    let download_chunks = download_chunks
+    let retry_gap = Duration::from_millis(options.retry_gap);
+    let download_chunks = options
+        .download_chunks
         .into_iter()
         .map(|(start, end)| start..end)
         .collect();
+    let write_method = match options.write_method.as_str() {
+        "mmap" => WriteMethod::Mmap,
+        "std" => WriteMethod::Std,
+        _ => WriteMethod::Std,
+    };
     let puller = FastDownPuller::new(
         url,
         headers,
-        proxy,
-        multiplexing,
-        accept_invalid_certs,
-        accept_invalid_hostnames,
+        options.proxy,
+        options.multiplexing,
+        options.accept_invalid_certs,
+        options.accept_invalid_hostnames,
     )?;
-    if threads == 0 {
-        return Err(Error::ZeroThreads);
-    }
-    let pusher = RandFilePusherMmap::new(file_path, file_size, write_buffer_size).await?;
-    let res = multi::download_multi(
-        puller,
-        pusher,
-        multi::DownloadOptions {
-            download_chunks,
-            concurrent: NonZeroUsize::new(threads).unwrap_or(NonZeroUsize::new(1).unwrap()),
-            retry_gap,
-            push_queue_cap: write_queue_cap,
-            min_chunk_size: NonZero::new(8 * 1024).unwrap(),
-        },
-    )
-    .await;
+    let pusher = match write_method {
+        WriteMethod::Mmap => {
+            let res = RandFilePusherMmap::new(
+                &options.file_path,
+                options.file_size,
+                options.write_buffer_size,
+            )
+            .await;
+            match res {
+                Err(e) => {
+                    dbg!(e);
+                    let file = OpenOptions::new()
+                        .write(true)
+                        .create(true)
+                        .truncate(false)
+                        .open(&options.file_path)
+                        .await
+                        .map_err(FilePusherError::from)?;
+                    Pusher::Std(
+                        RandFilePusherStd::new(file, options.file_size, options.write_buffer_size)
+                            .await?,
+                    )
+                }
+                Ok(pusher) => Pusher::Mmap(pusher),
+            }
+        }
+        WriteMethod::Std => {
+            let file = OpenOptions::new()
+                .write(true)
+                .create(true)
+                .truncate(false)
+                .open(&options.file_path)
+                .await
+                .map_err(FilePusherError::from)?;
+            Pusher::Std(
+                RandFilePusherStd::new(file, options.file_size, options.write_buffer_size).await?,
+            )
+        }
+    };
+    let res = match pusher {
+        Pusher::Mmap(pusher) => {
+            multi::download_multi(
+                puller,
+                pusher,
+                multi::DownloadOptions {
+                    download_chunks,
+                    concurrent: NonZero::new(options.threads).unwrap_or(NonZero::new(1).unwrap()),
+                    retry_gap,
+                    push_queue_cap: options.write_queue_cap,
+                    min_chunk_size: NonZero::new(options.min_chunk_size)
+                        .unwrap_or(NonZero::new(8 * 1024).unwrap()),
+                },
+            )
+            .await
+        }
+        Pusher::Std(pusher) => {
+            multi::download_multi(
+                puller,
+                pusher,
+                multi::DownloadOptions {
+                    download_chunks,
+                    concurrent: NonZero::new(options.threads).unwrap_or(NonZero::new(1).unwrap()),
+                    retry_gap,
+                    push_queue_cap: options.write_queue_cap,
+                    min_chunk_size: NonZero::new(options.min_chunk_size)
+                        .unwrap_or(NonZero::new(8 * 1024).unwrap()),
+                },
+            )
+            .await
+        }
+    };
     let res_clone = res.clone();
-    let stop_channel: Channel<()> = Channel::new(move |_| {
-        println!("stop download");
-        res_clone.abort();
-        Ok(())
+    app.listen("stop-download", move |event| {
+        if let Ok(payload) = serde_json::from_str::<StopEvent>(event.payload())
+            && payload.file_path == options.file_path
+        {
+            println!("stop download: {}", payload.file_path);
+            res_clone.abort();
+        }
     });
     tokio::spawn(async move {
         while let Ok(e) = res.event_chain.recv().await {
@@ -71,7 +159,7 @@ pub async fn download_multi(
         res.join().await.unwrap();
         tx.send(Event::AllFinished).unwrap();
     });
-    Ok(stop_channel)
+    Ok(())
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -80,8 +168,6 @@ pub enum Error {
     Io(#[from] FilePusherError),
     #[error(transparent)]
     UrlParse(#[from] url::ParseError),
-    #[error("threads must be greater than zero")]
-    ZeroThreads,
     #[error(transparent)]
     Reqwest(#[from] reqwest::Error),
     #[error(transparent)]
@@ -94,7 +180,6 @@ pub enum Error {
 enum ErrorKind {
     Io(String),
     UrlParse(String),
-    ZeroThreads(String),
     Reqwest(String),
     Thread(String),
 }
@@ -108,7 +193,6 @@ impl serde::Serialize for Error {
         let kind = match self {
             Error::Io(_) => ErrorKind::Io(msg),
             Error::UrlParse(_) => ErrorKind::UrlParse(msg),
-            Error::ZeroThreads => ErrorKind::ZeroThreads(msg),
             Error::Reqwest(_) => ErrorKind::Reqwest(msg),
             Error::Thread(_) => ErrorKind::Thread(msg),
         };

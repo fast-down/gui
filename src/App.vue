@@ -14,9 +14,19 @@
   <main class="main">
     <DownloadItem
       v-for="item in store.list"
-      :info="item"
+      :downloaded="item.downloaded"
+      :elapsed-ms="item.elapsedMs"
+      :file-name="item.fileName"
+      :file-size="item.fileSize"
+      :speed="item.speed"
+      :status="item.status"
+      :file-path="item.filePath"
+      :read-progress="item.readProgress"
       :key="item.filePath"
       class="download-item"
+      @remove="store.remove(item.filePath)"
+      @pause="store.pause(item.filePath)"
+      @resume="store.resume(item.filePath)"
     >
     </DownloadItem>
   </main>
@@ -31,7 +41,7 @@ const store = useAppStore()
 for (const e of store.list) {
   e.status = 'paused'
   e.readProgress = deepClone(e.writeProgress)
-  e.speed = (e.downloaded / e.elapsedMs) * 1000
+  e.speed = e.elapsedMs ? (e.downloaded / e.elapsedMs) * 1000 : 0
 }
 const createTaskVisible = ref(false)
 </script>
