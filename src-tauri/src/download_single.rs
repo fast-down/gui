@@ -2,8 +2,11 @@ use crate::{
     event::{Event, StopEvent},
     puller::FastDownPuller,
 };
-use fast_pull::{file::SeqFilePusher, single};
-use std::{collections::HashMap, time::Duration};
+use fast_pull::{Total, file::SeqFilePusher, single};
+use std::{
+    collections::HashMap,
+    time::{Duration, Instant},
+};
 use tauri::{AppHandle, Listener, http::HeaderMap, ipc::Channel};
 use tokio::fs::OpenOptions;
 use url::Url;
@@ -61,19 +64,52 @@ pub async fn download_single(
     )
     .await;
     let res_clone = res.clone();
-    app.listen("stop-download", move |event| {
+    let handle = app.clone();
+    let event_id = app.listen("stop-download", move |event| {
         if let Ok(payload) = serde_json::from_str::<StopEvent>(event.payload())
             && payload.file_path == options.file_path
         {
             println!("stop download: {}", payload.file_path);
             res_clone.abort();
+            handle.unlisten(event.id());
         }
     });
+    let handle = app.clone();
     tokio::spawn(async move {
+        let mut last_update_time = Instant::now();
+        let mut downloaded = 0;
+        let mut write = 0;
         while let Ok(e) = res.event_chain.recv().await {
-            tx.send(e.into()).unwrap();
+            match e {
+                fast_pull::Event::PullProgress(_, range) => {
+                    downloaded += range.total();
+                    if last_update_time.elapsed().as_millis() > 100 {
+                        last_update_time = Instant::now();
+                        tx.send(Event::PullProgress(vec![vec![(0, downloaded)]], downloaded))
+                            .unwrap();
+                        tx.send(Event::PushProgress(vec![vec![(0, write)]]))
+                            .unwrap();
+                    }
+                }
+                fast_pull::Event::PushProgress(_, range) => {
+                    write += range.total();
+                    if last_update_time.elapsed().as_millis() > 100 {
+                        last_update_time = Instant::now();
+                        tx.send(Event::PullProgress(vec![vec![(0, downloaded)]], downloaded))
+                            .unwrap();
+                        tx.send(Event::PushProgress(vec![vec![(0, write)]]))
+                            .unwrap();
+                    }
+                }
+                _ => tx.send(e.into()).unwrap(),
+            };
         }
+        tx.send(Event::PullProgress(vec![vec![(0, downloaded)]], downloaded))
+            .unwrap();
+        tx.send(Event::PushProgress(vec![vec![(0, write)]]))
+            .unwrap();
         res.join().await.unwrap();
+        handle.unlisten(event_id);
         tx.send(Event::AllFinished).unwrap();
     });
     Ok(())

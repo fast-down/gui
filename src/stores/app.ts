@@ -10,7 +10,7 @@ export interface DownloadEntry {
   readProgress: [number, number][][]
   writeProgress: [number, number][][]
   elapsedMs: number
-  status: 'pending' | 'downloading' | 'paused' | 'completed' | 'error'
+  status: 'pending' | 'downloading' | 'paused'
   downloaded: number
   etag: string | null
   lastModified: string | null
@@ -41,9 +41,17 @@ sec-ch-ua-platform: "Windows"`)
     const writeMethod = ref<'mmap' | 'std'>('mmap')
 
     function remove(filePath: string) {
-      const p = pause(filePath)
+      const p = emit('stop-download', { file_path: filePath })
       const i = list.value.findIndex(e => e.filePath === filePath)
       if (i != -1) list.value.splice(i, 1)
+      return p
+    }
+
+    function removeAll() {
+      const p = Promise.all(
+        list.value.map(e => emit('stop-download', { file_path: e.filePath })),
+      )
+      list.value = []
       return p
     }
 
@@ -51,6 +59,14 @@ sec-ch-ua-platform: "Windows"`)
       const p = emit('stop-download', { file_path: filePath })
       const entry = list.value.find(e => e.filePath === filePath)
       if (entry) entry.status = 'paused'
+      return p
+    }
+
+    function pauseAll() {
+      const p = Promise.all(
+        list.value.map(e => emit('stop-download', { file_path: e.filePath })),
+      )
+      list.value.forEach(e => (e.status = 'paused'))
       return p
     }
 
@@ -70,7 +86,7 @@ sec-ch-ua-platform: "Windows"`)
       entry.status = 'downloading'
       const channel = new Channel<DownloadEvent>(res => {
         if (res.event === 'allFinished') {
-          entry.status = 'completed'
+          entry.status = 'paused'
           console.log('completed', mergeProgress(entry.writeProgress))
         } else if (res.event === 'pullProgress') {
           entry.readProgress = res.data[0]
@@ -140,7 +156,7 @@ sec-ch-ua-platform: "Windows"`)
       if (status !== 'downloading') return
       const channel = new Channel<DownloadEvent>(res => {
         if (res.event === 'allFinished') {
-          entry.status = 'completed'
+          entry.status = 'paused'
           console.log('completed', mergeProgress(entry.writeProgress))
         } else if (res.event === 'pullProgress') {
           entry.readProgress = res.data[0]
@@ -211,8 +227,11 @@ sec-ch-ua-platform: "Windows"`)
       writeMethod,
       add,
       remove,
+      removeAll,
       resume,
+
       pause,
+      pauseAll,
     }
   },
   {

@@ -6,12 +6,27 @@
       icon="pi pi-plus"
       @click="createTaskVisible = true"
     />
-    <Button label="全部开始" variant="text" icon="pi pi-play" />
-    <Button label="全部暂停" variant="text" icon="pi pi-pause" />
-    <Button label="全部删除" variant="text" icon="pi pi-trash" />
+    <Button
+      label="全部开始"
+      @click="startAll"
+      variant="text"
+      icon="pi pi-play"
+    />
+    <Button
+      label="全部暂停"
+      @click="store.pauseAll"
+      variant="text"
+      icon="pi pi-pause"
+    />
+    <Button
+      label="全部删除"
+      @click="store.removeAll"
+      variant="text"
+      icon="pi pi-trash"
+    />
     <Button label="设置" variant="text" icon="pi pi-cog" />
   </header>
-  <main class="main">
+  <TransitionGroup name="list" tag="main" class="main">
     <DownloadItem
       v-for="item in store.list"
       :downloaded="item.downloaded"
@@ -27,14 +42,17 @@
       @remove="store.remove(item.filePath)"
       @pause="store.pause(item.filePath)"
       @resume="store.resume(item.filePath)"
+      @update="updateEntry(item, $event)"
     >
     </DownloadItem>
-  </main>
+  </TransitionGroup>
   <CreateTask v-model:visible="createTaskVisible" />
   <Toast />
 </template>
 
 <script lang="ts" setup>
+import { DownloadEntry } from './stores/app'
+
 const store = useAppStore()
 for (const e of store.list) {
   e.status = 'paused'
@@ -42,6 +60,20 @@ for (const e of store.list) {
   e.speed = e.elapsedMs ? (e.downloaded / e.elapsedMs) * 1000 : 0
 }
 const createTaskVisible = ref(false)
+
+function startAll() {
+  store.list
+    .filter(e => e.status === 'paused' && e.downloaded < e.fileSize)
+    .forEach(e => store.resume(e.filePath))
+}
+
+function updateEntry(
+  item: DownloadEntry,
+  data: { elapsedMs: number; speed: number },
+) {
+  item.elapsedMs = data.elapsedMs
+  item.speed = data.speed
+}
 </script>
 
 <style scoped>

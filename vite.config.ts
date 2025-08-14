@@ -20,8 +20,8 @@ export default defineConfig({
     AutoImport({
       imports: [
         'vue',
-        '@vueuse/core',
         'pinia',
+        '@vueuse/core',
         {
           from: '@tauri-apps/api/core',
           imports: ['invoke'],

@@ -1,5 +1,5 @@
 <template>
-  <Card class="card">
+  <Card class="card" @click="clickHandler">
     <template #title>
       <div class="title">
         {{ props.fileName }}
@@ -71,13 +71,15 @@
         </tbody>
       </table>
     </template>
-    <template #footer v-if="detailProgress.length">
-      <div class="details">
-        <!-- eslint-disable-next-line vue/require-v-for-key -->
-        <div v-for="progress in detailProgress">
-          <div v-for="info in progress" :style="info" :key="info.left"></div>
+    <template #footer>
+      <Transition name="scale">
+        <div class="details" v-if="detailProgress.length && isShow">
+          <!-- eslint-disable-next-line vue/require-v-for-key -->
+          <div v-for="progress in detailProgress">
+            <div v-for="info in progress" :style="info" :key="info.left"></div>
+          </div>
         </div>
-      </div>
+      </Transition>
     </template>
   </Card>
 </template>
@@ -100,8 +102,12 @@ const props = defineProps<{
   fileSize: number
   readProgress: [number, number][][]
   speed: number
-  status: 'pending' | 'downloading' | 'paused' | 'completed' | 'error'
+  status: 'pending' | 'downloading' | 'paused'
 }>()
+const emit = defineEmits(['resume', 'pause', 'remove', 'update'])
+const toast = useToast()
+
+const isShow = ref(false)
 const eta = computed(() =>
   props.speed ? (props.fileSize - props.downloaded) / props.speed : 0,
 )
@@ -119,8 +125,32 @@ const detailProgress = computed(() =>
     : [],
 )
 
-const emit = defineEmits(['resume', 'pause', 'remove'])
-const toast = useToast()
+let timer: number | null = null
+watch(
+  () => props.status,
+  newStatus => {
+    console.log(newStatus)
+    if (newStatus === 'downloading') {
+      let lastTime = Date.now()
+      let oldDownloaded = props.downloaded
+      timer = setInterval(() => {
+        const dTime = Date.now() - lastTime
+        emit('update', {
+          elapsedMs: dTime + props.elapsedMs,
+          speed: ((props.downloaded - oldDownloaded) / dTime) * 1000,
+        })
+        lastTime = Date.now()
+        oldDownloaded = props.downloaded
+      }, 1000)
+    } else if (timer) {
+      clearInterval(timer)
+      timer = null
+    }
+  },
+  {
+    immediate: true,
+  },
+)
 
 async function checkFileExists(filePath: string) {
   if (!(await exists(filePath))) {
@@ -150,6 +180,14 @@ async function openFolder() {
     const dir = await path.dirname(props.filePath)
     await Command.create('open-linux', [dir]).execute()
   }
+}
+async function clickHandler(event: MouseEvent) {
+  let target = event.target as HTMLElement
+  while (target != document.body) {
+    if (target instanceof HTMLButtonElement) return
+    target = target.parentElement as HTMLElement
+  }
+  isShow.value = !isShow.value
 }
 </script>
 
@@ -183,8 +221,7 @@ async function openFolder() {
   }
 }
 .details {
-  max-height: 300px;
-  overflow: auto;
+  overflow: hidden;
 }
 .details > div {
   position: relative;
