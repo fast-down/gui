@@ -57,8 +57,6 @@ sec-ch-ua-platform: "Windows"`)
 
     function pause(filePath: string) {
       const p = emit('stop-download', { file_path: filePath })
-      const entry = list.value.find(e => e.filePath === filePath)
-      if (entry) entry.status = 'paused'
       return p
     }
 
@@ -66,7 +64,9 @@ sec-ch-ua-platform: "Windows"`)
       const p = Promise.all(
         list.value.map(e => emit('stop-download', { file_path: e.filePath })),
       )
-      list.value.forEach(e => (e.status = 'paused'))
+      list.value
+        .filter(e => e.status === 'pending')
+        .forEach(e => (e.status = 'paused'))
       return p
     }
 
