@@ -8,7 +8,7 @@
     />
     <Button
       label="全部开始"
-      @click="startAll"
+      @click="store.resumeAll"
       variant="text"
       icon="pi pi-play"
     />
@@ -24,7 +24,12 @@
       variant="text"
       icon="pi pi-trash"
     />
-    <Button label="设置" variant="text" icon="pi pi-cog" />
+    <Button
+      label="设置"
+      variant="text"
+      icon="pi pi-cog"
+      @click="settingsPageVisible = true"
+    />
   </header>
   <TransitionGroup name="list" tag="main" class="main">
     <DownloadItem
@@ -47,6 +52,7 @@
     </DownloadItem>
   </TransitionGroup>
   <CreateTask v-model:visible="createTaskVisible" />
+  <SettingsPage v-model:visible="settingsPageVisible" />
   <Toast />
 </template>
 
@@ -60,12 +66,7 @@ for (const e of store.list) {
   e.speed = e.elapsedMs ? (e.downloaded / e.elapsedMs) * 1000 : 0
 }
 const createTaskVisible = ref(false)
-
-function startAll() {
-  store.list
-    .filter(e => e.status === 'paused' && e.downloaded < e.fileSize)
-    .forEach(e => store.resume(e.filePath))
-}
+const settingsPageVisible = ref(false)
 
 function updateEntry(
   item: DownloadEntry,

@@ -4,14 +4,18 @@
     @update:visible="onUpdateVisible"
     modal
     header="新建任务"
-    :style="{ maxWidth: '25rem' }"
+    :style="{ width: '25rem' }"
     :closable="false"
   >
     <Form v-slot="$form" :initial-values :resolver @submit="onFormSubmit">
       <div class="fields">
         <div>
           <IftaLabel style="display: flex">
-            <Textarea name="url" rows="5" class="url-input" />
+            <Textarea
+              name="url"
+              rows="5"
+              style="resize: vertical; width: 100%"
+            />
             <label for="url">URL (一行一个)</label>
           </IftaLabel>
           <Message
@@ -23,33 +27,21 @@
             >{{ $form.url.error?.message }}</Message
           >
         </div>
-        <div>
-          <IftaLabel>
-            <InputNumber name="threads" :min="1" fluid />
-            <label for="threads">线程数</label>
-          </IftaLabel>
-          <Message
-            v-if="$form.threads?.invalid"
-            severity="error"
-            size="small"
-            variant="simple"
-            >{{ $form.threads.error?.message }}</Message
-          >
-        </div>
+        <IftaLabel>
+          <InputNumber name="threads" :min="1" fluid />
+          <label for="threads">线程数</label>
+        </IftaLabel>
         <div>
           <div class="save-dir-container">
-            <IftaLabel class="save-dir-label">
-              <InputText
-                name="saveDir"
-                class="save-dir-input"
-                id="save-dir-input"
-              />
+            <IftaLabel style="flex: 1">
+              <InputText name="saveDir" fluid id="save-dir-input" />
               <label for="saveDir">保存目录</label>
             </IftaLabel>
             <Button
               variant="text"
               icon="pi pi-folder-open"
               aria-label="选取文件夹"
+              size="large"
               @click="selectDir"
             />
           </div>
@@ -89,8 +81,12 @@ const store = useAppStore()
 
 const initialValues = reactive({
   url: '',
-  threads: store.threads,
-  saveDir: store.saveDir,
+  threads: 8,
+  saveDir: '',
+})
+watchEffect(() => {
+  initialValues.threads = store.threads
+  initialValues.saveDir = store.saveDir
 })
 
 async function resolver({ values }: FormResolverOptions) {
@@ -106,12 +102,12 @@ async function resolver({ values }: FormResolverOptions) {
       try {
         const url = new URL(item)
         if (!['http:', 'https:'].includes(url.protocol)) {
-          errors.url = errors.url || []
+          errors.url ??= []
           errors.url.push({ message: `第 ${i + 1} 行 URL 协议不正确` })
         }
       } catch (error) {
         console.error(error)
-        errors.url = errors.url || []
+        errors.url ??= []
         errors.url.push({ message: `第 ${i + 1} 行 URL 格式不正确` })
       }
     }
@@ -134,10 +130,13 @@ function onFormSubmit(event: FormSubmitEvent) {
   if (!event.valid) return
   emit('update:visible', false)
   const formData = event.states
-  const urls = formData.url.value.split('\n').map((e: string) => e.trim())
-  initialValues.saveDir = store.saveDir = formData.saveDir.value
-  initialValues.threads = store.threads = formData.threads.value
-  urls.forEach(store.add)
+  const urls: string[] = formData.url.value
+    .split('\n')
+    .map((e: string) => e.trim())
+    .filter(Boolean)
+  store.saveDir = formData.saveDir.value
+  store.threads = formData.threads.value
+  urls.forEach(url => store.add(url))
 }
 
 async function selectDir() {
@@ -171,19 +170,9 @@ function onUpdateVisible(v: boolean) {
   justify-content: end;
   gap: 8px;
 }
-.url-input {
-  width: 100%;
-  resize: none;
-}
 .save-dir-container {
   display: flex;
   align-items: center;
   gap: 8px;
-}
-.save-dir-label {
-  flex: 1;
-}
-.save-dir-input {
-  width: 100%;
 }
 </style>

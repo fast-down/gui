@@ -26,11 +26,7 @@ export const useAppStore = defineStore(
 User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36
 sec-ch-ua: "Not)A;Brand";v="99", "Google Chrome";v="127", "Chromium";v="127"
 sec-ch-ua-platform: "Windows"`)
-    const proxy = ref(null as string | null)
-    const runningCount = computed(
-      () => list.value.filter(e => e.status === 'downloading').length,
-    )
-    const maxRunningCount = ref(3)
+    const proxy = ref<string | null>(null)
     const writeBufferSize = ref(8 * 1024 * 1024)
     const writeQueueCap = ref(10240)
     const retryGap = ref(500)
@@ -70,8 +66,11 @@ sec-ch-ua-platform: "Windows"`)
       return p
     }
 
-    async function resume(filePath: string) {
-      const entry = list.value.find(e => e.filePath === filePath)
+    async function resume(filePathOrEntry: string | DownloadEntry) {
+      const entry =
+        typeof filePathOrEntry === 'string'
+          ? list.value.find(e => e.filePath === filePathOrEntry)
+          : filePathOrEntry
       if (!entry) return
       const headersObj = buildHeaders(headers.value)
       const info = await prefetch({
@@ -97,6 +96,11 @@ sec-ch-ua-platform: "Windows"`)
           console.log(res)
         }
       })
+      console.log(
+        'resume',
+        invertProgress(mergeProgress(entry.writeProgress), info.size),
+        entry.writeProgress,
+      )
       downloadMulti({
         options: {
           url: entry.url,
@@ -124,6 +128,12 @@ sec-ch-ua-platform: "Windows"`)
       })
     }
 
+    async function resumeAll() {
+      Promise.all(
+        list.value.filter(item => item.status === 'paused').map(resume),
+      )
+    }
+
     async function add(url: string, info?: UrlInfo) {
       const headersObj = buildHeaders(headers.value)
       if (!info)
@@ -136,8 +146,6 @@ sec-ch-ua-platform: "Windows"`)
         })
       const filePath = await genUniquePath(saveDir.value, info.name)
       await remove(filePath.path)
-      const status =
-        runningCount.value < maxRunningCount.value ? 'downloading' : 'pending'
       list.value.unshift({
         url,
         filePath: filePath.path,
@@ -147,13 +155,12 @@ sec-ch-ua-platform: "Windows"`)
         readProgress: [],
         writeProgress: [],
         elapsedMs: 0,
-        status,
+        status: 'downloading',
         downloaded: 0,
         etag: info.etag,
         lastModified: info.lastModified,
       })
       const entry = list.value[0]
-      if (status !== 'downloading') return
       const channel = new Channel<DownloadEvent>(res => {
         if (res.event === 'allFinished') {
           entry.status = 'paused'
@@ -218,18 +225,16 @@ sec-ch-ua-platform: "Windows"`)
       writeBufferSize,
       writeQueueCap,
       retryGap,
+      minChunkSize,
       acceptInvalidCerts,
       acceptInvalidHostnames,
-      minChunkSize,
       multiplexing,
-      runningCount,
-      maxRunningCount,
       writeMethod,
       add,
       remove,
       removeAll,
       resume,
-
+      resumeAll,
       pause,
       pauseAll,
     }
