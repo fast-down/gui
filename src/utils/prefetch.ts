@@ -1,5 +1,3 @@
-import { invoke } from '@tauri-apps/api/core'
-
 export interface Prefetch {
   url: string
   headers: Record<string, string>
@@ -19,5 +17,6 @@ export interface UrlInfo {
 }
 
 export async function prefetch(options: Prefetch) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return (await invoke('prefetch', options as any)) as UrlInfo
 }

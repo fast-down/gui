@@ -73,8 +73,9 @@
     </template>
     <template #footer v-if="detailProgress.length">
       <div class="details">
+        <!-- eslint-disable-next-line vue/require-v-for-key -->
         <div v-for="progress in detailProgress">
-          <div v-for="info in progress" :style="info"></div>
+          <div v-for="info in progress" :style="info" :key="info.left"></div>
         </div>
       </div>
     </template>

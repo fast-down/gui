@@ -28,6 +28,7 @@ export function deepClone<T>(source: T, hash = new WeakMap()): T {
     return copy as T
   }
   if (Array.isArray(source)) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const copy: any[] = []
     hash.set(source, copy)
     source.forEach(item => {
@@ -39,7 +40,7 @@ export function deepClone<T>(source: T, hash = new WeakMap()): T {
     const copy = Object.create(Object.getPrototypeOf(source))
     hash.set(source, copy)
     for (const key in source) {
-      if (source.hasOwnProperty(key)) {
+      if (Object.prototype.hasOwnProperty.call(source, key)) {
         copy[key] = deepClone(source[key], hash)
       }
     }

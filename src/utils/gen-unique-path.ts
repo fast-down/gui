@@ -1,5 +1,3 @@
-import { invoke } from '@tauri-apps/api/core'
-
 export interface UniquePath {
   dir: string
   name: string

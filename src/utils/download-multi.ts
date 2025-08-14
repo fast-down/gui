@@ -1,4 +1,4 @@
-import { Channel, invoke } from '@tauri-apps/api/core'
+import { Channel } from '@tauri-apps/api/core'
 
 export interface DownloadMulti {
   options: DownloadMultiOptions
@@ -21,8 +21,11 @@ export interface DownloadMultiOptions {
   acceptInvalidHostnames: boolean
   proxy: string | null
   writeMethod: string
+  initProgress: [number, number][][]
+  initDownloaded: number
 }
 
 export async function downloadMulti(options: DownloadMulti) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   await invoke('download_multi', options as any)
 }

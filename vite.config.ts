@@ -18,9 +18,21 @@ export default defineConfig({
       dts: 'types/components.d.ts',
     }),
     AutoImport({
-      imports: ['vue', '@vueuse/core', 'pinia'],
+      imports: [
+        'vue',
+        '@vueuse/core',
+        'pinia',
+        {
+          from: '@tauri-apps/api/core',
+          imports: ['invoke'],
+        },
+      ],
       dirs: ['src/stores', 'src/utils'],
       dts: 'types/auto-imports.d.ts',
+      eslintrc: {
+        enabled: true,
+        filepath: 'types/.eslintrc-auto-import.json',
+      },
     }),
     wasm(),
     fonts({

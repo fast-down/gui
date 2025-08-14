@@ -35,8 +35,6 @@
 </template>
 
 <script lang="ts" setup>
-import { deepClone } from './utils/deep-clone'
-
 const store = useAppStore()
 for (const e of store.list) {
   e.status = 'paused'

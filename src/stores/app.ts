@@ -1,9 +1,5 @@
-import { Channel } from '@tauri-apps/api/core'
 import { emit } from '@tauri-apps/api/event'
-import { prefetch } from '../utils/prefetch'
-import { genUniquePath } from '../utils/gen-unique-path'
-import { downloadMulti } from '../utils/download-multi'
-import { downloadSingle } from '../utils/download-single'
+import { Channel } from '@tauri-apps/api/core'
 
 export interface DownloadEntry {
   url: string
@@ -44,44 +40,89 @@ sec-ch-ua-platform: "Windows"`)
     const multiplexing = ref(true)
     const writeMethod = ref<'mmap' | 'std'>('mmap')
 
-    async function remove(filePath: string) {
-      for (let i = 0; i < list.value.length; i++) {
-        if (list.value[i].filePath === filePath) {
-          list.value.splice(i, 1)
-          await pause(filePath)
-          break
-        }
-      }
+    function remove(filePath: string) {
+      const p = pause(filePath)
+      const i = list.value.findIndex(e => e.filePath === filePath)
+      if (i != -1) list.value.splice(i, 1)
+      return p
     }
 
     function pause(filePath: string) {
-      for (let i = 0; i < list.value.length; i++) {
-        if (list.value[i].filePath === filePath) {
-          list.value[i].status = 'paused'
-        }
-      }
-      return emit('stop-download', { file_path: filePath })
+      const p = emit('stop-download', { file_path: filePath })
+      const entry = list.value.find(e => e.filePath === filePath)
+      if (entry) entry.status = 'paused'
+      return p
     }
 
-    function resume(filePath: string) {}
-
-    async function add(url: string) {
-      console.log(`add url: ${url}`)
+    async function resume(filePath: string) {
+      const entry = list.value.find(e => e.filePath === filePath)
+      if (!entry) return
       const headersObj = buildHeaders(headers.value)
       const info = await prefetch({
-        url,
+        url: entry.url,
         headers: headersObj,
         proxy: proxy.value,
         acceptInvalidCerts: acceptInvalidCerts.value,
         acceptInvalidHostnames: acceptInvalidHostnames.value,
       })
-      console.log(info)
+      if (!info.fastDownload || entry.downloaded >= info.size)
+        return add(entry.url, info)
+      entry.status = 'downloading'
+      const channel = new Channel<DownloadEvent>(res => {
+        if (res.event === 'allFinished') {
+          entry.status = 'completed'
+          console.log('completed', mergeProgress(entry.writeProgress))
+        } else if (res.event === 'pullProgress') {
+          entry.readProgress = res.data[0]
+          entry.downloaded = res.data[1]
+        } else if (res.event === 'pushProgress') {
+          entry.writeProgress = res.data
+        } else {
+          console.log(res)
+        }
+      })
+      downloadMulti({
+        options: {
+          url: entry.url,
+          filePath: entry.filePath,
+          fileSize: info.size,
+          threads: threads.value,
+          writeBufferSize: writeBufferSize.value,
+          writeQueueCap: writeQueueCap.value,
+          minChunkSize: minChunkSize.value,
+          retryGap: retryGap.value,
+          downloadChunks: invertProgress(
+            mergeProgress(entry.writeProgress),
+            info.size,
+          ),
+          headers: headersObj,
+          multiplexing: multiplexing.value,
+          acceptInvalidCerts: acceptInvalidCerts.value,
+          acceptInvalidHostnames: acceptInvalidHostnames.value,
+          proxy: proxy.value,
+          writeMethod: writeMethod.value,
+          initProgress: entry.writeProgress,
+          initDownloaded: entry.downloaded,
+        },
+        tx: channel,
+      })
+    }
+
+    async function add(url: string, info?: UrlInfo) {
+      const headersObj = buildHeaders(headers.value)
+      if (!info)
+        info = await prefetch({
+          url,
+          headers: headersObj,
+          proxy: proxy.value,
+          acceptInvalidCerts: acceptInvalidCerts.value,
+          acceptInvalidHostnames: acceptInvalidHostnames.value,
+        })
       const filePath = await genUniquePath(saveDir.value, info.name)
-      console.log(filePath)
       await remove(filePath.path)
       const status =
         runningCount.value < maxRunningCount.value ? 'downloading' : 'pending'
-      list.value.push({
+      list.value.unshift({
         url,
         filePath: filePath.path,
         fileName: filePath.name,
@@ -95,11 +136,12 @@ sec-ch-ua-platform: "Windows"`)
         etag: info.etag,
         lastModified: info.lastModified,
       })
-      const entry = list.value[list.value.length - 1]
+      const entry = list.value[0]
       if (status !== 'downloading') return
       const channel = new Channel<DownloadEvent>(res => {
         if (res.event === 'allFinished') {
           entry.status = 'completed'
+          console.log('completed', mergeProgress(entry.writeProgress))
         } else if (res.event === 'pullProgress') {
           entry.readProgress = res.data[0]
           entry.downloaded = res.data[1]
@@ -127,6 +169,8 @@ sec-ch-ua-platform: "Windows"`)
             multiplexing: multiplexing.value,
             threads: threads.value,
             writeMethod: writeMethod.value,
+            initProgress: [],
+            initDownloaded: 0,
           },
           tx: channel,
         })

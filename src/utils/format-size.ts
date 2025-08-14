@@ -1,10 +1,10 @@
-const units = ["B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB"];
+const units = ['B', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB']
 
 export function formatSize(size: number) {
-  let unitIndex = 0;
+  let unitIndex = 0
   while (size >= 1024 && unitIndex < units.length - 1) {
-    size /= 1024;
-    unitIndex += 1;
+    size /= 1024
+    unitIndex += 1
   }
-  return `${size.toFixed(2)} ${units[unitIndex]}`;
+  return `${size.toFixed(2)} ${units[unitIndex]}`
 }

@@ -1,5 +1,6 @@
 use crate::{
     event::{Event, StopEvent},
+    format_progress::fmt_progress,
     puller::FastDownPuller,
 };
 use fast_pull::{
@@ -44,6 +45,8 @@ pub struct DownloadOptions {
     pub accept_invalid_hostnames: bool,
     pub proxy: Option<String>,
     pub write_method: String,
+    pub init_progress: Vec<Vec<(u64, u64)>>,
+    pub init_downloaded: u64,
 }
 
 #[tauri::command]
@@ -149,19 +152,30 @@ pub async fn download_multi(
         }
     };
     let res_clone = res.clone();
-    app.listen("stop-download", move |event| {
+    let handle = app.clone();
+    let event_id = app.listen("stop-download", move |event| {
         if let Ok(payload) = serde_json::from_str::<StopEvent>(event.payload())
             && payload.file_path == options.file_path
         {
             println!("stop download: {}", payload.file_path);
             res_clone.abort();
+            handle.unlisten(event.id());
         }
     });
+    let handle = app.clone();
     tokio::spawn(async move {
-        let mut pull_progress = vec![vec![]; options.threads];
-        let mut push_progress = vec![vec![]; options.threads];
+        let mut pull_progress: Vec<Vec<ProgressEntry>> = options
+            .init_progress
+            .iter()
+            .map(|v| v.iter().map(|e| e.0..e.1).collect())
+            .collect();
+        println!("pull progress: {pull_progress:?}");
+        if pull_progress.len() < options.threads {
+            pull_progress.resize(options.threads, Vec::new());
+        }
+        let mut push_progress = pull_progress.clone();
         let mut last_update_time = Instant::now();
-        let mut downloaded = 0;
+        let mut downloaded = options.init_downloaded;
         while let Ok(e) = res.event_chain.recv().await {
             match e {
                 fast_pull::Event::PullProgress(id, range) => {
@@ -169,51 +183,40 @@ pub async fn download_multi(
                     pull_progress[id].merge_progress(range);
                     if last_update_time.elapsed().as_millis() > 100 {
                         last_update_time = Instant::now();
-                        let pull_progress_data = pull_progress
-                            .iter()
-                            .map(|v| v.iter().map(|r| (r.start, r.end)).collect())
-                            .collect();
-                        tx.send(Event::PullProgress(pull_progress_data, downloaded))
+                        tx.send(Event::PullProgress(
+                            fmt_progress(&pull_progress),
+                            downloaded,
+                        ))
+                        .unwrap();
+                        tx.send(Event::PushProgress(fmt_progress(&push_progress)))
                             .unwrap();
-                        let push_progress_data = push_progress
-                            .iter()
-                            .map(|v| v.iter().map(|r: &ProgressEntry| (r.start, r.end)).collect())
-                            .collect();
-                        tx.send(Event::PushProgress(push_progress_data)).unwrap();
                     }
                 }
                 fast_pull::Event::PushProgress(id, range) => {
                     push_progress[id].merge_progress(range);
                     if last_update_time.elapsed().as_millis() > 100 {
                         last_update_time = Instant::now();
-                        let pull_progress_data = pull_progress
-                            .iter()
-                            .map(|v| v.iter().map(|r| (r.start, r.end)).collect())
-                            .collect();
-                        tx.send(Event::PullProgress(pull_progress_data, downloaded))
+                        tx.send(Event::PullProgress(
+                            fmt_progress(&pull_progress),
+                            downloaded,
+                        ))
+                        .unwrap();
+                        tx.send(Event::PushProgress(fmt_progress(&push_progress)))
                             .unwrap();
-                        let push_progress_data = push_progress
-                            .iter()
-                            .map(|v| v.iter().map(|r: &ProgressEntry| (r.start, r.end)).collect())
-                            .collect();
-                        tx.send(Event::PushProgress(push_progress_data)).unwrap();
                     }
                 }
                 _ => tx.send(e.into()).unwrap(),
             };
         }
-        let pull_progress_data = pull_progress
-            .iter()
-            .map(|v| v.iter().map(|r| (r.start, r.end)).collect())
-            .collect();
-        tx.send(Event::PullProgress(pull_progress_data, downloaded))
+        tx.send(Event::PullProgress(
+            fmt_progress(&pull_progress),
+            downloaded,
+        ))
+        .unwrap();
+        tx.send(Event::PushProgress(fmt_progress(&push_progress)))
             .unwrap();
-        let push_progress_data = push_progress
-            .iter()
-            .map(|v| v.iter().map(|r: &ProgressEntry| (r.start, r.end)).collect())
-            .collect();
-        tx.send(Event::PushProgress(push_progress_data)).unwrap();
         res.join().await.unwrap();
+        handle.unlisten(event_id);
         tx.send(Event::AllFinished).unwrap();
     });
     Ok(())

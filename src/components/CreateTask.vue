@@ -78,7 +78,6 @@
 <script setup lang="ts">
 import { Form, FormResolverOptions, FormSubmitEvent } from '@primevue/forms'
 import { open } from '@tauri-apps/plugin-dialog'
-import { formatDir } from '../utils/format-dir'
 
 const props = defineProps<{
   visible: boolean
@@ -132,7 +131,6 @@ async function resolver({ values }: FormResolverOptions) {
 }
 
 function onFormSubmit(event: FormSubmitEvent) {
-  console.log(event)
   if (!event.valid) return
   emit('update:visible', false)
   const formData = event.states
