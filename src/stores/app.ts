@@ -37,33 +37,26 @@ sec-ch-ua-platform: "Windows"`)
     const writeMethod = ref<'mmap' | 'std'>('mmap')
 
     function remove(filePath: string) {
-      const p = emit('stop-download', { file_path: filePath })
       const i = list.value.findIndex(e => e.filePath === filePath)
       if (i != -1) list.value.splice(i, 1)
-      return p
+      return pause(filePath)
     }
 
     function removeAll() {
-      const p = Promise.all(
-        list.value.map(e => emit('stop-download', { file_path: e.filePath })),
-      )
+      const p = Promise.all(list.value.map(e => pause(e.filePath)))
       list.value = []
       return p
     }
 
     function pause(filePath: string) {
-      const p = emit('stop-download', { file_path: filePath })
-      return p
+      return emit('stop-download', { file_path: filePath })
     }
 
     function pauseAll() {
-      const p = Promise.all(
-        list.value.map(e => emit('stop-download', { file_path: e.filePath })),
-      )
       list.value
         .filter(e => e.status === 'pending')
         .forEach(e => (e.status = 'paused'))
-      return p
+      return Promise.all(list.value.map(e => pause(e.filePath)))
     }
 
     async function resume(filePathOrEntry: string | DownloadEntry) {
@@ -128,26 +121,29 @@ sec-ch-ua-platform: "Windows"`)
       })
     }
 
-    async function resumeAll() {
-      Promise.all(
-        list.value.filter(item => item.status === 'paused').map(resume),
+    function resumeAll() {
+      return Promise.all(
+        list.value
+          .filter(
+            item => item.status === 'paused' && item.downloaded < item.fileSize,
+          )
+          .map(resume),
       )
     }
 
     async function add(url: string, info?: UrlInfo) {
       const headersObj = buildHeaders(headers.value)
-      if (!info)
-        info = await prefetch({
-          url,
-          headers: headersObj,
-          proxy: proxy.value,
-          acceptInvalidCerts: acceptInvalidCerts.value,
-          acceptInvalidHostnames: acceptInvalidHostnames.value,
-        })
+      info ??= await prefetch({
+        url,
+        headers: headersObj,
+        proxy: proxy.value,
+        acceptInvalidCerts: acceptInvalidCerts.value,
+        acceptInvalidHostnames: acceptInvalidHostnames.value,
+      })
       const filePath = await genUniquePath(saveDir.value, info.name)
       await remove(filePath.path)
       list.value.unshift({
-        url,
+        url: info.finalUrl,
         filePath: filePath.path,
         fileName: filePath.name,
         fileSize: info.size,
