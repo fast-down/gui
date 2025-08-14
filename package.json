@@ -5,12 +5,14 @@
   "type": "module",
   "scripts": {
     "tauri": "tauri",
-    "dev": "bun build:dkms && vite",
-    "build:dkms": "deno --node-modules-dir=none -A scripts/dkms.ts",
-    "build": "run-p type-check \"build-only {@}\" --",
+    "dev": "vite",
+    "build": "vite build",
     "preview": "vite preview",
-    "build-only": "build:dkms && vite build",
-    "type-check": "vue-tsc --build --force"
+    "type-check": "vue-tsc --build --force",
+    "dev:dkms": "bun build:dkms && vite",
+    "build:dkms": "build:dkms && vite build",
+    "build:dkms2": "deno --node-modules-dir=none -A scripts/dkms.ts",
+    "build:type-check": "run-p type-check \"build-only {@}\" --"
   },
   "dependencies": {
     "@fontsource/roboto": "5.2.6",
