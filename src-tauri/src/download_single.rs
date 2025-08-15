@@ -69,7 +69,6 @@ pub async fn download_single(
         if let Ok(payload) = serde_json::from_str::<StopEvent>(event.payload())
             && payload.file_path == options.file_path
         {
-            println!("stop download: {}", payload.file_path);
             res_clone.abort();
             handle.unlisten(event.id());
         }

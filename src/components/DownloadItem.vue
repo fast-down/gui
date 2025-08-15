@@ -141,7 +141,6 @@ let timer: number | null = null
 watch(
   () => props.status,
   newStatus => {
-    console.log(newStatus)
     if (newStatus === 'downloading') {
       let lastTime = Date.now()
       let oldDownloaded = props.downloaded

@@ -79,7 +79,6 @@ sec-ch-ua-platform: "Windows"`)
       const channel = new Channel<DownloadEvent>(res => {
         if (res.event === 'allFinished') {
           entry.status = 'paused'
-          console.log('completed', mergeProgress(entry.writeProgress))
         } else if (res.event === 'pullProgress') {
           entry.readProgress = res.data[0]
           entry.downloaded = res.data[1]
@@ -89,11 +88,6 @@ sec-ch-ua-platform: "Windows"`)
           console.log(res)
         }
       })
-      console.log(
-        'resume',
-        invertProgress(mergeProgress(entry.writeProgress), info.size),
-        entry.writeProgress,
-      )
       downloadMulti({
         options: {
           url: entry.url,
@@ -160,7 +154,6 @@ sec-ch-ua-platform: "Windows"`)
       const channel = new Channel<DownloadEvent>(res => {
         if (res.event === 'allFinished') {
           entry.status = 'paused'
-          console.log('completed', mergeProgress(entry.writeProgress))
         } else if (res.event === 'pullProgress') {
           entry.readProgress = res.data[0]
           entry.downloaded = res.data[1]
