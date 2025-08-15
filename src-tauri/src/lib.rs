@@ -24,10 +24,9 @@ pub fn run() {
     {
         builder = builder.plugin(tauri_plugin_single_instance::init(|app, _, _| {
             use tauri::Manager;
-            let _ = app
-                .get_webview_window("main")
-                .expect("no main window")
-                .set_focus();
+            let main_window = app.get_webview_window("main").expect("no main window");
+            let _ = main_window.unminimize();
+            let _ = main_window.set_focus();
         }));
     }
     builder
