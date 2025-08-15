@@ -1,5 +1,5 @@
-import { emit } from '@tauri-apps/api/event'
 import { Channel } from '@tauri-apps/api/core'
+import { stopDownload } from '../utils/stop-download'
 
 export interface DownloadEntry {
   url: string
@@ -14,6 +14,7 @@ export interface DownloadEntry {
   downloaded: number
   etag: string | null
   lastModified: string | null
+  isLocked: boolean
 }
 
 export const useAppStore = defineStore(
@@ -39,24 +40,32 @@ sec-ch-ua-platform: "Windows"`)
     function remove(filePath: string) {
       const i = list.value.findIndex(e => e.filePath === filePath)
       if (i != -1) list.value.splice(i, 1)
-      return pause(filePath)
+      return stopDownload(filePath)
     }
 
     function removeAll() {
-      const p = Promise.all(list.value.map(e => pause(e.filePath)))
+      const p = Promise.all(list.value.map(e => stopDownload(e.filePath)))
       list.value = []
       return p
     }
 
     function pause(filePath: string) {
-      return emit('stop-download', { file_path: filePath })
+      const entry = list.value.find(e => e.filePath === filePath)
+      if (!entry) return
+      entry.isLocked = true
+      return stopDownload(filePath)
     }
 
     function pauseAll() {
       list.value
         .filter(e => e.status === 'pending')
         .forEach(e => (e.status = 'paused'))
-      return Promise.all(list.value.map(e => pause(e.filePath)))
+      return Promise.all(
+        list.value.map(e => {
+          e.isLocked = true
+          return stopDownload(e.filePath)
+        }),
+      )
     }
 
     async function resume(filePathOrEntry: string | DownloadEntry) {
@@ -64,7 +73,7 @@ sec-ch-ua-platform: "Windows"`)
         typeof filePathOrEntry === 'string'
           ? list.value.find(e => e.filePath === filePathOrEntry)
           : filePathOrEntry
-      if (!entry) return
+      if (!entry || entry.isLocked) return
       const headersObj = buildHeaders(headers.value)
       const info = await prefetch({
         url: entry.url,
@@ -79,6 +88,7 @@ sec-ch-ua-platform: "Windows"`)
       const channel = new Channel<DownloadEvent>(res => {
         if (res.event === 'allFinished') {
           entry.status = 'paused'
+          entry.isLocked = false
         } else if (res.event === 'pullProgress') {
           entry.readProgress = res.data[0]
           entry.downloaded = res.data[1]
@@ -90,7 +100,7 @@ sec-ch-ua-platform: "Windows"`)
       })
       downloadMulti({
         options: {
-          url: entry.url,
+          url: info.finalUrl,
           filePath: entry.filePath,
           fileSize: info.size,
           threads: threads.value,
@@ -119,7 +129,8 @@ sec-ch-ua-platform: "Windows"`)
       return Promise.all(
         list.value
           .filter(
-            item => item.status === 'paused' && item.downloaded < item.fileSize,
+            e =>
+              !e.isLocked && e.status === 'paused' && e.downloaded < e.fileSize,
           )
           .map(resume),
       )
@@ -149,11 +160,13 @@ sec-ch-ua-platform: "Windows"`)
         downloaded: 0,
         etag: info.etag,
         lastModified: info.lastModified,
+        isLocked: false,
       })
       const entry = list.value[0]
       const channel = new Channel<DownloadEvent>(res => {
         if (res.event === 'allFinished') {
           entry.status = 'paused'
+          entry.isLocked = false
         } else if (res.event === 'pullProgress') {
           entry.readProgress = res.data[0]
           entry.downloaded = res.data[1]
