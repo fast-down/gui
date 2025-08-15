@@ -72,8 +72,7 @@
       </table>
     </template>
     <template #footer v-if="detailProgress.length">
-      <div class="details" :class="{ open: isShow }">
-        <!-- eslint-disable-next-line vue/require-v-for-key -->
+      <div class="details">
         <div
           v-for="info in detailProgress"
           :style="info"
@@ -134,8 +133,8 @@ const detailProgress = computed(() =>
       )
     : [],
 )
-const detailProgressHeight = computed(
-  () => props.readProgress.length * 12 + 'px',
+const detailProgressHeight = computed(() =>
+  isShow.value ? props.readProgress.length * 12 + 'px' : '12px',
 )
 
 let timer: number | null = null
@@ -235,7 +234,7 @@ async function clickHandler(event: MouseEvent) {
 }
 .details {
   position: relative;
-  height: 12px;
+  height: v-bind('detailProgressHeight');
   transition: height 0.2s ease;
 }
 .details > div {
@@ -244,9 +243,6 @@ async function clickHandler(event: MouseEvent) {
   border-radius: 6px;
   background: var(--color);
   transition: top 0.2s ease;
-}
-.details.open {
-  height: v-bind('detailProgressHeight');
 }
 .card :deep(.p-card-caption) {
   gap: 0;
