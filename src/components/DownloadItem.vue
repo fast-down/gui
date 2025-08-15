@@ -117,10 +117,16 @@ const bgProgress = computed(() =>
 const detailProgress = computed(() =>
   props.fileSize
     ? props.readProgress.map(progress =>
-        progress.map(p => ({
-          width: ((p[1] - p[0]) / props.fileSize) * 100 + '%',
-          left: (p[0] / props.fileSize) * 100 + '%',
-        })),
+        progress
+          .map(p => ({
+            width: ((p[1] - p[0]) / props.fileSize) * 100,
+            left: (p[0] / props.fileSize) * 100,
+          }))
+          .filter(e => e.width > 0.5)
+          .map(e => ({
+            width: e.width + '%',
+            left: e.left + '%',
+          })),
       )
     : [],
 )
@@ -231,6 +237,7 @@ async function clickHandler(event: MouseEvent) {
 .details > div > div {
   position: absolute;
   height: 100%;
+  border-radius: 6px;
   background: var(--p-primary-color);
 }
 .card :deep(.p-card-caption) {
