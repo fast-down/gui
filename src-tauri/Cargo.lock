@@ -91,34 +91,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e16d2d3311acee920a9eb8d33b8cbc1787ce4a264e85f964c2404b969bdcd487"
 
 [[package]]
-name = "app"
-version = "0.1.0"
-dependencies = [
- "bytes",
- "fast-pull",
- "futures",
- "log",
- "path-clean",
- "reqwest",
- "serde",
- "serde_json",
- "tauri",
- "tauri-build",
- "tauri-plugin-autostart",
- "tauri-plugin-dialog",
- "tauri-plugin-fs",
- "tauri-plugin-log",
- "tauri-plugin-opener",
- "tauri-plugin-os",
- "tauri-plugin-shell",
- "tauri-plugin-single-instance",
- "tauri-plugin-updater",
- "thiserror 2.0.12",
- "tokio",
- "url",
-]
-
-[[package]]
 name = "arbitrary"
 version = "1.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1193,6 +1165,34 @@ checksum = "8be9f3dfaaffdae2972880079a491a1a8bb7cbed0b8dd7a347f668b4150a3b93"
 dependencies = [
  "event-listener",
  "pin-project-lite",
+]
+
+[[package]]
+name = "fast-down"
+version = "0.1.0"
+dependencies = [
+ "bytes",
+ "fast-pull",
+ "futures",
+ "log",
+ "path-clean",
+ "reqwest",
+ "serde",
+ "serde_json",
+ "tauri",
+ "tauri-build",
+ "tauri-plugin-autostart",
+ "tauri-plugin-dialog",
+ "tauri-plugin-fs",
+ "tauri-plugin-log",
+ "tauri-plugin-opener",
+ "tauri-plugin-os",
+ "tauri-plugin-shell",
+ "tauri-plugin-single-instance",
+ "tauri-plugin-updater",
+ "thiserror 2.0.12",
+ "tokio",
+ "url",
 ]
 
 [[package]]

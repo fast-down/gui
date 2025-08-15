@@ -1,5 +1,5 @@
 [package]
-name = "app"
+name = "fast-down"
 version = "0.1.0"
 description = "fast-down 多线程下载器的 GUI 版本"
 authors = ["share121 <2854631158@qq.com>", "Cyan Changes <contact@cyans.me>"]
@@ -11,7 +11,7 @@ rust-version = "1.85.0"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [lib]
-name = "app_lib"
+name = "fast_down_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [build-dependencies]
