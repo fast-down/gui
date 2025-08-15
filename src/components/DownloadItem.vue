@@ -234,14 +234,14 @@ async function clickHandler(event: MouseEvent) {
 .details {
   position: relative;
   height: 12px;
-  transition: height 0.3s ease-in-out;
+  transition: height 0.2s ease;
 }
 .details > div {
   position: absolute;
   height: 12px;
   border-radius: 6px;
   background: var(--p-primary-color);
-  transition: top 0.3s ease-in-out;
+  transition: top 0.2s ease;
 }
 .details.open {
   height: v-bind('detailProgressHeight');
