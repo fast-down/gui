@@ -96,6 +96,8 @@
         <ToggleSwitch name="acceptInvalidCerts" />
         <label for="acceptInvalidHostnames">是否接受无效主机名 (不安全)</label>
         <ToggleSwitch name="acceptInvalidHostnames" />
+        <label for="autoStart">是否开机自启动</label>
+        <ToggleSwitch name="autoStart" />
       </div>
       <div class="action">
         <Button
@@ -135,6 +137,7 @@ const initialValues = reactive({
   acceptInvalidHostnames: false,
   multiplexing: true,
   writeMethod: 'mmap',
+  autoStart: false,
 })
 watchEffect(() => {
   initialValues.threads = store.threads
@@ -149,6 +152,7 @@ watchEffect(() => {
   initialValues.acceptInvalidHostnames = store.acceptInvalidHostnames
   initialValues.multiplexing = store.multiplexing
   initialValues.writeMethod = store.writeMethod
+  initialValues.autoStart = store.autoStart
 })
 
 const writeMethodOptions = [
@@ -213,6 +217,7 @@ function onFormSubmit(event: FormSubmitEvent) {
   store.acceptInvalidHostnames = formData.acceptInvalidHostnames.value
   store.multiplexing = formData.multiplexing.value
   store.writeMethod = formData.writeMethod.value
+  store.autoStart = formData.autoStart.value
 }
 
 async function selectDir() {

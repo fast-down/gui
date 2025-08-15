@@ -1,5 +1,6 @@
 import { Channel } from '@tauri-apps/api/core'
 import { stopDownload } from '../utils/stop-download'
+import { disable, enable } from '@tauri-apps/plugin-autostart'
 
 export interface DownloadEntry {
   url: string
@@ -36,6 +37,15 @@ sec-ch-ua-platform: "Windows"`)
     const minChunkSize = ref(8 * 1024)
     const multiplexing = ref(true)
     const writeMethod = ref<'mmap' | 'std'>('mmap')
+    const autoStart = ref(false)
+
+    watch(autoStart, async v => {
+      if (v) {
+        await enable()
+      } else {
+        await disable()
+      }
+    })
 
     function remove(filePath: string) {
       const i = list.value.findIndex(e => e.filePath === filePath)
@@ -232,6 +242,7 @@ sec-ch-ua-platform: "Windows"`)
       acceptInvalidHostnames,
       multiplexing,
       writeMethod,
+      autoStart,
       add,
       remove,
       removeAll,
