@@ -68,7 +68,7 @@ const store = useAppStore()
 for (const e of store.list) {
   e.isLocked = false
   e.status = 'paused'
-  e.readProgress = deepClone(e.writeProgress)
+  e.readProgress = structuredClone(e.writeProgress)
   e.speed = e.elapsedMs ? (e.downloaded / e.elapsedMs) * 1000 : 0
 }
 const createTaskVisible = ref(false)
