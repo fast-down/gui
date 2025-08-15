@@ -3,8 +3,7 @@ export function canMerge(a: [number, number], b: [number, number]) {
 }
 
 export function mergeProgress(progresses: [number, number][][]) {
-  const list: [number, number][] = []
-  for (const item of progresses) list.push(...item)
+  const list = progresses.flatMap(e => deepClone(e))
   list.sort((a, b) => a[0] - b[0])
   for (let i = 1; i < list.length; i++) {
     if (canMerge(list[i - 1], list[i])) {
