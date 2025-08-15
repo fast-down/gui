@@ -93,6 +93,7 @@ import { Command } from '@tauri-apps/plugin-shell'
 import { path } from '@tauri-apps/api'
 import { exists } from '@tauri-apps/plugin-fs'
 import { useToast } from 'primevue'
+import { colors } from '../utils/colors'
 
 const props = defineProps<{
   downloaded: number
@@ -123,11 +124,12 @@ const detailProgress = computed(() =>
             left: (p[0] / props.fileSize) * 100,
             top: isShow.value ? i * 12 : 0,
           }))
-          .filter(e => e.width > 0.5)
+          .filter(e => e.width >= 1)
           .map(e => ({
             width: e.width + '%',
             left: e.left + '%',
             top: e.top + 'px',
+            '--color': `var(--p-${colors[i % colors.length]}-400)`,
           })),
       )
     : [],
@@ -240,7 +242,7 @@ async function clickHandler(event: MouseEvent) {
   position: absolute;
   height: 12px;
   border-radius: 6px;
-  background: var(--p-primary-color);
+  background: var(--color);
   transition: top 0.2s ease;
 }
 .details.open {
