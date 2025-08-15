@@ -62,12 +62,12 @@
 </template>
 
 <script lang="ts" setup>
-import { DownloadEntry } from './stores/app'
+import { DownloadEntry } from "./stores/app"
 
 const store = useAppStore()
 for (const e of store.list) {
   e.isLocked = false
-  e.status = 'paused'
+  e.status = "paused"
   e.readProgress = structuredClone(toRaw(e.writeProgress))
   e.speed = e.elapsedMs ? (e.downloaded / e.elapsedMs) * 1000 : 0
 }
@@ -76,14 +76,14 @@ const settingsPageVisible = ref(false)
 
 function updateEntry(
   item: DownloadEntry,
-  data: { elapsedMs: number; speed: number },
+  data: { elapsedMs: number; speed: number }
 ) {
   item.elapsedMs = data.elapsedMs
   item.speed = data.speed
 }
 
 function onBeforeLeave(el: Element) {
-  if (el instanceof HTMLElement) el.style.width = el.clientWidth + 'px'
+  if (el instanceof HTMLElement) el.style.width = el.clientWidth + "px"
 }
 </script>
 
@@ -93,17 +93,25 @@ function onBeforeLeave(el: Element) {
   gap: 8px;
   padding: 8px;
   overflow-x: auto;
+  -webkit-user-select: none; /* For WebKit-based browsers (Chrome, Safari, etc.) */
+  -moz-user-select: none; /* For Mozilla Firefox */
+  -ms-user-select: none; /* For Internet Explorer/Edge (older versions) */
+  user-select: none; /* Standard property for modern browsers */
 }
+
 .header > * {
   flex-shrink: 0;
 }
+
 .main {
   flex: 1;
   overflow: auto;
 }
+
 .download-item {
   margin: 8px;
 }
+
 .download-item:first-child {
   margin-top: 0;
 }
