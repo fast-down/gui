@@ -1,5 +1,9 @@
 <template>
-  <Card class="card" @click="clickHandler">
+  <Card class="card" @click="clickHandler" :pt="{
+    content: {
+      style: 'user-select: none;'
+    }
+  }">
     <template #title>
       <div class="title">
         {{ props.fileName }}
@@ -13,11 +17,19 @@
             @click="emit('pause')"
           />
           <Button
-            v-else
+            v-else-if="!completed"
             size="small"
             variant="text"
             icon="pi pi-play"
             aria-label="开始"
+            @click="emit('resume')"
+          />
+          <Button
+            v-else
+            size="small"
+            variant="text"
+            icon="pi pi-refresh"
+            aria-label="重新开始"
             @click="emit('resume')"
           />
           <Button
@@ -107,6 +119,10 @@ const emit = defineEmits(['resume', 'pause', 'remove', 'update'])
 const toast = useToast()
 
 const collapse = ref(true)
+const completed = ref(props.downloaded >= props.fileSize)
+watch(() => props.downloaded, (value) => {
+  if (value >= props.fileSize) completed.value = true
+})
 const eta = computed(() =>
   props.speed ? (props.fileSize - props.downloaded) / props.speed : 0,
 )
@@ -218,6 +234,9 @@ async function clickHandler(event: MouseEvent) {
   text-align: start;
 }
 .card {
+  user-select: none;
+}
+.card {
   background-image: linear-gradient(var(--p-primary-200), var(--p-primary-200));
   background-repeat: no-repeat;
   background-size: v-bind('bgProgress') 100%;
@@ -237,6 +256,7 @@ async function clickHandler(event: MouseEvent) {
 }
 .details {
   &::before {
+    transform: translateY(-1px);
     border-top: 2px solid var(--p-primary-500);
     content: '';
     position: absolute; /* Allows for precise positioning */
