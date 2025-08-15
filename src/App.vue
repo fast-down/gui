@@ -31,7 +31,12 @@
       @click="settingsPageVisible = true"
     />
   </header>
-  <TransitionGroup name="list" tag="main" class="main">
+  <TransitionGroup
+    name="list"
+    tag="main"
+    class="main"
+    @before-leave="onBeforeLeave"
+  >
     <DownloadItem
       v-for="item in store.list"
       :downloaded="item.downloaded"
@@ -74,6 +79,10 @@ function updateEntry(
 ) {
   item.elapsedMs = data.elapsedMs
   item.speed = data.speed
+}
+
+function onBeforeLeave(el: Element) {
+  if (el instanceof HTMLElement) el.style.width = el.clientWidth + 'px'
 }
 </script>
 
