@@ -4,7 +4,6 @@ import fonts from 'unplugin-fonts/vite'
 import Components from 'unplugin-vue-components/vite'
 import { defineConfig } from 'vite'
 import { PrimeVueResolver } from '@primevue/auto-import-resolver'
-import wasm from 'vite-plugin-wasm'
 
 // @ts-expect-error process is a nodejs global
 const host = process.env.TAURI_DEV_HOST
@@ -34,7 +33,6 @@ export default defineConfig({
         filepath: 'types/.eslintrc-auto-import.json',
       },
     }),
-    wasm(),
     fonts({
       fontsource: {
         families: [

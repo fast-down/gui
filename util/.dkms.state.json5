@@ -1,9 +1,0 @@
-{
-  build: {
-    'Cargo.toml': '8aokO72qoZv1N/8vT2lpQ6Zry9tDzeHYcjTnWTbkAK0=',
-    'src\\fmt\\mod.rs': 'uIBHZJiuso0y4Ht6dg5we71Nix7p1HienxA5B7k0Ycg=',
-    'src\\fmt\\size.rs': '/sh6Ho1t5lhEd7spTShYVC5fC+UohknaP2v8hLe66Qc=',
-    'src\\fmt\\time.rs': 'j9vlSMSdXJuNbyD9lfz+xwQX8MRkYkEenGH+zVPntQs=',
-    'src\\lib.rs': '7M6v7sRFcmm6PPLnEf9jhBKTQbrMBcXSLPqBt9q0Ikg=',
-  },
-}
