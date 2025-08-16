@@ -54,9 +54,9 @@ sec-ch-ua-platform: "Windows"`)
     }
 
     function removeAll() {
-      const p = Promise.all(list.value.map(e => stopDownload(e.filePath)))
-      list.value = []
-      return p
+      list.value = list.value.filter(
+        e => e.status !== 'paused' || e.downloaded < e.fileSize,
+      )
     }
 
     function pause(filePath: string) {
