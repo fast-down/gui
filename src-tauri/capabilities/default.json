@@ -18,6 +18,7 @@
     },
     "shell:default",
     "os:default",
+    "log:allow-log",
     {
       "identifier": "shell:allow-execute",
       "allow": [

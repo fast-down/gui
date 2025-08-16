@@ -157,7 +157,7 @@ watchEffect(() => {
 
 const writeMethodOptions = [
   { name: '内存映射文件 (推荐)', code: 'mmap' },
-  { name: '标准库', code: 'std' },
+  { name: '标准库 (兼容性好)', code: 'std' },
 ]
 
 async function resolver({ values }: FormResolverOptions) {
@@ -183,8 +183,7 @@ async function resolver({ values }: FormResolverOptions) {
     try {
       const res = await formatDir(values.saveDir)
       if (!res) errors.saveDir = [{ message: '目录不存在' }]
-    } catch (error) {
-      console.error(error)
+    } catch {
       errors.saveDir = [{ message: '目录格式不正确' }]
     }
   }
@@ -193,8 +192,7 @@ async function resolver({ values }: FormResolverOptions) {
       const url = new URL(values.proxy)
       if (!['http:', 'https:', 'socks:', 'socks5:'].includes(url.protocol))
         errors.proxy = [{ message: '不支持的协议' }]
-    } catch (error) {
-      console.error(error)
+    } catch {
       errors.proxy = [{ message: '代理格式不正确' }]
     }
   }

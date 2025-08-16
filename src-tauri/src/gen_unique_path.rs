@@ -13,7 +13,7 @@ pub struct UniquePath {
 pub fn gen_unique_path(dir: &str, name: &str) -> Result<UniquePath, String> {
     let dir = format_dir::format_dir(dir)?.ok_or("No a directory")?;
     let path = Path::new(&dir).join(name);
-    if !path.try_exists().map_err(|e| e.to_string())? {
+    if !path.try_exists().map_err(|e| format!("{e:?}"))? {
         return Ok(UniquePath {
             dir,
             name: name.to_string(),
@@ -30,7 +30,7 @@ pub fn gen_unique_path(dir: &str, name: &str) -> Result<UniquePath, String> {
     for i in 1.. {
         let new_name = format!("{stem} ({i}){ext}");
         let new_path = Path::new(&dir).join(&new_name);
-        if !new_path.try_exists().map_err(|e| e.to_string())? {
+        if !new_path.try_exists().map_err(|e| format!("{e:?}"))? {
             return Ok(UniquePath {
                 dir,
                 name: new_name,

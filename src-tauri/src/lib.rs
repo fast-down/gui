@@ -1,4 +1,5 @@
 use tauri::Manager;
+use tauri_plugin_log::{Target, TargetKind};
 
 mod download_multi;
 mod download_single;
@@ -13,6 +14,15 @@ mod updater;
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let mut builder = tauri::Builder::default()
+        .plugin(
+            tauri_plugin_log::Builder::new()
+                .targets([
+                    Target::new(TargetKind::Stdout),
+                    Target::new(TargetKind::LogDir { file_name: None }),
+                    Target::new(TargetKind::Webview),
+                ])
+                .build(),
+        )
         .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_autostart::init(
@@ -38,13 +48,6 @@ pub fn run() {
     }
     builder
         .setup(|app| {
-            if cfg!(debug_assertions) {
-                app.handle().plugin(
-                    tauri_plugin_log::Builder::default()
-                        .level(log::LevelFilter::Info)
-                        .build(),
-                )?;
-            }
             let main_window = app.get_webview_window("main").expect("no main window");
             let _ = main_window.set_title(&format!("fast-down v{}", app.package_info().version));
             let handle = app.handle().clone();

@@ -63,8 +63,11 @@
 </template>
 
 <script lang="ts" setup>
+import { useToast } from 'primevue'
 import { DownloadEntry } from './stores/app'
+import { error } from '@tauri-apps/plugin-log'
 
+const toast = useToast()
 const store = useAppStore()
 for (const e of store.list) {
   e.isLocked = false
@@ -87,6 +90,37 @@ function updateEntry(
 function onBeforeLeave(el: Element) {
   if (el instanceof HTMLElement) el.style.width = el.clientWidth + 'px'
 }
+
+window.addEventListener('error', event => {
+  error(
+    `Error captured by addEventListener: ${JSON.stringify({
+      message: event.message,
+      filename: event.filename,
+      lineno: event.lineno,
+      colno: event.colno,
+      timeStamp: event.timeStamp,
+    })}`,
+  )
+  toast.add({
+    severity: 'error',
+    summary: '错误',
+    detail: event.message,
+  })
+})
+window.addEventListener('unhandledrejection', event => {
+  error(
+    `Unhandled rejection captured by addEventListener: ${JSON.stringify({
+      type: event.type,
+      reason: event.reason,
+      timeStamp: event.timeStamp,
+    })}`,
+  )
+  toast.add({
+    severity: 'error',
+    summary: '错误',
+    detail: event.reason,
+  })
+})
 </script>
 
 <style scoped>

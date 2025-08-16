@@ -20,9 +20,7 @@ impl From<fast_pull::UrlInfo> for UrlInfo {
     fn from(value: fast_pull::UrlInfo) -> Self {
         Self {
             size: value.size,
-            name: urlencoding::decode(&value.name)
-                .map(|e| e.to_string())
-                .unwrap_or(value.name),
+            name: value.name,
             supports_range: value.supports_range,
             fast_download: value.fast_download,
             final_url: value.final_url.to_string(),
@@ -50,10 +48,10 @@ pub async fn prefetch(
         accept_invalid_certs,
         accept_invalid_hostnames,
     )
-    .map_err(|e| e.to_string())?;
+    .map_err(|e| format!("{e:?}"))?;
     client
         .prefetch(url)
         .await
-        .map_err(|e| e.to_string())
+        .map_err(|e| format!("{e:?}"))
         .map(UrlInfo::from)
 }

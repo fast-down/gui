@@ -61,7 +61,7 @@
           severity="secondary"
           @click="emit('update:visible', false)"
         ></Button>
-        <Button type="submit" label="新建"></Button>
+        <Button type="submit" label="立即下载"></Button>
       </div>
     </Form>
   </Dialog>
@@ -105,8 +105,7 @@ async function resolver({ values }: FormResolverOptions) {
           errors.url ??= []
           errors.url.push({ message: `第 ${i + 1} 行 URL 协议不正确` })
         }
-      } catch (error) {
-        console.error(error)
+      } catch {
         errors.url ??= []
         errors.url.push({ message: `第 ${i + 1} 行 URL 格式不正确` })
       }
@@ -118,8 +117,7 @@ async function resolver({ values }: FormResolverOptions) {
     try {
       const res = await formatDir(values.saveDir)
       if (!res) errors.saveDir = [{ message: '目录不存在' }]
-    } catch (error) {
-      console.error(error)
+    } catch {
       errors.saveDir = [{ message: '目录格式不正确' }]
     }
   }

@@ -1,6 +1,7 @@
 import { Channel } from '@tauri-apps/api/core'
 import { stopDownload } from '../utils/stop-download'
 import { disable, enable } from '@tauri-apps/plugin-autostart'
+import { info } from '@tauri-apps/plugin-log'
 
 export interface DownloadEntry {
   url: string
@@ -85,15 +86,15 @@ sec-ch-ua-platform: "Windows"`)
           : filePathOrEntry
       if (!entry || entry.isLocked) return
       const headersObj = buildHeaders(headers.value)
-      const info = await prefetch({
+      const urlInfo = await prefetch({
         url: entry.url,
         headers: headersObj,
         proxy: proxy.value,
         acceptInvalidCerts: acceptInvalidCerts.value,
         acceptInvalidHostnames: acceptInvalidHostnames.value,
       })
-      if (!info.fastDownload || entry.downloaded >= info.size)
-        return add(entry.url, info)
+      if (!urlInfo.fastDownload || entry.downloaded >= urlInfo.size)
+        return add(entry.url, urlInfo)
       entry.status = 'downloading'
       const channel = new Channel<DownloadEvent>(res => {
         if (res.event === 'allFinished') {
@@ -105,14 +106,14 @@ sec-ch-ua-platform: "Windows"`)
         } else if (res.event === 'pushProgress') {
           entry.writeProgress = res.data
         } else {
-          console.log(res)
+          info(`Event: ${res.event}, Data: ${res.data}`)
         }
       })
       downloadMulti({
         options: {
-          url: info.finalUrl,
+          url: urlInfo.finalUrl,
           filePath: entry.filePath,
-          fileSize: info.size,
+          fileSize: urlInfo.size,
           threads: threads.value,
           writeBufferSize: writeBufferSize.value,
           writeQueueCap: writeQueueCap.value,
@@ -120,7 +121,7 @@ sec-ch-ua-platform: "Windows"`)
           retryGap: retryGap.value,
           downloadChunks: invertProgress(
             mergeProgress(toRaw(entry.writeProgress)),
-            info.size,
+            urlInfo.size,
           ),
           headers: headersObj,
           multiplexing: multiplexing.value,
@@ -146,30 +147,30 @@ sec-ch-ua-platform: "Windows"`)
       )
     }
 
-    async function add(url: string, info?: UrlInfo) {
+    async function add(url: string, urlInfo?: UrlInfo) {
       const headersObj = buildHeaders(headers.value)
-      info ??= await prefetch({
+      urlInfo ??= await prefetch({
         url,
         headers: headersObj,
         proxy: proxy.value,
         acceptInvalidCerts: acceptInvalidCerts.value,
         acceptInvalidHostnames: acceptInvalidHostnames.value,
       })
-      const filePath = await genUniquePath(saveDir.value, info.name)
+      const filePath = await genUniquePath(saveDir.value, urlInfo.name)
       await remove(filePath.path)
       list.value.unshift({
-        url: info.finalUrl,
+        url: urlInfo.finalUrl,
         filePath: filePath.path,
         fileName: filePath.name,
-        fileSize: info.size,
+        fileSize: urlInfo.size,
         speed: 0,
         readProgress: [],
         writeProgress: [],
         elapsedMs: 0,
         status: 'downloading',
         downloaded: 0,
-        etag: info.etag,
-        lastModified: info.lastModified,
+        etag: urlInfo.etag,
+        lastModified: urlInfo.lastModified,
         isLocked: false,
       })
       const entry = list.value[0]
@@ -183,20 +184,20 @@ sec-ch-ua-platform: "Windows"`)
         } else if (res.event === 'pushProgress') {
           entry.writeProgress = res.data
         } else {
-          console.log(res)
+          info(`Event: ${res.event}, Data: ${res.data}`)
         }
       })
-      if (info.fastDownload) {
+      if (urlInfo.fastDownload) {
         await downloadMulti({
           options: {
-            url: info.finalUrl,
+            url: urlInfo.finalUrl,
             acceptInvalidCerts: acceptInvalidCerts.value,
             acceptInvalidHostnames: acceptInvalidHostnames.value,
-            downloadChunks: [[0, info.size]],
+            downloadChunks: [[0, urlInfo.size]],
             headers: headersObj,
             proxy: proxy.value,
             filePath: filePath.path,
-            fileSize: info.size,
+            fileSize: urlInfo.size,
             writeBufferSize: writeBufferSize.value,
             writeQueueCap: writeQueueCap.value,
             retryGap: retryGap.value,
@@ -212,7 +213,7 @@ sec-ch-ua-platform: "Windows"`)
       } else {
         await downloadSingle({
           options: {
-            url: info.finalUrl,
+            url: urlInfo.finalUrl,
             acceptInvalidCerts: acceptInvalidCerts.value,
             acceptInvalidHostnames: acceptInvalidHostnames.value,
             headers: headersObj,

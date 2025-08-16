@@ -28,7 +28,7 @@
             variant="text"
             icon="pi pi-file"
             aria-label="打开"
-            @click="openFile"
+            @click="openFile(props.filePath)"
           />
           <Button
             size="small"
@@ -36,7 +36,7 @@
             variant="text"
             icon="pi pi-folder-open"
             aria-label="打开文件夹"
-            @click="openFolder"
+            @click="openFolder(props.filePath)"
           />
           <Button
             size="small"
@@ -76,7 +76,7 @@
       </table>
     </template>
     <template #footer v-if="detailProgress.length">
-      <div class="details">
+      <div class="details" :class="{ open: isShow }">
         <div
           v-for="info in detailProgress"
           :style="info"
@@ -88,16 +88,11 @@
 </template>
 
 <script setup lang="ts">
-import { openPath } from '@tauri-apps/plugin-opener'
 import { formatSize } from '../utils/format-size'
 import { formatTime } from '../utils/format-time'
-import { platform } from '@tauri-apps/plugin-os'
-import { Command } from '@tauri-apps/plugin-shell'
-import { path } from '@tauri-apps/api'
-import { exists } from '@tauri-apps/plugin-fs'
-import { useToast } from 'primevue'
 import { lerp } from '../utils/lerp'
 import { oklchToRgb } from '../utils/oklch2rgb'
+import { openFile, openFolder } from '../utils/open'
 
 const props = defineProps<{
   downloaded: number
@@ -110,7 +105,6 @@ const props = defineProps<{
   status: 'pending' | 'downloading' | 'paused'
 }>()
 const emit = defineEmits(['resume', 'pause', 'remove', 'update'])
-const toast = useToast()
 
 const isShow = ref(false)
 const eta = computed(() =>
@@ -119,25 +113,26 @@ const eta = computed(() =>
 const bgProgress = computed(() =>
   props.fileSize ? (props.downloaded / props.fileSize) * 100 + '%' : '0%',
 )
-const detailProgress = computed(() =>
-  props.fileSize
-    ? props.readProgress.flatMap((progress, i, arr) =>
-        progress
-          .map(p => ({
-            width: ((p[1] - p[0]) / props.fileSize) * 100,
-            left: (p[0] / props.fileSize) * 100,
-            top: isShow.value ? i * 12 : 0,
-          }))
-          .filter(e => e.width >= 1)
-          .map(e => ({
-            width: e.width + '%',
-            left: e.left + '%',
-            top: e.top + 'px',
-            '--color': oklchToRgb(0.8, 0.18, lerp(0, 360, i / arr.length)),
-          })),
-      )
-    : [],
-)
+const detailProgress = computed(() => {
+  if (!props.fileSize) return []
+  const t = props.readProgress.flatMap((progress, i, arr) =>
+    progress
+      .map(p => ({
+        width: ((p[1] - p[0]) / props.fileSize) * 100,
+        left: (p[0] / props.fileSize) * 100,
+        top: isShow.value ? i * 12 : 0,
+        background: oklchToRgb(0.8, 0.18, lerp(0, 360, i / arr.length)),
+      }))
+      .filter(e => e.width >= 1),
+  )
+  t.sort((a, b) => a.left - b.left)
+  return t.map(e => ({
+    width: e.width + '%',
+    left: e.left + '%',
+    top: e.top + 'px',
+    background: e.background,
+  }))
+})
 const detailProgressHeight = computed(() =>
   isShow.value ? props.readProgress.length * 12 + 'px' : '12px',
 )
@@ -168,35 +163,6 @@ watch(
   },
 )
 
-async function checkFileExists(filePath: string) {
-  if (!(await exists(filePath))) {
-    toast.add({
-      severity: 'error',
-      summary: '文件不存在',
-      detail: filePath,
-      life: 3000,
-    })
-    return false
-  }
-  return true
-}
-
-async function openFile() {
-  if (!(await checkFileExists(props.filePath))) return
-  await openPath(props.filePath)
-}
-async function openFolder() {
-  if (!(await checkFileExists(props.filePath))) return
-  const currentPlatform = platform()
-  if (currentPlatform === 'windows') {
-    await openPath(`/select,${props.filePath}`, 'explorer.exe')
-  } else if (currentPlatform === 'macos') {
-    await Command.create('open-mac', ['-R', props.filePath]).execute()
-  } else if (currentPlatform === 'linux') {
-    const dir = await path.dirname(props.filePath)
-    await Command.create('open-linux', [dir]).execute()
-  }
-}
 async function clickHandler(event: MouseEvent) {
   let target = event.target as HTMLElement
   while (target != document.body) {
@@ -209,6 +175,7 @@ async function clickHandler(event: MouseEvent) {
 
 <style scoped>
 .single-line-text {
+  white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
@@ -248,9 +215,22 @@ async function clickHandler(event: MouseEvent) {
 .details > div {
   position: absolute;
   height: 12px;
+  transition: top 0.2s ease, border-radius 0.2s ease;
+}
+.details.open > div {
   border-radius: 6px;
-  background: var(--color);
-  transition: top 0.2s ease;
+}
+.details > div:first-child {
+  border-radius: 6px 0 0 6px;
+}
+.details.open > div:first-child {
+  border-radius: 6px;
+}
+.details > div:last-child {
+  border-radius: 0 6px 6px 0;
+}
+.details.open > div:last-child {
+  border-radius: 6px;
 }
 .card :deep(.p-card-caption) {
   gap: 0;

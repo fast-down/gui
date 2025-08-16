@@ -141,7 +141,7 @@ impl serde::Serialize for Error {
     where
         S: serde::ser::Serializer,
     {
-        let msg = self.to_string();
+        let msg = format!("{self:?}");
         let kind = match self {
             Error::Io(_) => ErrorKind::Io(msg),
             Error::UrlParse(_) => ErrorKind::UrlParse(msg),

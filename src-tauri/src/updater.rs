@@ -2,11 +2,17 @@ use crate::puller::{self, FastDownPuller};
 use fast_pull::{RandPusher, multi, reqwest::Prefetch};
 use spin::mutex::SpinMutex;
 use std::{num::NonZero, sync::Arc, time::Duration};
-use tauri::{Emitter, Listener, http::HeaderMap};
+use tauri::{Emitter, Listener, Manager, http::HeaderMap};
 use tauri_plugin_updater::UpdaterExt;
 
 pub async fn update(app: tauri::AppHandle) -> tauri_plugin_updater::Result<()> {
     if let Some(update) = app.updater()?.check().await? {
+        if let Some(main_window) = app.get_webview_window("main") {
+            let _ = main_window.set_title(&format!(
+                "fast-down v{} -> v{}",
+                update.current_version, update.version
+            ));
+        }
         let client = puller::build_client(&HeaderMap::new(), &None, false, false)?;
         let info = client.prefetch(update.download_url.clone()).await?;
         let puller = FastDownPuller::new(

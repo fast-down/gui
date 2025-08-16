@@ -4,7 +4,7 @@
     :visible="props.visible"
     @update:visible="onUpdateVisible"
     modal
-    :header="`更新 ${updateInfo.currentVersion} -> ${updateInfo.version}`"
+    :header="`更新 v${updateInfo.currentVersion} -> v${updateInfo.version}`"
     :style="{ width: '25rem' }"
     :closable="false"
   >
@@ -55,7 +55,6 @@ async function restart() {
 const updateInfo = ref<UpdateInfo | null>(null)
 
 listen<UpdateInfo>('update', event => {
-  console.log('update event', event)
   updateInfo.value = event.payload
   onUpdateVisible(true)
 })
