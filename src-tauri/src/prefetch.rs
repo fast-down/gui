@@ -20,7 +20,9 @@ impl From<fast_pull::UrlInfo> for UrlInfo {
     fn from(value: fast_pull::UrlInfo) -> Self {
         Self {
             size: value.size,
-            name: value.name,
+            name: urlencoding::decode(&value.name)
+                .map(|e| e.to_string())
+                .unwrap_or(value.name),
             supports_range: value.supports_range,
             fast_download: value.fast_download,
             final_url: value.final_url.to_string(),
