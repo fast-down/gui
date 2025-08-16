@@ -1,6 +1,23 @@
-import { format_time } from './util'
+const oneSecond = 1
+const oneMinute = oneSecond * 60
+const oneHour = oneMinute * 60
+const oneDay = oneHour * 24
 
-export function formatTime(time_secs: number | bigint): string {
-  if (typeof time_secs === 'number') return format_time(BigInt(time_secs|0));
-  return format_time(time_secs)
+export function formatTime(sec: number): string {
+  if (sec < oneDay) {
+    const seconds = sec % oneMinute
+    const minutes = Math.floor((sec / oneMinute) % oneMinute)
+    const hours = Math.floor(sec / oneHour)
+    return `${hours.toString().padStart(2, '0')}:${minutes
+      .toString()
+      .padStart(2, '0')}:${seconds.toFixed(0).padStart(2, '0')}`
+  }
+  const remainder = sec % oneDay
+  const days = Math.floor(sec / oneDay)
+  const seconds = remainder % oneMinute
+  const minutes = Math.floor((remainder / oneMinute) % oneMinute)
+  const hours = Math.floor(remainder / oneHour)
+  return `${days}d ${hours.toString().padStart(2, '0')}:${minutes
+    .toString()
+    .padStart(2, '0')}:${seconds.toFixed(0).padStart(2, '0')}`
 }

@@ -33,3 +33,7 @@ body {
 .list-leave-active {
   position: absolute;
 }
+
+* {
+  user-select: none;
+}

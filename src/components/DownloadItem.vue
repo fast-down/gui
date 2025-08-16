@@ -1,12 +1,8 @@
 <template>
-  <Card class="card" @click="clickHandler" :pt="{
-    content: {
-      style: 'user-select: none;'
-    }
-  }">
+  <Card class="card" @click="clickHandler">
     <template #title>
       <div class="title">
-        {{ props.fileName }}
+        <div style="user-select: text">{{ props.fileName }}</div>
         <div class="action">
           <Button
             v-if="['pending', 'downloading'].includes(props.status)"
@@ -17,19 +13,11 @@
             @click="emit('pause')"
           />
           <Button
-            v-else-if="!completed"
+            v-else
             size="small"
             variant="text"
             icon="pi pi-play"
             aria-label="开始"
-            @click="emit('resume')"
-          />
-          <Button
-            v-else
-            size="small"
-            variant="text"
-            icon="pi pi-refresh"
-            aria-label="重新开始"
             @click="emit('resume')"
           />
           <Button
@@ -59,7 +47,9 @@
         </div>
       </div>
     </template>
-    <template #subtitle>{{ props.filePath }}</template>
+    <template #subtitle>
+      <div style="user-select: text">{{ props.filePath }}</div>
+    </template>
     <template #content>
       <table class="table">
         <thead class="thead">
@@ -84,7 +74,7 @@
       </table>
     </template>
     <template #footer v-if="detailProgress.length">
-      <div :class="{ details: true, track: collapse }">
+      <div class="details">
         <div
           v-for="info in detailProgress"
           :style="info"
@@ -104,6 +94,7 @@ import { Command } from '@tauri-apps/plugin-shell'
 import { path } from '@tauri-apps/api'
 import { exists } from '@tauri-apps/plugin-fs'
 import { useToast } from 'primevue'
+import { colors } from '../utils/colors'
 
 const props = defineProps<{
   downloaded: number
@@ -118,11 +109,7 @@ const props = defineProps<{
 const emit = defineEmits(['resume', 'pause', 'remove', 'update'])
 const toast = useToast()
 
-const collapse = ref(true)
-const completed = ref(props.downloaded >= props.fileSize)
-watch(() => props.downloaded, (value) => {
-  if (value >= props.fileSize) completed.value = true
-})
+const isShow = ref(false)
 const eta = computed(() =>
   props.speed ? (props.fileSize - props.downloaded) / props.speed : 0,
 )
@@ -131,25 +118,25 @@ const bgProgress = computed(() =>
 )
 const detailProgress = computed(() =>
   props.fileSize
-    ? props.readProgress.flatMap((progress, i, arr) =>
+    ? props.readProgress.flatMap((progress, i) =>
         progress
           .map(p => ({
             width: ((p[1] - p[0]) / props.fileSize) * 100,
             left: (p[0] / props.fileSize) * 100,
-            top: collapse.value ? 0 : i * 12,
+            top: isShow.value ? i * 12 : 0,
           }))
           .filter(e => e.width >= 1)
           .map(e => ({
             width: e.width + '%',
             left: e.left + '%',
             top: e.top + 'px',
-            '--color': `oklch(0.8 0.05 ${lerp(0, 360, i / arr.length)})`,
+            '--color': `var(--p-${colors[i % colors.length]}-400)`,
           })),
       )
     : [],
 )
 const detailProgressHeight = computed(() =>
-  `${collapse.value && 12 || props.readProgress.length * 12}px`,
+  isShow.value ? props.readProgress.length * 12 + 'px' : '12px',
 )
 
 let timer: number | null = null
@@ -213,11 +200,11 @@ async function clickHandler(event: MouseEvent) {
     if (target instanceof HTMLButtonElement) return
     target = target.parentElement as HTMLElement
   }
-  collapse.value = !collapse.value
+  isShow.value = !isShow.value
 }
 </script>
 
-<style lang="scss" scoped>
+<style scoped>
 .action {
   margin-left: auto;
   display: flex;
@@ -232,9 +219,6 @@ async function clickHandler(event: MouseEvent) {
 }
 .thead th {
   text-align: start;
-}
-.card {
-  user-select: none;
 }
 .card {
   background-image: linear-gradient(var(--p-primary-200), var(--p-primary-200));
@@ -253,23 +237,6 @@ async function clickHandler(event: MouseEvent) {
   position: relative;
   height: v-bind('detailProgressHeight');
   transition: height 0.2s ease;
-}
-.details {
-  &::before {
-    transform: translateY(-1px);
-    border-top: 2px solid var(--p-primary-500);
-    content: '';
-    position: absolute; /* Allows for precise positioning */
-    top: 50%; /* Moves the top edge of the line to the vertical center */
-    left: 0;
-    width: 100%;
-    height: 2px;
-    opacity: 0;
-    transition: opacity 0ms ease-in-out;
-  }
-  &.track::before {
-    opacity: 100%;
-  }
 }
 .details > div {
   position: absolute;
