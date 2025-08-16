@@ -33,7 +33,3 @@ body {
 .list-leave-active {
   position: absolute;
 }
-
-* {
-  overflow-wrap: break-word;
-}

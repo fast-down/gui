@@ -2,7 +2,7 @@
   <Card class="card" @click="clickHandler">
     <template #title>
       <div class="title">
-        <div>{{ props.fileName }}</div>
+        <div style="overflow-wrap: break-word">{{ props.fileName }}</div>
         <div class="action">
           <Button
             v-if="['pending', 'downloading'].includes(props.status)"
@@ -47,7 +47,9 @@
         </div>
       </div>
     </template>
-    <template #subtitle>{{ props.filePath }}</template>
+    <template #subtitle>
+      <div style="overflow-wrap: break-word">{{ props.filePath }}</div>
+    </template>
     <template #content>
       <table class="table">
         <thead class="thead">

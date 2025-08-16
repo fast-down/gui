@@ -8,16 +8,15 @@
     :style="{ width: '25rem' }"
     :closable="false"
   >
-    <div>{{ updateInfo.body || '修复了一些已知问题' }}</div>
-    <Divider />
-    <div>目标：{{ updateInfo.target }}</div>
-    <div v-if="updateInfo.date">
-      发布时间：{{
-        formatDate(new Date(updateInfo.date), 'YYYY-MM-DD HH:mm:ss')
-      }}
+    <div style="overflow-wrap: break-word">
+      <div>修复了一些已知问题</div>
+      <Divider />
+      <div v-if="updateInfo.date">
+        发布时间：{{
+          formatDate(new Date(updateInfo.date * 1000), 'YYYY-MM-DD HH:mm:ss')
+        }}
+      </div>
     </div>
-    <div>签名：{{ updateInfo.signature }}</div>
-    <div>下载地址：{{ updateInfo.downloadUrl }}</div>
     <div class="action">
       <Button
         type="button"
