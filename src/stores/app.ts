@@ -84,7 +84,8 @@ sec-ch-ua-platform: "Windows"`)
         typeof filePathOrEntry === 'string'
           ? list.value.find(e => e.filePath === filePathOrEntry)
           : filePathOrEntry
-      if (!entry || entry.isLocked) return
+      if (!entry || entry.isLocked || entry.status !== 'paused') return
+      entry.isLocked = true
       const headersObj = buildHeaders(headers.value)
       const urlInfo = await prefetch({
         url: entry.url,
@@ -92,7 +93,7 @@ sec-ch-ua-platform: "Windows"`)
         proxy: proxy.value,
         acceptInvalidCerts: acceptInvalidCerts.value,
         acceptInvalidHostnames: acceptInvalidHostnames.value,
-      })
+      }).finally(() => (entry.isLocked = false))
       if (!urlInfo.fastDownload || entry.downloaded >= urlInfo.size)
         return add(entry.url, urlInfo)
       entry.status = 'downloading'

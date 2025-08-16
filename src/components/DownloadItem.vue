@@ -75,7 +75,7 @@
         </tbody>
       </table>
     </template>
-    <template #footer v-if="detailProgress.length">
+    <template #footer v-if="detailProgressRaw.length">
       <div class="details" :class="{ open: isShow }">
         <div
           v-for="info in detailProgress"
@@ -113,30 +113,40 @@ const eta = computed(() =>
 const bgProgress = computed(() =>
   props.fileSize ? (props.downloaded / props.fileSize) * 100 + '%' : '0%',
 )
-const detailProgress = computed(() => {
+const detailProgressRaw = computed(() => {
   if (!props.fileSize) return []
-  const t = props.readProgress
+  return props.readProgress
+    .map((progress, i, arr) =>
+      progress
+        .map(p => ({
+          width: ((p[1] - p[0]) / props.fileSize) * 100,
+          left: (p[0] / props.fileSize) * 100,
+          '--rgb': oklchToRgb(0.8, 0.18, lerp(0, 360, i / arr.length)),
+          backgroundColor: `oklch(0.8 0.18 ${lerp(0, 360, i / arr.length)})`,
+        }))
+        .filter(e => e.width >= 1),
+    )
     .filter(e => e.length)
-    .flatMap((progress, i, arr) =>
-      progress.map(p => ({
-        width: ((p[1] - p[0]) / props.fileSize) * 100,
-        left: (p[0] / props.fileSize) * 100,
+    .map((e, i) =>
+      e.map(e => ({
+        ...e,
         top: isShow.value ? i * 12 : 0,
-        '--rgb': oklchToRgb(0.8, 0.18, lerp(0, 360, i / arr.length)),
-        backgroundColor: `oklch(0.8 0.18 ${lerp(0, 360, i / arr.length)})`,
       })),
     )
-    .filter(e => e.width >= 1)
+})
+const detailProgress = computed(() => {
+  if (!props.fileSize) return []
+  const t = detailProgressRaw.value.flat()
   t.sort((a, b) => a.left - b.left)
   return t.map(e => ({
     ...e,
-    width: e.width + '%',
     left: e.left + '%',
     top: e.top + 'px',
+    width: e.width + '%',
   }))
 })
 const detailProgressHeight = computed(() =>
-  isShow.value ? props.readProgress.length * 12 + 'px' : '12px',
+  isShow.value ? detailProgressRaw.value.length * 12 + 'px' : '12px',
 )
 
 let timer: number | null = null
