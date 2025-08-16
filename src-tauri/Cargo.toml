@@ -1,6 +1,6 @@
 [package]
 name = "fast-down"
-version = "0.1.0"
+version = "0.1.1"
 description = "fast-down 多线程下载器的 GUI 版本"
 authors = ["share121 <2854631158@qq.com>", "Cyan Changes <contact@cyans.me>"]
 license = ""
