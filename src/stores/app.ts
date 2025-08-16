@@ -119,7 +119,7 @@ sec-ch-ua-platform: "Windows"`)
           minChunkSize: minChunkSize.value,
           retryGap: retryGap.value,
           downloadChunks: invertProgress(
-            mergeProgress(entry.writeProgress),
+            mergeProgress(toRaw(entry.writeProgress)),
             info.size,
           ),
           headers: headersObj,

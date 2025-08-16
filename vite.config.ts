@@ -1,22 +1,23 @@
 import vue from '@vitejs/plugin-vue'
-import AutoImport from 'unplugin-auto-import/vite'
+import components from 'unplugin-vue-components/vite'
+import autoImport from 'unplugin-auto-import/vite'
+import wasm from 'vite-plugin-wasm'
 import fonts from 'unplugin-fonts/vite'
-import Components from 'unplugin-vue-components/vite'
 import { defineConfig } from 'vite'
 import { PrimeVueResolver } from '@primevue/auto-import-resolver'
+import process from 'node:process'
 
-// @ts-expect-error process is a nodejs global
 const host = process.env.TAURI_DEV_HOST
 
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [
     vue(),
-    Components({
+    components({
       resolvers: [PrimeVueResolver()],
       dts: 'types/components.d.ts',
     }),
-    AutoImport({
+    autoImport({
       imports: [
         'vue',
         'pinia',
@@ -44,6 +45,7 @@ export default defineConfig({
         ],
       },
     }),
+    wasm(),
   ],
   clearScreen: false,
   server: {
