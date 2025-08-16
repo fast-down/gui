@@ -2,7 +2,7 @@
   <Card class="card" @click="clickHandler">
     <template #title>
       <div class="title">
-        <div style="user-select: text">{{ props.fileName }}</div>
+        <div>{{ props.fileName }}</div>
         <div class="action">
           <Button
             v-if="['pending', 'downloading'].includes(props.status)"
@@ -47,9 +47,7 @@
         </div>
       </div>
     </template>
-    <template #subtitle>
-      <div style="user-select: text">{{ props.filePath }}</div>
-    </template>
+    <template #subtitle>{{ props.filePath }}</template>
     <template #content>
       <table class="table">
         <thead class="thead">

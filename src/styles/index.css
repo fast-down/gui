@@ -35,5 +35,5 @@ body {
 }
 
 * {
-  user-select: none;
+  overflow-wrap: break-word;
 }
