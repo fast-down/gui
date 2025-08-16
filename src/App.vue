@@ -58,6 +58,7 @@
   </TransitionGroup>
   <CreateTask v-model:visible="createTaskVisible" />
   <SettingsPage v-model:visible="settingsPageVisible" />
+  <UpdatePage v-model:visible="updatePageVisible" />
   <Toast />
 </template>
 
@@ -73,6 +74,7 @@ for (const e of store.list) {
 }
 const createTaskVisible = ref(false)
 const settingsPageVisible = ref(false)
+const updatePageVisible = ref(false)
 
 function updateEntry(
   item: DownloadEntry,

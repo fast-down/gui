@@ -6,10 +6,12 @@ mod format_progress;
 mod gen_unique_path;
 mod prefetch;
 mod puller;
+mod updater;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let mut builder = tauri::Builder::default()
+        .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_autostart::init(
             tauri_plugin_autostart::MacosLauncher::LaunchAgent,
@@ -18,7 +20,11 @@ pub fn run() {
         .plugin(tauri_plugin_os::init())
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_opener::init())
-        // .plugin(tauri_plugin_updater::Builder::new().build())
+        .plugin(
+            tauri_plugin_updater::Builder::new()
+                .default_version_comparator(|current, update| update.version != current)
+                .build(),
+        )
         .plugin(tauri_plugin_dialog::init());
     #[cfg(desktop)]
     {
@@ -38,6 +44,10 @@ pub fn run() {
                         .build(),
                 )?;
             }
+            let handle = app.handle().clone();
+            tauri::async_runtime::spawn(async move {
+                updater::update(handle).await.unwrap();
+            });
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
