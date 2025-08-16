@@ -222,7 +222,7 @@ async function clickHandler(event: MouseEvent) {
   text-align: start;
 }
 .card {
-  background-image: linear-gradient(var(--p-primary-200), var(--p-primary-200));
+  background-image: linear-gradient(var(--p-primary-100), var(--p-primary-100));
   background-repeat: no-repeat;
   background-size: v-bind('bgProgress') 100%;
 }
