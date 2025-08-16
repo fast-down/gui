@@ -115,16 +115,17 @@ const bgProgress = computed(() =>
 )
 const detailProgress = computed(() => {
   if (!props.fileSize) return []
-  const t = props.readProgress.flatMap((progress, i, arr) =>
-    progress
-      .map(p => ({
+  const t = props.readProgress
+    .filter(e => e.length)
+    .flatMap((progress, i, arr) =>
+      progress.map(p => ({
         width: ((p[1] - p[0]) / props.fileSize) * 100,
         left: (p[0] / props.fileSize) * 100,
         top: isShow.value ? i * 12 : 0,
         background: oklchToRgb(0.8, 0.18, lerp(0, 360, i / arr.length)),
-      }))
-      .filter(e => e.width >= 1),
-  )
+      })),
+    )
+    .filter(e => e.width >= 1)
   t.sort((a, b) => a.left - b.left)
   return t.map(e => ({
     width: e.width + '%',
@@ -221,13 +222,15 @@ async function clickHandler(event: MouseEvent) {
   border-radius: 6px;
 }
 .details > div:first-child {
-  border-radius: 6px 0 0 6px;
+  border-top-left-radius: 6px;
+  border-bottom-left-radius: 6px;
 }
 .details.open > div:first-child {
   border-radius: 6px;
 }
 .details > div:last-child {
-  border-radius: 0 6px 6px 0;
+  border-top-right-radius: 6px;
+  border-bottom-right-radius: 6px;
 }
 .details.open > div:last-child {
   border-radius: 6px;
