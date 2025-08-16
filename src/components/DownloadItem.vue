@@ -122,16 +122,17 @@ const detailProgress = computed(() => {
         width: ((p[1] - p[0]) / props.fileSize) * 100,
         left: (p[0] / props.fileSize) * 100,
         top: isShow.value ? i * 12 : 0,
-        background: oklchToRgb(0.8, 0.18, lerp(0, 360, i / arr.length)),
+        '--rgb': oklchToRgb(0.8, 0.18, lerp(0, 360, i / arr.length)),
+        backgroundColor: `oklch(0.8 0.18 ${lerp(0, 360, i / arr.length)})`,
       })),
     )
     .filter(e => e.width >= 1)
   t.sort((a, b) => a.left - b.left)
   return t.map(e => ({
+    ...e,
     width: e.width + '%',
     left: e.left + '%',
     top: e.top + 'px',
-    background: e.background,
   }))
 })
 const detailProgressHeight = computed(() =>
@@ -217,6 +218,7 @@ async function clickHandler(event: MouseEvent) {
   position: absolute;
   height: 12px;
   transition: top 0.2s ease, border-radius 0.2s ease;
+  background-color: var(--rgb);
 }
 .details.open > div {
   border-radius: 6px;
