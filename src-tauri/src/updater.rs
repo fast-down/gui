@@ -1,9 +1,8 @@
-use std::{num::NonZero, sync::Arc, time::Duration};
-
 use crate::puller::{self, FastDownPuller};
 use fast_pull::{RandPusher, multi, reqwest::Prefetch};
 use spin::mutex::SpinMutex;
-use tauri::{Emitter, http::HeaderMap};
+use std::{num::NonZero, sync::Arc, time::Duration};
+use tauri::{Emitter, Listener, http::HeaderMap};
 use tauri_plugin_updater::UpdaterExt;
 
 pub async fn update(app: tauri::AppHandle) -> tauri_plugin_updater::Result<()> {
@@ -33,7 +32,13 @@ pub async fn update(app: tauri::AppHandle) -> tauri_plugin_updater::Result<()> {
         )
         .await;
         if res.join().await.is_ok() {
-            update.install(pusher.data.lock().clone())?;
+            let app_clone = app.clone();
+            let update_clone = update.clone();
+            app.listen("accept_update", move |_| {
+                if update_clone.install(pusher.data.lock().clone()).is_ok() {
+                    app_clone.restart();
+                }
+            });
             app.emit(
                 "update",
                 UpdateInfo {

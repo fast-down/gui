@@ -1,3 +1,5 @@
+use tauri::Manager;
+
 mod download_multi;
 mod download_single;
 mod event;
@@ -29,7 +31,6 @@ pub fn run() {
     #[cfg(desktop)]
     {
         builder = builder.plugin(tauri_plugin_single_instance::init(|app, _, _| {
-            use tauri::Manager;
             let main_window = app.get_webview_window("main").expect("no main window");
             let _ = main_window.unminimize();
             let _ = main_window.set_focus();
@@ -44,6 +45,8 @@ pub fn run() {
                         .build(),
                 )?;
             }
+            let main_window = app.get_webview_window("main").expect("no main window");
+            let _ = main_window.set_title(&format!("fast-down v{}", app.package_info().version));
             let handle = app.handle().clone();
             tauri::async_runtime::spawn(async move {
                 let _ = updater::update(handle).await;

@@ -32,9 +32,9 @@
 
 <script setup lang="ts">
 import { listen } from '@tauri-apps/api/event'
-import { relaunch } from '@tauri-apps/plugin-process'
 import { UpdateInfo } from '../utils/updater'
 import { formatDate } from '@vueuse/core'
+import { acceptUpdate } from '../utils/accept-update'
 
 const props = defineProps<{
   visible: boolean
@@ -50,12 +50,13 @@ function onUpdateVisible(v: boolean) {
 
 async function restart() {
   await store.pauseAll()
-  await relaunch()
+  await acceptUpdate()
 }
 
 const updateInfo = ref<UpdateInfo | null>(null)
 
 listen<UpdateInfo>('update', event => {
+  console.log('update event', event)
   updateInfo.value = event.payload
   onUpdateVisible(true)
 })
