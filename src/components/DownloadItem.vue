@@ -2,7 +2,9 @@
   <Card class="card" @click="clickHandler">
     <template #title>
       <div class="title">
-        <div style="overflow-wrap: break-word">{{ props.fileName }}</div>
+        <div class="single-line-text">
+          {{ props.fileName }}
+        </div>
         <div class="action">
           <Button
             v-if="['pending', 'downloading'].includes(props.status)"
@@ -48,7 +50,7 @@
       </div>
     </template>
     <template #subtitle>
-      <div style="overflow-wrap: break-word">{{ props.filePath }}</div>
+      <div class="single-line-text">{{ props.filePath }}</div>
     </template>
     <template #content>
       <table class="table">
@@ -206,9 +208,13 @@ async function clickHandler(event: MouseEvent) {
 </script>
 
 <style scoped>
+.single-line-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 .action {
-  margin-left: auto;
   display: flex;
+  margin-left: auto;
 }
 .title {
   display: flex;
