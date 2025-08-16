@@ -52,9 +52,6 @@ pub async fn prefetch(
     client
         .prefetch(url)
         .await
-        .map_err(|e| {
-            dbg!(&e);
-            e.to_string()
-        })
+        .map_err(|e| e.to_string())
         .map(UrlInfo::from)
 }

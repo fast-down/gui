@@ -32,25 +32,20 @@ pub async fn update(app: tauri::AppHandle) -> tauri_plugin_updater::Result<()> {
             },
         )
         .await;
-        match res.join().await {
-            Ok(_) => {
-                update.install(pusher.data.lock().clone())?;
-                app.emit(
-                    "update",
-                    UpdateInfo {
-                        body: update.body,
-                        current_version: update.current_version,
-                        version: update.version,
-                        date: update.date.map(|d| d.unix_timestamp()),
-                        target: update.target,
-                        download_url: update.download_url.to_string(),
-                        signature: update.signature,
-                    },
-                )?;
-            }
-            Err(e) => {
-                dbg!(&e);
-            }
+        if res.join().await.is_ok() {
+            update.install(pusher.data.lock().clone())?;
+            app.emit(
+                "update",
+                UpdateInfo {
+                    body: update.body,
+                    current_version: update.current_version,
+                    version: update.version,
+                    date: update.date.map(|d| d.unix_timestamp()),
+                    target: update.target,
+                    download_url: update.download_url.to_string(),
+                    signature: update.signature,
+                },
+            )?;
         }
     }
     Ok(())

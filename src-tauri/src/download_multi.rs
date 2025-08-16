@@ -89,8 +89,7 @@ pub async fn download_multi(
             )
             .await;
             match res {
-                Err(e) => {
-                    dbg!(e);
+                Err(_) => {
                     let file = OpenOptions::new()
                         .write(true)
                         .create(true)
