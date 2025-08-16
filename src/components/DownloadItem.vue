@@ -94,7 +94,8 @@ import { Command } from '@tauri-apps/plugin-shell'
 import { path } from '@tauri-apps/api'
 import { exists } from '@tauri-apps/plugin-fs'
 import { useToast } from 'primevue'
-import { colors } from '../utils/colors'
+import { lerp } from '../utils/lerp'
+import { oklchToRgb } from '../utils/oklch2rgb'
 
 const props = defineProps<{
   downloaded: number
@@ -118,7 +119,7 @@ const bgProgress = computed(() =>
 )
 const detailProgress = computed(() =>
   props.fileSize
-    ? props.readProgress.flatMap((progress, i) =>
+    ? props.readProgress.flatMap((progress, i, arr) =>
         progress
           .map(p => ({
             width: ((p[1] - p[0]) / props.fileSize) * 100,
@@ -130,7 +131,7 @@ const detailProgress = computed(() =>
             width: e.width + '%',
             left: e.left + '%',
             top: e.top + 'px',
-            '--color': `var(--p-${colors[i % colors.length]}-400)`,
+            '--color': oklchToRgb(0.8, 0.18, lerp(0, 360, i / arr.length)),
           })),
       )
     : [],
