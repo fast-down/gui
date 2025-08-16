@@ -90,7 +90,7 @@
           placeholder="写入方式"
           fluid
         />
-        <label for="multiplexing">是否启用多路复用</label>
+        <label for="multiplexing">是否启用多路复用 (建议速度慢时关闭)</label>
         <ToggleSwitch name="multiplexing" />
         <label for="acceptInvalidCerts">是否接受无效证书 (不安全)</label>
         <ToggleSwitch name="acceptInvalidCerts" />
