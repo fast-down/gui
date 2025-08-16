@@ -2,8 +2,7 @@
 
 ![Latest commit (branch)](https://img.shields.io/github/last-commit/fast-down/gui/main)
 [![Build](https://github.com/fast-down/gui/workflows/publish/badge.svg)](https://github.com/fast-down/gui/actions)
-[![Latest version](https://img.shields.io/crates/v/fast-down-gui.svg)](https://crates.io/crates/fast-down-gui)
-![License](https://img.shields.io/crates/l/fast-down-gui.svg)
+[![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/fast-down/gui/blob/main/LICENSE)
 
 `fast-down` **Fastest** concurrent downloader!
 
