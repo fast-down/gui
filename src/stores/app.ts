@@ -117,11 +117,13 @@ sec-ch-ua-platform: "Windows"`)
         proxy: proxy.value,
         acceptInvalidCerts: acceptInvalidCerts.value,
         acceptInvalidHostnames: acceptInvalidHostnames.value,
-      })
-      if (localCount !== entry.count) return
+      }).finally(() => (entry.status = 'paused'))
+      if (localCount !== entry.count) return (entry.status = 'paused')
       if (runningCount.value >= maxConcurrentTasks.value) return
-      if (!urlInfo.fastDownload || entry.downloaded >= urlInfo.size)
+      if (!urlInfo.fastDownload || entry.downloaded >= urlInfo.size) {
+        entry.status = 'paused'
         return add(entry.url, { urlInfo })
+      }
       entry.status = 'downloading'
       const channel = new Channel<DownloadEvent>(res => {
         if (res.event === 'allFinished') {
