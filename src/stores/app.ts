@@ -16,7 +16,7 @@ export interface DownloadEntry {
   downloaded: number
   etag: string | null
   lastModified: string | null
-  isLocked: boolean
+  count: number
 }
 
 export const useAppStore = defineStore(
@@ -50,20 +50,22 @@ sec-ch-ua-platform: "Windows"`)
 
     function remove(filePath: string) {
       const i = list.value.findIndex(e => e.filePath === filePath)
-      if (i != -1) list.value.splice(i, 1)
+      if (i != -1) list.value.splice(i, 1)[0].count++
       return stopDownload(filePath)
     }
 
     function removeAll() {
-      list.value = list.value.filter(
-        e => e.status !== 'paused' || e.downloaded < e.fileSize,
-      )
+      list.value = list.value.filter(e => {
+        const r = e.status === 'paused' && e.downloaded < e.fileSize
+        if (r) e.count++
+        return !r
+      })
     }
 
     function pause(filePath: string) {
       const entry = list.value.find(e => e.filePath === filePath)
       if (!entry) return
-      entry.isLocked = true
+      entry.count++
       return stopDownload(filePath)
     }
 
@@ -73,7 +75,7 @@ sec-ch-ua-platform: "Windows"`)
         .forEach(e => (e.status = 'paused'))
       return Promise.all(
         list.value.map(e => {
-          e.isLocked = true
+          e.count++
           return stopDownload(e.filePath)
         }),
       )
@@ -84,8 +86,8 @@ sec-ch-ua-platform: "Windows"`)
         typeof filePathOrEntry === 'string'
           ? list.value.find(e => e.filePath === filePathOrEntry)
           : filePathOrEntry
-      if (!entry || entry.isLocked || entry.status !== 'paused') return
-      entry.isLocked = true
+      if (!entry || entry.status !== 'paused') return
+      const localCount = ++entry.count
       const headersObj = buildHeaders(headers.value)
       const urlInfo = await prefetch({
         url: entry.url,
@@ -93,24 +95,24 @@ sec-ch-ua-platform: "Windows"`)
         proxy: proxy.value,
         acceptInvalidCerts: acceptInvalidCerts.value,
         acceptInvalidHostnames: acceptInvalidHostnames.value,
-      }).finally(() => (entry.isLocked = false))
+      })
+      if (localCount !== entry.count) return
       if (!urlInfo.fastDownload || entry.downloaded >= urlInfo.size)
         return add(entry.url, urlInfo)
       entry.status = 'downloading'
       const channel = new Channel<DownloadEvent>(res => {
         if (res.event === 'allFinished') {
           entry.status = 'paused'
-          entry.isLocked = false
         } else if (res.event === 'pullProgress') {
           entry.readProgress = res.data[0]
           entry.downloaded = res.data[1]
         } else if (res.event === 'pushProgress') {
           entry.writeProgress = res.data
         } else {
-          info(`Event: ${res.event}, Data: ${res.data}`)
+          info(`Event: ${res.event}, Data: ${JSON.stringify(res.data)}`)
         }
       })
-      downloadMulti({
+      await downloadMulti({
         options: {
           url: urlInfo.finalUrl,
           filePath: entry.filePath,
@@ -140,10 +142,7 @@ sec-ch-ua-platform: "Windows"`)
     function resumeAll() {
       return Promise.all(
         list.value
-          .filter(
-            e =>
-              !e.isLocked && e.status === 'paused' && e.downloaded < e.fileSize,
-          )
+          .filter(e => e.status === 'paused' && e.downloaded < e.fileSize)
           .map(resume),
       )
     }
@@ -172,20 +171,19 @@ sec-ch-ua-platform: "Windows"`)
         downloaded: 0,
         etag: urlInfo.etag,
         lastModified: urlInfo.lastModified,
-        isLocked: false,
+        count: 0,
       })
       const entry = list.value[0]
       const channel = new Channel<DownloadEvent>(res => {
         if (res.event === 'allFinished') {
           entry.status = 'paused'
-          entry.isLocked = false
         } else if (res.event === 'pullProgress') {
           entry.readProgress = res.data[0]
           entry.downloaded = res.data[1]
         } else if (res.event === 'pushProgress') {
           entry.writeProgress = res.data
         } else {
-          info(`Event: ${res.event}, Data: ${res.data}`)
+          info(`Event: ${res.event}, Data: ${JSON.stringify(res.data)}`)
         }
       })
       if (urlInfo.fastDownload) {

@@ -70,7 +70,7 @@ import { error } from '@tauri-apps/plugin-log'
 const toast = useToast()
 const store = useAppStore()
 for (const e of store.list) {
-  e.isLocked = false
+  e.count = 0
   e.status = 'paused'
   e.readProgress = structuredClone(toRaw(e.writeProgress))
   e.speed = e.elapsedMs ? (e.downloaded / e.elapsedMs) * 1000 : 0
