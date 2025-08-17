@@ -1,7 +1,7 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "fast-down-gui",
-  "version": "0.1.10",
+  "version": "0.1.11",
   "identifier": "com.fast-down.fast-down-gui",
   "build": {
     "beforeDevCommand": "bun run dev",
@@ -34,12 +34,7 @@
       "icons/128x128@2x.png",
       "icons/icon.icns",
       "icons/icon.ico"
-    ],
-    "windows": {
-      "webviewInstallMode": {
-        "type": "embedBootstrapper"
-      }
-    }
+    ]
   },
   "plugins": {
     "updater": {
