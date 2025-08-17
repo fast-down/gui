@@ -115,6 +115,7 @@
 <script setup lang="ts">
 import { Form, FormResolverOptions, FormSubmitEvent } from '@primevue/forms'
 import { open } from '@tauri-apps/plugin-dialog'
+import { writeMethodOptions } from '../utils/write-method-options'
 
 const props = defineProps<{
   visible: boolean
@@ -155,11 +156,6 @@ watchEffect(() => {
   initialValues.autoStart = store.autoStart
 })
 
-const writeMethodOptions = [
-  { name: '内存映射文件 (推荐)', code: 'mmap' },
-  { name: '标准库 (兼容性好)', code: 'std' },
-]
-
 async function resolver({ values }: FormResolverOptions) {
   const errors = {} as {
     [k in keyof typeof values]: { message: string }[]
@@ -176,7 +172,7 @@ async function resolver({ values }: FormResolverOptions) {
         .filter(Boolean).length !== 2
     ) {
       errors.headers ??= []
-      errors.headers.push({ message: `第 ${i + 1} 行 URL 格式不正确` })
+      errors.headers.push({ message: `第 ${i + 1} 行请求头格式不正确` })
     }
   }
   if (typeof values.saveDir === 'string' && values.saveDir) {
