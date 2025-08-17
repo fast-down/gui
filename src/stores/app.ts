@@ -46,8 +46,8 @@ sec-ch-ua-platform: "Windows"`)
       () => list.value.filter(e => e.status === 'downloading').length,
     )
 
-    watch(runningCount, async v => {
-      if (v >= maxConcurrentTasks.value) return
+    watch([runningCount, maxConcurrentTasks], async ([curr, max]) => {
+      if (curr >= max) return
       const entry = list.value.find(e => e.status === 'pending')
       if (!entry) return
       await resume(entry)
