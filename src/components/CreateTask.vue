@@ -60,8 +60,9 @@
           label="取消"
           severity="secondary"
           @click="emit('update:visible', false)"
-        ></Button>
-        <Button type="submit" label="立即下载"></Button>
+        />
+        <Button type="submit" data-action="after" label="稍后下载" />
+        <Button type="submit" data-action="immediately" label="立即下载" />
       </div>
     </Form>
   </Dialog>
@@ -134,7 +135,11 @@ function onFormSubmit(event: FormSubmitEvent) {
     .filter(Boolean)
   store.saveDir = formData.saveDir.value
   store.threads = formData.threads.value
-  urls.forEach(url => store.add(url))
+  const target = (event.originalEvent as SubmitEvent)
+    .submitter as HTMLButtonElement
+  urls.forEach(url =>
+    store.add(url, { paused: target.dataset.action === 'after' }),
+  )
 }
 
 async function selectDir() {

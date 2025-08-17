@@ -39,6 +39,11 @@ sec-ch-ua-platform: "Windows"`)
     const multiplexing = ref(true)
     const writeMethod = ref<'mmap' | 'std'>('mmap')
     const autoStart = ref(false)
+    const maxConcurrentTasks = ref(3)
+
+    const runningCount = computed(
+      () => list.value.filter(e => e.status === 'downloading').length,
+    )
 
     watch(autoStart, async v => {
       if (v) {
@@ -98,7 +103,7 @@ sec-ch-ua-platform: "Windows"`)
       })
       if (localCount !== entry.count) return
       if (!urlInfo.fastDownload || entry.downloaded >= urlInfo.size)
-        return add(entry.url, urlInfo)
+        return add(entry.url, { urlInfo })
       entry.status = 'downloading'
       const channel = new Channel<DownloadEvent>(res => {
         if (res.event === 'allFinished') {
@@ -147,15 +152,22 @@ sec-ch-ua-platform: "Windows"`)
       )
     }
 
-    async function add(url: string, urlInfo?: UrlInfo) {
+    interface AddOptions {
+      urlInfo?: UrlInfo
+      paused?: boolean
+    }
+
+    async function add(url: string, options: AddOptions = {}) {
       const headersObj = buildHeaders(headers.value)
-      urlInfo ??= await prefetch({
-        url,
-        headers: headersObj,
-        proxy: proxy.value,
-        acceptInvalidCerts: acceptInvalidCerts.value,
-        acceptInvalidHostnames: acceptInvalidHostnames.value,
-      })
+      const urlInfo =
+        options.urlInfo ||
+        (await prefetch({
+          url,
+          headers: headersObj,
+          proxy: proxy.value,
+          acceptInvalidCerts: acceptInvalidCerts.value,
+          acceptInvalidHostnames: acceptInvalidHostnames.value,
+        }))
       const filePath = await genUniquePath(saveDir.value, urlInfo.name)
       await remove(filePath.path)
       list.value.unshift({
@@ -167,12 +179,13 @@ sec-ch-ua-platform: "Windows"`)
         readProgress: [],
         writeProgress: [],
         elapsedMs: 0,
-        status: 'downloading',
+        status: options.paused ? 'paused' : 'downloading',
         downloaded: 0,
         etag: urlInfo.etag,
         lastModified: urlInfo.lastModified,
         count: 0,
       })
+      if (options.paused) return
       const entry = list.value[0]
       const channel = new Channel<DownloadEvent>(res => {
         if (res.event === 'allFinished') {
@@ -243,6 +256,8 @@ sec-ch-ua-platform: "Windows"`)
       multiplexing,
       writeMethod,
       autoStart,
+      maxConcurrentTasks,
+      runningCount,
       add,
       remove,
       removeAll,
