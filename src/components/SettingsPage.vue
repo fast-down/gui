@@ -67,6 +67,10 @@
           >
         </div>
         <IftaLabel>
+          <InputNumber name="maxConcurrentTasks" :min="1" fluid />
+          <label for="maxConcurrentTasks">最大并发任务数</label>
+        </IftaLabel>
+        <IftaLabel>
           <InputNumber name="writeBufferSize" :min="0" fluid />
           <label for="writeBufferSize">写入缓冲区大小 (字节)</label>
         </IftaLabel>
@@ -130,6 +134,7 @@ const initialValues = reactive({
   saveDir: '',
   headers: '',
   proxy: '',
+  maxConcurrentTasks: 3,
   writeBufferSize: 8 * 1024 * 1024,
   writeQueueCap: 10240,
   retryGap: 500,
@@ -145,6 +150,7 @@ watchEffect(() => {
   initialValues.saveDir = store.saveDir
   initialValues.headers = store.headers
   initialValues.proxy = store.proxy || ''
+  initialValues.maxConcurrentTasks = store.maxConcurrentTasks
   initialValues.writeBufferSize = store.writeBufferSize
   initialValues.writeQueueCap = store.writeQueueCap
   initialValues.retryGap = store.retryGap
@@ -203,6 +209,7 @@ function onFormSubmit(event: FormSubmitEvent) {
   store.saveDir = formData.saveDir.value
   store.headers = formData.headers.value
   store.proxy = formData.proxy.value || null
+  store.maxConcurrentTasks = formData.maxConcurrentTasks.value
   store.writeBufferSize = formData.writeBufferSize.value
   store.writeQueueCap = formData.writeQueueCap.value
   store.retryGap = formData.retryGap.value
