@@ -7,10 +7,18 @@
         </div>
         <div class="action">
           <Button
-            v-if="['pending', 'downloading'].includes(props.status)"
+            v-if="props.status === 'downloading'"
             size="small"
             variant="text"
             icon="pi pi-pause"
+            aria-label="暂停"
+            @click="emit('pause')"
+          />
+          <Button
+            v-else-if="props.status === 'pending'"
+            size="small"
+            variant="text"
+            icon="pi pi-flag"
             aria-label="暂停"
             @click="emit('pause')"
           />

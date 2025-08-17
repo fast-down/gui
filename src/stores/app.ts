@@ -2,6 +2,7 @@ import { Channel } from '@tauri-apps/api/core'
 import { stopDownload } from '../utils/stop-download'
 import { disable, enable } from '@tauri-apps/plugin-autostart'
 import { info } from '@tauri-apps/plugin-log'
+import { Mutex } from '../utils/mutex'
 
 export interface DownloadEntry {
   url: string
@@ -45,6 +46,13 @@ sec-ch-ua-platform: "Windows"`)
       () => list.value.filter(e => e.status === 'downloading').length,
     )
 
+    watch(runningCount, async v => {
+      if (v >= maxConcurrentTasks.value) return
+      const entry = list.value.find(e => e.status === 'pending')
+      if (!entry) return
+      await resume(entry)
+    })
+
     watch(autoStart, async v => {
       if (v) {
         await enable()
@@ -60,18 +68,24 @@ sec-ch-ua-platform: "Windows"`)
     }
 
     function removeAll() {
+      const p: Promise<void>[] = []
       list.value = list.value.filter(e => {
-        const r = e.status === 'paused' && e.downloaded < e.fileSize
-        if (r) e.count++
+        const r = e.status === 'paused' && e.downloaded >= e.fileSize
+        if (r) {
+          e.count++
+          p.push(stopDownload(e.filePath))
+        }
         return !r
       })
+      return Promise.all(p)
     }
 
     function pause(filePath: string) {
       const entry = list.value.find(e => e.filePath === filePath)
       if (!entry) return
       entry.count++
-      return stopDownload(filePath)
+      if (entry.status === 'pending') entry.status = 'paused'
+      else return stopDownload(filePath)
     }
 
     function pauseAll() {
@@ -91,7 +105,9 @@ sec-ch-ua-platform: "Windows"`)
         typeof filePathOrEntry === 'string'
           ? list.value.find(e => e.filePath === filePathOrEntry)
           : filePathOrEntry
-      if (!entry || entry.status !== 'paused') return
+      if (!entry || entry.status === 'downloading') return
+      entry.status = 'pending'
+      if (runningCount.value >= maxConcurrentTasks.value) return
       const localCount = ++entry.count
       const headersObj = buildHeaders(headers.value)
       const urlInfo = await prefetch({
@@ -102,6 +118,7 @@ sec-ch-ua-platform: "Windows"`)
         acceptInvalidHostnames: acceptInvalidHostnames.value,
       })
       if (localCount !== entry.count) return
+      if (runningCount.value >= maxConcurrentTasks.value) return
       if (!urlInfo.fastDownload || entry.downloaded >= urlInfo.size)
         return add(entry.url, { urlInfo })
       entry.status = 'downloading'
@@ -157,87 +174,99 @@ sec-ch-ua-platform: "Windows"`)
       paused?: boolean
     }
 
+    const mutex = new Mutex()
     async function add(url: string, options: AddOptions = {}) {
-      const headersObj = buildHeaders(headers.value)
-      const urlInfo =
-        options.urlInfo ||
-        (await prefetch({
-          url,
-          headers: headersObj,
-          proxy: proxy.value,
-          acceptInvalidCerts: acceptInvalidCerts.value,
-          acceptInvalidHostnames: acceptInvalidHostnames.value,
-        }))
-      const filePath = await genUniquePath(saveDir.value, urlInfo.name)
-      await remove(filePath.path)
-      list.value.unshift({
-        url: urlInfo.finalUrl,
-        filePath: filePath.path,
-        fileName: filePath.name,
-        fileSize: urlInfo.size,
-        speed: 0,
-        readProgress: [],
-        writeProgress: [],
-        elapsedMs: 0,
-        status: options.paused ? 'paused' : 'downloading',
-        downloaded: 0,
-        etag: urlInfo.etag,
-        lastModified: urlInfo.lastModified,
-        count: 0,
-      })
-      if (options.paused) return
-      const entry = list.value[0]
-      const channel = new Channel<DownloadEvent>(res => {
-        if (res.event === 'allFinished') {
-          entry.status = 'paused'
-        } else if (res.event === 'pullProgress') {
-          entry.readProgress = res.data[0]
-          entry.downloaded = res.data[1]
-        } else if (res.event === 'pushProgress') {
-          entry.writeProgress = res.data
-        } else {
-          info(`Event: ${res.event}, Data: ${JSON.stringify(res.data)}`)
+      const unlock = await mutex.lock()
+      try {
+        const headersObj = buildHeaders(headers.value)
+        const urlInfo =
+          options.urlInfo ||
+          (await prefetch({
+            url,
+            headers: headersObj,
+            proxy: proxy.value,
+            acceptInvalidCerts: acceptInvalidCerts.value,
+            acceptInvalidHostnames: acceptInvalidHostnames.value,
+          }))
+        const filePath = await genUniquePath(saveDir.value, urlInfo.name)
+        await remove(filePath.path)
+        list.value.unshift({
+          url: urlInfo.finalUrl,
+          filePath: filePath.path,
+          fileName: filePath.name,
+          fileSize: urlInfo.size,
+          speed: 0,
+          readProgress: [],
+          writeProgress: [],
+          elapsedMs: 0,
+          status: options.paused
+            ? 'paused'
+            : runningCount.value < maxConcurrentTasks.value
+            ? 'downloading'
+            : 'pending',
+          downloaded: 0,
+          etag: urlInfo.etag,
+          lastModified: urlInfo.lastModified,
+          count: 0,
+        })
+        const entry = list.value[0]
+        if (options.paused || entry.status !== 'downloading') {
+          return
         }
-      })
-      if (urlInfo.fastDownload) {
-        await downloadMulti({
-          options: {
-            url: urlInfo.finalUrl,
-            acceptInvalidCerts: acceptInvalidCerts.value,
-            acceptInvalidHostnames: acceptInvalidHostnames.value,
-            downloadChunks: [[0, urlInfo.size]],
-            headers: headersObj,
-            proxy: proxy.value,
-            filePath: filePath.path,
-            fileSize: urlInfo.size,
-            writeBufferSize: writeBufferSize.value,
-            writeQueueCap: writeQueueCap.value,
-            retryGap: retryGap.value,
-            minChunkSize: minChunkSize.value,
-            multiplexing: multiplexing.value,
-            threads: threads.value,
-            writeMethod: writeMethod.value,
-            initProgress: [],
-            initDownloaded: 0,
-          },
-          tx: channel,
+        const channel = new Channel<DownloadEvent>(res => {
+          if (res.event === 'allFinished') {
+            entry.status = 'paused'
+          } else if (res.event === 'pullProgress') {
+            entry.readProgress = res.data[0]
+            entry.downloaded = res.data[1]
+          } else if (res.event === 'pushProgress') {
+            entry.writeProgress = res.data
+          } else {
+            info(`Event: ${res.event}, Data: ${JSON.stringify(res.data)}`)
+          }
         })
-      } else {
-        await downloadSingle({
-          options: {
-            url: urlInfo.finalUrl,
-            acceptInvalidCerts: acceptInvalidCerts.value,
-            acceptInvalidHostnames: acceptInvalidHostnames.value,
-            headers: headersObj,
-            proxy: proxy.value,
-            filePath: filePath.path,
-            writeBufferSize: writeBufferSize.value,
-            writeQueueCap: writeQueueCap.value,
-            multiplexing: multiplexing.value,
-            retryGap: retryGap.value,
-          },
-          tx: channel,
-        })
+        if (urlInfo.fastDownload) {
+          await downloadMulti({
+            options: {
+              url: urlInfo.finalUrl,
+              acceptInvalidCerts: acceptInvalidCerts.value,
+              acceptInvalidHostnames: acceptInvalidHostnames.value,
+              downloadChunks: [[0, urlInfo.size]],
+              headers: headersObj,
+              proxy: proxy.value,
+              filePath: filePath.path,
+              fileSize: urlInfo.size,
+              writeBufferSize: writeBufferSize.value,
+              writeQueueCap: writeQueueCap.value,
+              retryGap: retryGap.value,
+              minChunkSize: minChunkSize.value,
+              multiplexing: multiplexing.value,
+              threads: threads.value,
+              writeMethod: writeMethod.value,
+              initProgress: [],
+              initDownloaded: 0,
+            },
+            tx: channel,
+          })
+        } else {
+          await downloadSingle({
+            options: {
+              url: urlInfo.finalUrl,
+              acceptInvalidCerts: acceptInvalidCerts.value,
+              acceptInvalidHostnames: acceptInvalidHostnames.value,
+              headers: headersObj,
+              proxy: proxy.value,
+              filePath: filePath.path,
+              writeBufferSize: writeBufferSize.value,
+              writeQueueCap: writeQueueCap.value,
+              multiplexing: multiplexing.value,
+              retryGap: retryGap.value,
+            },
+            tx: channel,
+          })
+        }
+      } finally {
+        unlock()
       }
     }
 
