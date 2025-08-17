@@ -1,6 +1,6 @@
-import vue from '@vitejs/plugin-vue'
+import Vue from '@vitejs/plugin-vue'
 import AutoImport from 'unplugin-auto-import/vite'
-import fonts from 'unplugin-fonts/vite'
+import Fonts from 'unplugin-fonts/vite'
 import Components from 'unplugin-vue-components/vite'
 import { defineConfig } from 'vite'
 import { PrimeVueResolver } from '@primevue/auto-import-resolver'
@@ -12,7 +12,7 @@ const host = process.env.TAURI_DEV_HOST
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [
-    vue(),
+    Vue(),
     Components({
       resolvers: [PrimeVueResolver()],
       dts: 'types/components.d.ts',
@@ -34,7 +34,7 @@ export default defineConfig({
         filepath: 'types/.eslintrc-auto-import.json',
       },
     }),
-    fonts({
+    Fonts({
       fontsource: {
         families: [
           {

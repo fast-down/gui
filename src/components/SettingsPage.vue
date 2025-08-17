@@ -102,7 +102,7 @@
         <ToggleSwitch name="acceptInvalidHostnames" />
         <label for="autoStart">是否开机自启动</label>
         <ToggleSwitch name="autoStart" />
-        <label for="showAppMenu">是否显示菜单栏</label>
+        <label for="showAppMenu">是否显示菜单栏 (重启后生效)</label>
         <ToggleSwitch name="showAppMenu" />
       </div>
       <div class="action">
