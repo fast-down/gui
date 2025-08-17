@@ -45,8 +45,8 @@
     "updater": {
       "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDI1RUMwNkFDQjI1MTE4NQpSV1NGRVNYTGFzQmVBbmNqQXd0OUNFNW5tQndSM1loMi9DSFNiRHhwU0RJWXVaWE1oSVp5YWpOZgo=",
       "endpoints": [
-        "https://fast-down-update.s121.top/gui/latest",
-        "https://github.com/fast-down/gui/releases/latest/download/latest.json"
+        "https://github.com/fast-down/gui/releases/latest/download/latest.json",
+        "https://fast-down-update.s121.top/gui/latest"
       ]
     }
   }
