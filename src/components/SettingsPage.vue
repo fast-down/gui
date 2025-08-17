@@ -102,6 +102,8 @@
         <ToggleSwitch name="acceptInvalidHostnames" />
         <label for="autoStart">是否开机自启动</label>
         <ToggleSwitch name="autoStart" />
+        <label for="showAppMenu">是否显示菜单栏</label>
+        <ToggleSwitch name="showAppMenu" />
       </div>
       <div class="action">
         <Button
@@ -144,6 +146,7 @@ const initialValues = reactive({
   multiplexing: true,
   writeMethod: 'mmap',
   autoStart: false,
+  showAppMenu: false,
 })
 watchEffect(() => {
   initialValues.threads = store.threads
@@ -160,6 +163,7 @@ watchEffect(() => {
   initialValues.multiplexing = store.multiplexing
   initialValues.writeMethod = store.writeMethod
   initialValues.autoStart = store.autoStart
+  initialValues.showAppMenu = store.showAppMenu
 })
 
 async function resolver({ values }: FormResolverOptions) {
@@ -219,6 +223,7 @@ function onFormSubmit(event: FormSubmitEvent) {
   store.multiplexing = formData.multiplexing.value
   store.writeMethod = formData.writeMethod.value
   store.autoStart = formData.autoStart.value
+  store.showAppMenu = formData.showAppMenu.value
 }
 
 async function selectDir() {

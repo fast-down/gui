@@ -66,6 +66,12 @@
 import { useToast } from 'primevue'
 import { DownloadEntry } from './stores/app'
 import { error } from '@tauri-apps/plugin-log'
+import { TrayIcon } from '@tauri-apps/api/tray'
+import { defaultWindowIcon } from '@tauri-apps/api/app'
+import { Menu } from '@tauri-apps/api/menu'
+import { exit, relaunch } from '@tauri-apps/plugin-process'
+import { focusWindow } from './utils/focus-window'
+import { getCurrentWindow } from '@tauri-apps/api/window'
 
 const toast = useToast()
 const store = useAppStore()
@@ -121,6 +127,82 @@ window.addEventListener('unhandledrejection', event => {
     detail: event.reason,
   })
 })
+;(async () => {
+  const menu = await Menu.new({
+    items: [
+      {
+        id: 'createTask',
+        text: '添加任务',
+        async action() {
+          focusWindow()
+          createTaskVisible.value = true
+        },
+      },
+      {
+        id: 'resumeAll',
+        text: '全部开始',
+        action() {
+          return store.resumeAll()
+        },
+      },
+      {
+        id: 'pauseAll',
+        text: '全部暂停',
+        action() {
+          return store.pauseAll()
+        },
+      },
+      {
+        id: 'removeAll',
+        text: '全部删除',
+        action() {
+          return store.removeAll()
+        },
+      },
+      {
+        id: 'settings',
+        text: '设置',
+        action() {
+          focusWindow()
+          settingsPageVisible.value = true
+        },
+      },
+      {
+        id: 'relaunch',
+        text: '重启',
+        async action() {
+          await store.pauseAll()
+          await relaunch()
+        },
+      },
+      {
+        id: 'quit',
+        text: '退出',
+        async action() {
+          await store.pauseAll()
+          await exit(0)
+        },
+      },
+    ],
+  })
+  TrayIcon.new({
+    icon: (await defaultWindowIcon()) || undefined,
+    menuOnLeftClick: false,
+    menu,
+    action: e => {
+      if (e.type === 'Click' && e.button === 'Left' && e.buttonState === 'Up') {
+        console.log(e)
+        return focusWindow()
+      }
+    },
+  })
+  if (store.showAppMenu) menu.setAsAppMenu()
+  const window = getCurrentWindow()
+  window.onCloseRequested(e => {
+    e.preventDefault()
+    return window.hide()
+  })
+})()
 </script>
 
 <style scoped>

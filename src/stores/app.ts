@@ -41,6 +41,7 @@ sec-ch-ua-platform: "Windows"`)
     const writeMethod = ref<'mmap' | 'std'>('mmap')
     const autoStart = ref(false)
     const maxConcurrentTasks = ref(3)
+    const showAppMenu = ref(false)
 
     const runningCount = computed(
       () => list.value.filter(e => e.status === 'downloading').length,
@@ -287,6 +288,7 @@ sec-ch-ua-platform: "Windows"`)
       autoStart,
       maxConcurrentTasks,
       runningCount,
+      showAppMenu,
       add,
       remove,
       removeAll,

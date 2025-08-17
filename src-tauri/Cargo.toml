@@ -41,7 +41,7 @@ path-clean = "1.0.1"
 spin = { version = "0.10.0", features = [
   "spin_mutex",
 ], default-features = false }
-tauri = { version = "2.7.0", features = [] }
+tauri = { version = "2.7.0", features = ["tray-icon"] }
 tauri-plugin-log = "2"
 tauri-plugin-dialog = "2"
 tauri-plugin-opener = "2"
