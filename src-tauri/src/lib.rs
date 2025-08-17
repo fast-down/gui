@@ -1,6 +1,10 @@
 use tauri::Manager;
 use tauri_plugin_log::{Target, TargetKind};
 
+// fix someone who's linking libz without making sure it exist
+#[cfg(unix)]
+extern crate libz_sys;
+
 mod download_multi;
 mod download_single;
 mod event;
