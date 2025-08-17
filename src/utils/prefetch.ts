@@ -18,5 +18,11 @@ export interface UrlInfo {
 
 export async function prefetch(options: Prefetch) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return <UrlInfo>await invoke('prefetch', options as any)
+  const info: UrlInfo = await invoke('prefetch', options as any)
+  try {
+    info.name = decodeURIComponent(info.name)
+  } catch {
+    // ignore
+  }
+  return info
 }
