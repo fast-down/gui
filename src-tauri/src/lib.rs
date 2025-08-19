@@ -1,4 +1,5 @@
 use tauri::Manager;
+use tauri_plugin_deep_link::DeepLinkExt;
 use tauri_plugin_log::{Target, TargetKind};
 
 // fix someone who's linking libz without making sure it exist
@@ -20,7 +21,8 @@ pub fn run() {
     let mut builder = tauri::Builder::default();
     #[cfg(desktop)]
     {
-        builder = builder.plugin(tauri_plugin_single_instance::init(|app, _, _| {
+        builder = builder.plugin(tauri_plugin_single_instance::init(|app, argv, cmd| {
+            log::info!("[single_instance] {argv:?} {cmd:?}");
             let main_window = app.get_webview_window("main").expect("no main window");
             let _ = main_window.show();
             let _ = main_window.unminimize();
@@ -60,6 +62,9 @@ pub fn run() {
             let handle = app.handle().clone();
             tauri::async_runtime::spawn(async move {
                 let _ = updater::update(handle).await;
+            });
+            app.deep_link().on_open_url(|event| {
+                log::info!("[deep_link] {:?}", event.urls());
             });
             Ok(())
         })

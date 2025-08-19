@@ -3,6 +3,7 @@ import { stopDownload } from '../utils/stop-download'
 import { disable, enable } from '@tauri-apps/plugin-autostart'
 import { info } from '@tauri-apps/plugin-log'
 import { Mutex } from '../utils/mutex'
+import { UrlInfo } from '../utils/prefetch'
 
 export interface DownloadConfig {
   threads: number
@@ -35,6 +36,20 @@ export interface DownloadEntry {
   count: number
   config?: Partial<DownloadConfig>
 }
+
+export type AddOptions =
+  | {
+      urlInfo?: Partial<UrlInfo>
+      paused?: boolean
+      config?: Partial<DownloadConfig>
+      needPrefetch: true
+    }
+  | {
+      urlInfo: UrlInfo
+      paused?: boolean
+      config?: Partial<DownloadConfig>
+      needPrefetch?: false
+    }
 
 export const useAppStore = defineStore(
   'app',
@@ -197,14 +212,11 @@ sec-ch-ua-platform: "Windows"`,
       )
     }
 
-    interface AddOptions {
-      urlInfo?: UrlInfo
-      paused?: boolean
-      config?: Partial<DownloadConfig>
-    }
-
     const mutex = new Mutex()
-    async function add(url: string, options: AddOptions = {}) {
+    async function add(
+      url: string,
+      options: AddOptions = { needPrefetch: true },
+    ) {
       const unlock = await mutex.lock()
       const config = {
         ...options.config,
@@ -212,15 +224,18 @@ sec-ch-ua-platform: "Windows"`,
       }
       try {
         const headersObj = buildHeaders(config.headers)
-        const urlInfo =
-          options.urlInfo ||
-          (await prefetch({
-            url,
-            headers: headersObj,
-            proxy: config.proxy,
-            acceptInvalidCerts: config.acceptInvalidCerts,
-            acceptInvalidHostnames: config.acceptInvalidHostnames,
-          }))
+        const urlInfo = {
+          ...(options.needPrefetch
+            ? await prefetch({
+                url,
+                headers: headersObj,
+                proxy: config.proxy,
+                acceptInvalidCerts: config.acceptInvalidCerts,
+                acceptInvalidHostnames: config.acceptInvalidHostnames,
+              })
+            : {}),
+          ...options.urlInfo,
+        } as UrlInfo
         const filePath = await genUniquePath(config.saveDir, urlInfo.name)
         await remove(filePath.path)
         list.value.unshift({

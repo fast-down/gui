@@ -66,7 +66,7 @@
 
 <script lang="ts" setup>
 import { useToast } from 'primevue'
-import { DownloadEntry } from './stores/app'
+import { AddOptions, DownloadEntry } from './stores/app'
 import { error } from '@tauri-apps/plugin-log'
 import { TrayIcon } from '@tauri-apps/api/tray'
 import { defaultWindowIcon } from '@tauri-apps/api/app'
@@ -75,6 +75,8 @@ import { exit, relaunch } from '@tauri-apps/plugin-process'
 import { focusWindow } from './utils/focus-window'
 import { getCurrentWindow } from '@tauri-apps/api/window'
 import { onOpenUrl } from '@tauri-apps/plugin-deep-link'
+import { removeUndefined, UndefinedAble } from './utils/remove-undefined'
+import { UrlInfo } from './utils/prefetch'
 
 const toast = useToast()
 const store = useAppStore()
@@ -201,8 +203,7 @@ Menu.new({
     menu,
     action: e => {
       if (e.type === 'Click' && e.button === 'Left' && e.buttonState === 'Up') {
-        console.log(e)
-        return focusWindow()
+        focusWindow()
       }
     },
   })
@@ -215,8 +216,59 @@ currWindow.onCloseRequested(e => {
 })
 
 onOpenUrl(urls => {
-  console.log('deep link:', urls)
+  for (const urlRaw of urls) {
+    const url = new URL(urlRaw)
+    console.log(url)
+    if (url.protocol !== 'fast-down:') continue
+    if (url.hostname === 'download') {
+      const downloadUrl = url.searchParams.get('url')
+      if (!downloadUrl) continue
+      const options: AddOptions = {
+        needPrefetch: true,
+        urlInfo: removeUndefined<Partial<UrlInfo>>({
+          name: url.searchParams.get('filename') || undefined,
+        }),
+        config: removeUndefined<UndefinedAble<DownloadConfig>>({
+          acceptInvalidCerts: maybeBool(
+            url.searchParams.get('acceptInvalidCerts'),
+          ),
+          acceptInvalidHostnames: maybeBool(
+            url.searchParams.get('acceptInvalidHostnames'),
+          ),
+          headers: url.searchParams.get('headers') || undefined,
+          proxy: url.searchParams.get('proxy') || undefined,
+          minChunkSize: maybeInt(url.searchParams.get('minChunkSize')),
+          multiplexing: maybeBool(url.searchParams.get('multiplexing')),
+          retryGap: maybeInt(url.searchParams.get('retryGap')),
+          saveDir: url.searchParams.get('saveDir') || undefined,
+          threads: maybeInt(url.searchParams.get('threads')),
+          writeBufferSize: maybeInt(url.searchParams.get('writeBufferSize')),
+          writeMethod: maybeWriteMethod(url.searchParams.get('writeMethod')),
+          writeQueueCap: maybeInt(url.searchParams.get('writeQueueCap')),
+        }),
+      }
+      console.log(downloadUrl, options)
+      store.add(downloadUrl, options)
+    }
+  }
 })
+
+function maybeInt(str: string | null) {
+  if (!str) return undefined
+  return parseInt(str) || undefined
+}
+
+function maybeBool(str: string | null) {
+  if (['true', '1'].includes(str || '')) return true
+  if (['false', '0'].includes(str || '')) return false
+  return undefined
+}
+
+function maybeWriteMethod(str: string | null) {
+  if (str === 'std') return 'std'
+  if (str === 'mmap') return 'mmap'
+  return undefined
+}
 </script>
 
 <style scoped>

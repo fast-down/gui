@@ -239,7 +239,6 @@ function onFormSubmit(event: FormSubmitEvent) {
     writeMethod: formData.writeMethod.value,
     writeQueueCap: formData.writeQueueCap.value,
   })
-  console.log(store.list[itemIndex.value])
 }
 
 function mergeConfig(
