@@ -261,7 +261,10 @@ function onFormSubmit(event: FormSubmitEvent) {
   const target = (event.originalEvent as SubmitEvent)
     .submitter as HTMLButtonElement
   urls.forEach(url =>
-    store.add(url, { paused: target.dataset.action === 'after' }),
+    store.add(url, {
+      paused: target.dataset.action === 'after',
+      needPrefetch: true,
+    }),
   )
 }
 
