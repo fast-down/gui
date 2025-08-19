@@ -249,7 +249,20 @@ onOpenUrl(urls => {
       }
       console.log(downloadUrl, options)
       store.add(downloadUrl, options)
-    }
+    } else if (url.hostname === 'pause') {
+      const filePath = url.searchParams.get('filePath')
+      if (filePath) store.pause(filePath)
+    } else if (url.hostname === 'resume') {
+      const filePath = url.searchParams.get('filePath')
+      if (filePath) store.resume(filePath)
+    } else if (url.hostname === 'remove') {
+      const filePath = url.searchParams.get('filePath')
+      if (filePath) store.remove(filePath)
+    } else if (url.hostname === 'pauseAll') store.pauseAll()
+    else if (url.hostname === 'resumeAll') store.resumeAll()
+    else if (url.hostname === 'removeAll') store.removeAll()
+    else if (url.hostname === 'relaunch') relaunch()
+    else if (url.hostname === 'exit') exit()
   }
 })
 
