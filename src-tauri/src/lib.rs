@@ -17,7 +17,17 @@ mod updater;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    let mut builder = tauri::Builder::default()
+    let mut builder = tauri::Builder::default();
+    #[cfg(desktop)]
+    {
+        builder = builder.plugin(tauri_plugin_single_instance::init(|app, _, _| {
+            let main_window = app.get_webview_window("main").expect("no main window");
+            let _ = main_window.show();
+            let _ = main_window.unminimize();
+            let _ = main_window.set_focus();
+        }));
+    }
+    builder = builder
         .plugin(
             tauri_plugin_log::Builder::new()
                 .targets([
@@ -33,24 +43,16 @@ pub fn run() {
             tauri_plugin_autostart::MacosLauncher::LaunchAgent,
             None,
         ))
-        .plugin(tauri_plugin_os::init())
         .plugin(tauri_plugin_shell::init())
+        .plugin(tauri_plugin_os::init())
         .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_deep_link::init())
         .plugin(
             tauri_plugin_updater::Builder::new()
                 .default_version_comparator(|current, update| update.version != current)
                 .build(),
         )
         .plugin(tauri_plugin_dialog::init());
-    #[cfg(desktop)]
-    {
-        builder = builder.plugin(tauri_plugin_single_instance::init(|app, _, _| {
-            let main_window = app.get_webview_window("main").expect("no main window");
-            let _ = main_window.show();
-            let _ = main_window.unminimize();
-            let _ = main_window.set_focus();
-        }));
-    }
     builder
         .setup(|app| {
             let main_window = app.get_webview_window("main").expect("no main window");

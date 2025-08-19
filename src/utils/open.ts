@@ -14,9 +14,9 @@ export async function openFolder(filePath: string) {
   if (currentPlatform === 'windows') {
     await openPath(`/select,${filePath}`, 'explorer.exe')
   } else if (currentPlatform === 'macos') {
-    await Command.create('open-mac', ['-R', filePath]).execute()
+    await Command.create('open', ['-R', filePath]).execute()
   } else if (currentPlatform === 'linux') {
     const dir = await path.dirname(filePath)
-    await Command.create('open-linux', [dir]).execute()
+    await Command.create('nautilus', [dir]).execute()
   }
 }

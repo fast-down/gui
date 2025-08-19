@@ -50,6 +50,7 @@
           "path": "**/*"
         }
       ]
-    }
+    },
+    "deep-link:default"
   ]
 }

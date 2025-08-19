@@ -32,6 +32,14 @@
           />
           <Button
             size="small"
+            severity="help"
+            variant="text"
+            icon="pi pi-info-circle"
+            aria-label="详情"
+            @click="emit('detail')"
+          />
+          <Button
+            size="small"
             severity="info"
             variant="text"
             icon="pi pi-file"
@@ -112,7 +120,7 @@ const props = defineProps<{
   speed: number
   status: 'pending' | 'downloading' | 'paused'
 }>()
-const emit = defineEmits(['resume', 'pause', 'remove', 'update'])
+const emit = defineEmits(['resume', 'pause', 'remove', 'update', 'detail'])
 
 const isShow = ref(false)
 const eta = computed(() =>

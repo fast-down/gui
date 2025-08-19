@@ -3,7 +3,7 @@
     :visible="props.visible"
     @update:visible="onUpdateVisible"
     modal
-    header="新建任务"
+    header="详情"
     :style="{ width: '25rem' }"
     :closable="false"
   >
@@ -12,7 +12,7 @@
         <div>
           <IftaLabel style="display: flex">
             <Textarea name="url" rows="5" auto-resize style="width: 100%" />
-            <label for="url">URL (一行一个)</label>
+            <label for="url">URL</label>
           </IftaLabel>
           <Message
             v-if="$form.url?.invalid"
@@ -26,10 +26,6 @@
         <IftaLabel>
           <InputNumber name="threads" :min="1" fluid />
           <label for="threads">线程数</label>
-        </IftaLabel>
-        <IftaLabel>
-          <InputNumber name="maxConcurrentTasks" :min="1" fluid />
-          <label for="maxConcurrentTasks">最大并发任务数</label>
         </IftaLabel>
         <div>
           <div class="save-dir-container">
@@ -53,76 +49,63 @@
             >{{ $form.saveDir.error?.message }}</Message
           >
         </div>
-        <Panel header="高级配置" toggleable collapsed>
-          <div class="fields">
-            <div>
-              <IftaLabel style="display: flex">
-                <Textarea
-                  name="headers"
-                  rows="5"
-                  auto-resize
-                  style="width: 100%"
-                />
-                <label for="headers">请求头 (Key: Value)</label>
-              </IftaLabel>
-              <Message
-                v-if="$form.headers?.invalid"
-                severity="error"
-                size="small"
-                variant="simple"
-                style="margin-top: 4px"
-                >{{ $form.headers.error?.message }}</Message
-              >
-            </div>
-            <div>
-              <IftaLabel>
-                <InputText name="proxy" fluid />
-                <label for="proxy">代理</label>
-              </IftaLabel>
-              <Message
-                v-if="$form.proxy?.invalid"
-                severity="error"
-                size="small"
-                variant="simple"
-                >{{ $form.proxy.error?.message }}</Message
-              >
-            </div>
-            <IftaLabel>
-              <InputNumber name="writeBufferSize" :min="0" fluid />
-              <label for="writeBufferSize">写入缓冲区大小 (字节)</label>
-            </IftaLabel>
-            <IftaLabel>
-              <InputNumber name="writeQueueCap" :min="0" fluid />
-              <label for="writeQueueCap">写入队列容量</label>
-            </IftaLabel>
-            <IftaLabel>
-              <InputNumber name="retryGap" :min="0" fluid />
-              <label for="retryGap">重试间隔 (ms)</label>
-            </IftaLabel>
-            <IftaLabel>
-              <InputNumber name="minChunkSize" :min="0" fluid />
-              <label for="minChunkSize">最小分块大小 (字节)</label>
-            </IftaLabel>
-            <Select
-              name="writeMethod"
-              :options="writeMethodOptions"
-              option-label="name"
-              option-value="code"
-              placeholder="写入方式"
-              fluid
-            />
-            <label for="multiplexing"
-              >是否启用多路复用 (建议速度慢时关闭)</label
-            >
-            <ToggleSwitch name="multiplexing" />
-            <label for="acceptInvalidCerts">是否接受无效证书 (不安全)</label>
-            <ToggleSwitch name="acceptInvalidCerts" />
-            <label for="acceptInvalidHostnames"
-              >是否接受无效主机名 (不安全)</label
-            >
-            <ToggleSwitch name="acceptInvalidHostnames" />
-          </div>
-        </Panel>
+        <div>
+          <IftaLabel style="display: flex">
+            <Textarea name="headers" rows="5" auto-resize style="width: 100%" />
+            <label for="headers">请求头 (Key: Value)</label>
+          </IftaLabel>
+          <Message
+            v-if="$form.headers?.invalid"
+            severity="error"
+            size="small"
+            variant="simple"
+            style="margin-top: 4px"
+            >{{ $form.headers.error?.message }}</Message
+          >
+        </div>
+        <div>
+          <IftaLabel>
+            <InputText name="proxy" fluid />
+            <label for="proxy">代理</label>
+          </IftaLabel>
+          <Message
+            v-if="$form.proxy?.invalid"
+            severity="error"
+            size="small"
+            variant="simple"
+            >{{ $form.proxy.error?.message }}</Message
+          >
+        </div>
+        <IftaLabel>
+          <InputNumber name="writeBufferSize" :min="0" fluid />
+          <label for="writeBufferSize">写入缓冲区大小 (字节)</label>
+        </IftaLabel>
+        <IftaLabel>
+          <InputNumber name="writeQueueCap" :min="0" fluid />
+          <label for="writeQueueCap">写入队列容量</label>
+        </IftaLabel>
+        <IftaLabel>
+          <InputNumber name="retryGap" :min="0" fluid />
+          <label for="retryGap">重试间隔 (ms)</label>
+        </IftaLabel>
+        <IftaLabel>
+          <InputNumber name="minChunkSize" :min="0" fluid />
+          <label for="minChunkSize">最小分块大小 (字节)</label>
+        </IftaLabel>
+        <Select
+          name="writeMethod"
+          :options="writeMethodOptions"
+          option-label="name"
+          option-value="code"
+          placeholder="写入方式"
+          fluid
+        />
+        <label for="multiplexing">是否启用多路复用 (建议速度慢时关闭)</label>
+        <ToggleSwitch name="multiplexing" />
+        <label for="acceptInvalidCerts">是否接受无效证书 (不安全)</label>
+        <ToggleSwitch name="acceptInvalidCerts" />
+        <label for="acceptInvalidHostnames">是否接受无效主机名 (不安全)</label>
+        <ToggleSwitch name="acceptInvalidHostnames" />
       </div>
       <div class="action">
         <Button
@@ -131,8 +114,7 @@
           severity="secondary"
           @click="emit('update:visible', false)"
         />
-        <Button type="submit" data-action="after" label="稍后下载" />
-        <Button type="submit" data-action="immediately" label="立即下载" />
+        <Button type="submit" label="保存" />
       </div>
     </Form>
   </Dialog>
@@ -142,14 +124,20 @@
 import { Form, FormResolverOptions, FormSubmitEvent } from '@primevue/forms'
 import { open } from '@tauri-apps/plugin-dialog'
 import { writeMethodOptions } from '../utils/write-method-options'
+import { DownloadConfig } from '../stores/app'
 
 const props = defineProps<{
   visible: boolean
+  filePath: string
 }>()
 const emit = defineEmits<{
   (e: 'update:visible', value: boolean): void
 }>()
 const store = useAppStore()
+
+const itemIndex = computed(() =>
+  store.list.findIndex(e => e.filePath === props.filePath),
+)
 
 const initialValues = ref({
   url: '',
@@ -157,7 +145,6 @@ const initialValues = ref({
   saveDir: '',
   headers: '',
   proxy: '',
-  maxConcurrentTasks: 3,
   writeBufferSize: 8 * 1024 * 1024,
   writeQueueCap: 10240,
   retryGap: 500,
@@ -170,9 +157,12 @@ const initialValues = ref({
 watchEffect(() => {
   initialValues.value = {
     ...store.globalConfig,
-    proxy: store.globalConfig.proxy || '',
-    maxConcurrentTasks: store.maxConcurrentTasks,
-    url: '',
+    ...store.list[itemIndex.value]?.config,
+    proxy:
+      store.list[itemIndex.value]?.config?.proxy ||
+      store.globalConfig.proxy ||
+      '',
+    url: store.list[itemIndex.value]?.url || '',
   }
 })
 
@@ -183,19 +173,13 @@ async function resolver({ values }: FormResolverOptions) {
   if (typeof values.url !== 'string' || !values.url.trim())
     errors.url = [{ message: '请输入下载链接' }]
   else {
-    const urls = values.url.split('\n').map(e => e.trim())
-    for (const [i, item] of urls.entries()) {
-      if (!item) continue
-      try {
-        const url = new URL(item)
-        if (!['http:', 'https:'].includes(url.protocol)) {
-          errors.url ??= []
-          errors.url.push({ message: `第 ${i + 1} 行 URL 协议不正确` })
-        }
-      } catch {
-        errors.url ??= []
-        errors.url.push({ message: `第 ${i + 1} 行 URL 格式不正确` })
+    try {
+      const url = new URL(values.url)
+      if (!['http:', 'https:'].includes(url.protocol)) {
+        errors.url = [{ message: `URL 协议不正确` }]
       }
+    } catch {
+      errors.url = [{ message: `URL 格式不正确` }]
     }
   }
   if (typeof values.saveDir !== 'string' || !values.saveDir.trim())
@@ -239,30 +223,35 @@ function onFormSubmit(event: FormSubmitEvent) {
   if (!event.valid) return
   emit('update:visible', false)
   const formData = event.states
-  const urls: string[] = formData.url.value
-    .split('\n')
-    .map((e: string) => e.trim())
-    .filter(Boolean)
-  store.globalConfig = {
-    threads: formData.threads.value,
-    saveDir: formData.saveDir.value,
-    headers: formData.headers.value,
-    proxy: formData.proxy.value || null,
-    writeBufferSize: formData.writeBufferSize.value,
-    writeQueueCap: formData.writeQueueCap.value,
-    retryGap: formData.retryGap.value,
-    minChunkSize: formData.minChunkSize.value,
+  if (!store.list[itemIndex.value]) return
+  store.list[itemIndex.value].url = formData.url.value
+  store.list[itemIndex.value].config = mergeConfig(store.globalConfig, {
     acceptInvalidCerts: formData.acceptInvalidCerts.value,
     acceptInvalidHostnames: formData.acceptInvalidHostnames.value,
+    headers: formData.headers.value,
+    minChunkSize: formData.minChunkSize.value,
     multiplexing: formData.multiplexing.value,
+    proxy: formData.proxy.value || null,
+    retryGap: formData.retryGap.value,
+    saveDir: formData.saveDir.value,
+    threads: formData.threads.value,
+    writeBufferSize: formData.writeBufferSize.value,
     writeMethod: formData.writeMethod.value,
+    writeQueueCap: formData.writeQueueCap.value,
+  })
+  console.log(store.list[itemIndex.value])
+}
+
+function mergeConfig(
+  globalConfig: DownloadConfig,
+  itemConfig: Partial<DownloadConfig>,
+) {
+  const result: Partial<DownloadConfig> = {}
+  for (const key in globalConfig) {
+    // @ts-expect-error 乱报错
+    if (globalConfig[key] !== itemConfig[key]) result[key] = itemConfig[key]
   }
-  store.maxConcurrentTasks = formData.maxConcurrentTasks.value
-  const target = (event.originalEvent as SubmitEvent)
-    .submitter as HTMLButtonElement
-  urls.forEach(url =>
-    store.add(url, { paused: target.dataset.action === 'after' }),
-  )
+  return result
 }
 
 async function selectDir() {

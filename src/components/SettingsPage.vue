@@ -11,11 +11,7 @@
       <div class="fields">
         <div>
           <IftaLabel style="display: flex">
-            <Textarea
-              name="headers"
-              rows="5"
-              style="resize: vertical; width: 100%"
-            />
+            <Textarea name="headers" rows="5" auto-resize style="width: 100%" />
             <label for="headers">请求头 (Key: Value)</label>
           </IftaLabel>
           <Message
@@ -131,7 +127,7 @@ const emit = defineEmits<{
 }>()
 const store = useAppStore()
 
-const initialValues = reactive({
+const initialValues = ref({
   threads: 8,
   saveDir: '',
   headers: '',
@@ -149,21 +145,13 @@ const initialValues = reactive({
   showAppMenu: false,
 })
 watchEffect(() => {
-  initialValues.threads = store.threads
-  initialValues.saveDir = store.saveDir
-  initialValues.headers = store.headers
-  initialValues.proxy = store.proxy || ''
-  initialValues.maxConcurrentTasks = store.maxConcurrentTasks
-  initialValues.writeBufferSize = store.writeBufferSize
-  initialValues.writeQueueCap = store.writeQueueCap
-  initialValues.retryGap = store.retryGap
-  initialValues.minChunkSize = store.minChunkSize
-  initialValues.acceptInvalidCerts = store.acceptInvalidCerts
-  initialValues.acceptInvalidHostnames = store.acceptInvalidHostnames
-  initialValues.multiplexing = store.multiplexing
-  initialValues.writeMethod = store.writeMethod
-  initialValues.autoStart = store.autoStart
-  initialValues.showAppMenu = store.showAppMenu
+  initialValues.value = {
+    ...store.globalConfig,
+    proxy: store.globalConfig.proxy || '',
+    autoStart: store.autoStart,
+    showAppMenu: store.showAppMenu,
+    maxConcurrentTasks: store.maxConcurrentTasks,
+  }
 })
 
 async function resolver({ values }: FormResolverOptions) {
@@ -209,19 +197,21 @@ function onFormSubmit(event: FormSubmitEvent) {
   if (!event.valid) return
   emit('update:visible', false)
   const formData = event.states
-  store.threads = formData.threads.value
-  store.saveDir = formData.saveDir.value
-  store.headers = formData.headers.value
-  store.proxy = formData.proxy.value || null
+  store.globalConfig = {
+    threads: formData.threads.value,
+    saveDir: formData.saveDir.value,
+    headers: formData.headers.value,
+    proxy: formData.proxy.value || null,
+    writeBufferSize: formData.writeBufferSize.value,
+    writeQueueCap: formData.writeQueueCap.value,
+    retryGap: formData.retryGap.value,
+    minChunkSize: formData.minChunkSize.value,
+    acceptInvalidCerts: formData.acceptInvalidCerts.value,
+    acceptInvalidHostnames: formData.acceptInvalidHostnames.value,
+    multiplexing: formData.multiplexing.value,
+    writeMethod: formData.writeMethod.value,
+  }
   store.maxConcurrentTasks = formData.maxConcurrentTasks.value
-  store.writeBufferSize = formData.writeBufferSize.value
-  store.writeQueueCap = formData.writeQueueCap.value
-  store.retryGap = formData.retryGap.value
-  store.minChunkSize = formData.minChunkSize.value
-  store.acceptInvalidCerts = formData.acceptInvalidCerts.value
-  store.acceptInvalidHostnames = formData.acceptInvalidHostnames.value
-  store.multiplexing = formData.multiplexing.value
-  store.writeMethod = formData.writeMethod.value
   store.autoStart = formData.autoStart.value
   store.showAppMenu = formData.showAppMenu.value
 }

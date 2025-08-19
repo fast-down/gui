@@ -4,6 +4,21 @@ import { disable, enable } from '@tauri-apps/plugin-autostart'
 import { info } from '@tauri-apps/plugin-log'
 import { Mutex } from '../utils/mutex'
 
+export interface DownloadConfig {
+  threads: number
+  saveDir: string
+  headers: string
+  proxy: string | null
+  writeBufferSize: number
+  writeQueueCap: number
+  retryGap: number
+  acceptInvalidCerts: boolean
+  acceptInvalidHostnames: boolean
+  minChunkSize: number
+  multiplexing: boolean
+  writeMethod: 'mmap' | 'std'
+}
+
 export interface DownloadEntry {
   url: string
   filePath: string
@@ -18,27 +33,30 @@ export interface DownloadEntry {
   etag: string | null
   lastModified: string | null
   count: number
+  config?: Partial<DownloadConfig>
 }
 
 export const useAppStore = defineStore(
   'app',
   () => {
     const list = ref<DownloadEntry[]>([])
-    const threads = ref(8)
-    const saveDir = ref('')
-    const headers = ref(String.raw`sec-ch-ua-mobile: ?0
+    const globalConfig = ref<DownloadConfig>({
+      threads: 8,
+      saveDir: '',
+      headers: String.raw`sec-ch-ua-mobile: ?0
 User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36
 sec-ch-ua: "Not)A;Brand";v="99", "Google Chrome";v="127", "Chromium";v="127"
-sec-ch-ua-platform: "Windows"`)
-    const proxy = ref<string | null>(null)
-    const writeBufferSize = ref(8 * 1024 * 1024)
-    const writeQueueCap = ref(10240)
-    const retryGap = ref(500)
-    const acceptInvalidCerts = ref(false)
-    const acceptInvalidHostnames = ref(false)
-    const minChunkSize = ref(8 * 1024)
-    const multiplexing = ref(true)
-    const writeMethod = ref<'mmap' | 'std'>('mmap')
+sec-ch-ua-platform: "Windows"`,
+      proxy: null,
+      writeBufferSize: 8 * 1024 * 1024,
+      writeQueueCap: 10240,
+      retryGap: 500,
+      acceptInvalidCerts: false,
+      acceptInvalidHostnames: false,
+      minChunkSize: 8 * 1024,
+      multiplexing: true,
+      writeMethod: 'mmap',
+    })
     const autoStart = ref(false)
     const maxConcurrentTasks = ref(3)
     const showAppMenu = ref(false)
@@ -110,13 +128,17 @@ sec-ch-ua-platform: "Windows"`)
       entry.status = 'pending'
       if (runningCount.value >= maxConcurrentTasks.value) return
       const localCount = ++entry.count
-      const headersObj = buildHeaders(headers.value)
+      const config = {
+        ...globalConfig.value,
+        ...entry.config,
+      }
+      const headersObj = buildHeaders(config.headers)
       const urlInfo = await prefetch({
         url: entry.url,
         headers: headersObj,
-        proxy: proxy.value,
-        acceptInvalidCerts: acceptInvalidCerts.value,
-        acceptInvalidHostnames: acceptInvalidHostnames.value,
+        proxy: config.proxy,
+        acceptInvalidCerts: config.acceptInvalidCerts,
+        acceptInvalidHostnames: config.acceptInvalidHostnames,
       }).finally(() => (entry.status = 'paused'))
       if (localCount !== entry.count) return (entry.status = 'paused')
       if (runningCount.value >= maxConcurrentTasks.value) return
@@ -142,21 +164,21 @@ sec-ch-ua-platform: "Windows"`)
           url: urlInfo.finalUrl,
           filePath: entry.filePath,
           fileSize: urlInfo.size,
-          threads: threads.value,
-          writeBufferSize: writeBufferSize.value,
-          writeQueueCap: writeQueueCap.value,
-          minChunkSize: minChunkSize.value,
-          retryGap: retryGap.value,
+          threads: config.threads,
+          writeBufferSize: config.writeBufferSize,
+          writeQueueCap: config.writeQueueCap,
+          minChunkSize: config.minChunkSize,
+          retryGap: config.retryGap,
           downloadChunks: invertProgress(
             mergeProgress(toRaw(entry.writeProgress)),
             urlInfo.size,
           ),
           headers: headersObj,
-          multiplexing: multiplexing.value,
-          acceptInvalidCerts: acceptInvalidCerts.value,
-          acceptInvalidHostnames: acceptInvalidHostnames.value,
-          proxy: proxy.value,
-          writeMethod: writeMethod.value,
+          multiplexing: config.multiplexing,
+          acceptInvalidCerts: config.acceptInvalidCerts,
+          acceptInvalidHostnames: config.acceptInvalidHostnames,
+          proxy: config.proxy,
+          writeMethod: config.writeMethod,
           initProgress: entry.writeProgress,
           initDownloaded: entry.downloaded,
         },
@@ -175,23 +197,28 @@ sec-ch-ua-platform: "Windows"`)
     interface AddOptions {
       urlInfo?: UrlInfo
       paused?: boolean
+      config?: Partial<DownloadConfig>
     }
 
     const mutex = new Mutex()
     async function add(url: string, options: AddOptions = {}) {
       const unlock = await mutex.lock()
+      const config = {
+        ...options.config,
+        ...globalConfig.value,
+      }
       try {
-        const headersObj = buildHeaders(headers.value)
+        const headersObj = buildHeaders(config.headers)
         const urlInfo =
           options.urlInfo ||
           (await prefetch({
             url,
             headers: headersObj,
-            proxy: proxy.value,
-            acceptInvalidCerts: acceptInvalidCerts.value,
-            acceptInvalidHostnames: acceptInvalidHostnames.value,
+            proxy: config.proxy,
+            acceptInvalidCerts: config.acceptInvalidCerts,
+            acceptInvalidHostnames: config.acceptInvalidHostnames,
           }))
-        const filePath = await genUniquePath(saveDir.value, urlInfo.name)
+        const filePath = await genUniquePath(config.saveDir, urlInfo.name)
         await remove(filePath.path)
         list.value.unshift({
           url: urlInfo.finalUrl,
@@ -232,20 +259,20 @@ sec-ch-ua-platform: "Windows"`)
           await downloadMulti({
             options: {
               url: urlInfo.finalUrl,
-              acceptInvalidCerts: acceptInvalidCerts.value,
-              acceptInvalidHostnames: acceptInvalidHostnames.value,
+              acceptInvalidCerts: config.acceptInvalidCerts,
+              acceptInvalidHostnames: config.acceptInvalidHostnames,
               downloadChunks: [[0, urlInfo.size]],
               headers: headersObj,
-              proxy: proxy.value,
+              proxy: config.proxy,
               filePath: filePath.path,
               fileSize: urlInfo.size,
-              writeBufferSize: writeBufferSize.value,
-              writeQueueCap: writeQueueCap.value,
-              retryGap: retryGap.value,
-              minChunkSize: minChunkSize.value,
-              multiplexing: multiplexing.value,
-              threads: threads.value,
-              writeMethod: writeMethod.value,
+              writeBufferSize: config.writeBufferSize,
+              writeQueueCap: config.writeQueueCap,
+              retryGap: config.retryGap,
+              minChunkSize: config.minChunkSize,
+              multiplexing: config.multiplexing,
+              threads: config.threads,
+              writeMethod: config.writeMethod,
               initProgress: [],
               initDownloaded: 0,
             },
@@ -255,15 +282,15 @@ sec-ch-ua-platform: "Windows"`)
           await downloadSingle({
             options: {
               url: urlInfo.finalUrl,
-              acceptInvalidCerts: acceptInvalidCerts.value,
-              acceptInvalidHostnames: acceptInvalidHostnames.value,
+              acceptInvalidCerts: config.acceptInvalidCerts,
+              acceptInvalidHostnames: config.acceptInvalidHostnames,
               headers: headersObj,
-              proxy: proxy.value,
+              proxy: config.proxy,
               filePath: filePath.path,
-              writeBufferSize: writeBufferSize.value,
-              writeQueueCap: writeQueueCap.value,
-              multiplexing: multiplexing.value,
-              retryGap: retryGap.value,
+              writeBufferSize: config.writeBufferSize,
+              writeQueueCap: config.writeQueueCap,
+              multiplexing: config.multiplexing,
+              retryGap: config.retryGap,
             },
             tx: channel,
           })
@@ -275,18 +302,7 @@ sec-ch-ua-platform: "Windows"`)
 
     return {
       list,
-      threads,
-      saveDir,
-      headers,
-      proxy,
-      writeBufferSize,
-      writeQueueCap,
-      retryGap,
-      minChunkSize,
-      acceptInvalidCerts,
-      acceptInvalidHostnames,
-      multiplexing,
-      writeMethod,
+      globalConfig,
       autoStart,
       maxConcurrentTasks,
       runningCount,
