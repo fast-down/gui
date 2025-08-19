@@ -256,6 +256,7 @@ sec-ch-ua-platform: "Windows"`,
           etag: urlInfo.etag,
           lastModified: urlInfo.lastModified,
           count: 0,
+          config: options.config,
         })
         const entry = list.value[0]
         if (options.paused || entry.status !== 'downloading') {

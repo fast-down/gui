@@ -1,4 +1,7 @@
-use crate::puller::{self, FastDownPuller};
+use crate::{
+    puller::{self, FastDownPuller},
+    relaunch,
+};
 use fast_pull::{RandPusher, multi, reqwest::Prefetch};
 use spin::mutex::SpinMutex;
 use std::{num::NonZero, sync::Arc, time::Duration};
@@ -42,7 +45,7 @@ pub async fn update(app: tauri::AppHandle) -> tauri_plugin_updater::Result<()> {
             let update_clone = update.clone();
             app.listen("accept_update", move |_| {
                 if update_clone.install(pusher.data.lock().clone()).is_ok() {
-                    app_clone.restart();
+                    relaunch::relaunch(app_clone.clone());
                 }
             });
             app.emit(

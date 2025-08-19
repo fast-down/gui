@@ -73,12 +73,13 @@ import { error } from '@tauri-apps/plugin-log'
 import { TrayIcon } from '@tauri-apps/api/tray'
 import { defaultWindowIcon } from '@tauri-apps/api/app'
 import { Menu } from '@tauri-apps/api/menu'
-import { exit, relaunch } from '@tauri-apps/plugin-process'
+import { exit } from '@tauri-apps/plugin-process'
 import { focusWindow } from './utils/focus-window'
 import { getCurrentWindow } from '@tauri-apps/api/window'
 import { getCurrent, onOpenUrl } from '@tauri-apps/plugin-deep-link'
 import { removeUndefined, UndefinedAble } from './utils/remove-undefined'
 import { UrlInfo } from './utils/prefetch'
+import { relaunch } from './utils/relaunch'
 
 const toast = useToast()
 const store = useAppStore()
@@ -274,7 +275,7 @@ function parseDeepLink(urls: string[]) {
     } else if (url.hostname === 'pauseAll') store.pauseAll()
     else if (url.hostname === 'resumeAll') store.resumeAll()
     else if (url.hostname === 'removeAll') store.removeAll()
-    else if (url.hostname === 'relaunch') relaunch()
+    else if (url.hostname === 'relaunch') restart()
     else if (url.hostname === 'exit') exit(0)
   }
 }

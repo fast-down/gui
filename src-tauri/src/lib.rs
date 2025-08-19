@@ -14,6 +14,7 @@ mod format_progress;
 mod gen_unique_path;
 mod prefetch;
 mod puller;
+mod relaunch;
 mod updater;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -74,6 +75,7 @@ pub fn run() {
             download_single::download_single,
             format_dir::format_dir,
             gen_unique_path::gen_unique_path,
+            relaunch::relaunch,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
