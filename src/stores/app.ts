@@ -219,8 +219,8 @@ sec-ch-ua-platform: "Windows"`,
     ) {
       const unlock = await mutex.lock()
       const config = {
-        ...options.config,
         ...globalConfig.value,
+        ...options.config,
       }
       try {
         const headersObj = buildHeaders(config.headers)
