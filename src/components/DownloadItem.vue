@@ -2,7 +2,14 @@
   <Card class="card" @click="clickHandler">
     <template #title>
       <div class="title">
-        <div class="single-line-text">
+        <div
+          class="single-line-text"
+          v-tooltip.top="{
+            value: props.fileName,
+            showDelay: 500,
+            autoHide: false,
+          }"
+        >
           {{ props.fileName }}
         </div>
         <div class="action">
