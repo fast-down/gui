@@ -1,25 +1,25 @@
 <template>
   <header class="header">
     <Button
-      label="新建任务"
+      label="新建"
       variant="text"
       icon="pi pi-plus"
       @click="createTaskVisible = true"
     />
     <Button
-      label="全部开始"
+      label="开始"
       @click="store.resumeAll"
       variant="text"
       icon="pi pi-play"
     />
     <Button
-      label="全部暂停"
+      label="暂停"
       @click="store.pauseAll"
       variant="text"
       icon="pi pi-pause"
     />
     <Button
-      label="全部删除"
+      label="删除"
       @click="store.removeAll"
       variant="text"
       icon="pi pi-trash"
@@ -30,6 +30,8 @@
       icon="pi pi-cog"
       @click="settingsPageVisible = true"
     />
+    <Button label="重启" @click="restart" variant="text" icon="pi pi-refresh" />
+    <Button label="退出" @click="quit" variant="text" icon="pi pi-power-off" />
   </header>
   <TransitionGroup
     name="list"
@@ -74,7 +76,7 @@ import { Menu } from '@tauri-apps/api/menu'
 import { exit, relaunch } from '@tauri-apps/plugin-process'
 import { focusWindow } from './utils/focus-window'
 import { getCurrentWindow } from '@tauri-apps/api/window'
-import { onOpenUrl } from '@tauri-apps/plugin-deep-link'
+import { getCurrent, onOpenUrl } from '@tauri-apps/plugin-deep-link'
 import { removeUndefined, UndefinedAble } from './utils/remove-undefined'
 import { UrlInfo } from './utils/prefetch'
 
@@ -95,6 +97,16 @@ let detailItem: Ref<string> = ref('')
 function showDetail(filePath: string) {
   detailItem.value = filePath
   detailPageVisible.value = true
+}
+
+async function restart() {
+  await store.pauseAll()
+  await relaunch()
+}
+
+async function quit() {
+  await store.pauseAll()
+  await exit(0)
 }
 
 function updateEntry(
@@ -182,17 +194,15 @@ Menu.new({
     {
       id: 'relaunch',
       text: '重启',
-      async action() {
-        await store.pauseAll()
-        await relaunch()
+      action() {
+        return restart()
       },
     },
     {
       id: 'quit',
       text: '退出',
-      async action() {
-        await store.pauseAll()
-        await exit(0)
+      action() {
+        return quit()
       },
     },
   ],
@@ -215,7 +225,12 @@ currWindow.onCloseRequested(e => {
   return currWindow.hide()
 })
 
-onOpenUrl(urls => {
+getCurrent().then(urls => {
+  if (urls) parseDeepLink(urls)
+})
+onOpenUrl(parseDeepLink)
+
+function parseDeepLink(urls: string[]) {
   for (const urlRaw of urls) {
     const url = new URL(urlRaw)
     console.log(url)
@@ -262,9 +277,9 @@ onOpenUrl(urls => {
     else if (url.hostname === 'resumeAll') store.resumeAll()
     else if (url.hostname === 'removeAll') store.removeAll()
     else if (url.hostname === 'relaunch') relaunch()
-    else if (url.hostname === 'exit') exit()
+    else if (url.hostname === 'exit') exit(0)
   }
-})
+}
 
 function maybeInt(str: string | null) {
   if (!str) return undefined
@@ -287,7 +302,6 @@ function maybeWriteMethod(str: string | null) {
 <style scoped>
 .header {
   display: flex;
-  gap: 8px;
   padding: 8px;
   overflow-x: auto;
 }
