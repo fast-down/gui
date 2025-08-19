@@ -139,7 +139,10 @@ sec-ch-ua-platform: "Windows"`,
         proxy: config.proxy,
         acceptInvalidCerts: config.acceptInvalidCerts,
         acceptInvalidHostnames: config.acceptInvalidHostnames,
-      }).finally(() => (entry.status = 'paused'))
+      }).catch(e => {
+        entry.status = 'paused'
+        throw e
+      })
       if (localCount !== entry.count) return (entry.status = 'paused')
       if (runningCount.value >= maxConcurrentTasks.value) return
       if (!urlInfo.fastDownload || entry.downloaded >= urlInfo.size) {
