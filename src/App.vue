@@ -233,8 +233,6 @@ onOpenUrl(parseDeepLink)
 function parseDeepLink(urls: string[]) {
   for (const urlRaw of urls) {
     const url = new URL(urlRaw)
-    console.log(url)
-    if (url.protocol !== 'fast-down:') continue
     if (url.hostname === 'download') {
       const downloadUrl = url.searchParams.get('url')
       if (!downloadUrl) continue
