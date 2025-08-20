@@ -163,12 +163,7 @@ async function resolver({ values }: FormResolverOptions) {
     .map((e: string) => e.trim())
   for (const [i, item] of headers.entries()) {
     if (!item) continue
-    if (
-      item
-        .split(':')
-        .map(e => e.trim())
-        .filter(Boolean).length !== 2
-    ) {
+    if (!item.match(/^([^:]+):(.+)$/)) {
       errors.headers ??= []
       errors.headers.push({ message: `第 ${i + 1} 行请求头格式不正确` })
     }
