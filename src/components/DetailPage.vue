@@ -124,7 +124,7 @@
 import { Form, FormResolverOptions, FormSubmitEvent } from '@primevue/forms'
 import { open } from '@tauri-apps/plugin-dialog'
 import { writeMethodOptions } from '../utils/write-method-options'
-import { DownloadConfig } from '../stores/app'
+import { mergeConfig } from '../utils/merge-config'
 
 const props = defineProps<{
   visible: boolean
@@ -234,18 +234,6 @@ function onFormSubmit(event: FormSubmitEvent) {
     writeMethod: formData.writeMethod.value,
     writeQueueCap: formData.writeQueueCap.value,
   })
-}
-
-function mergeConfig(
-  globalConfig: DownloadConfig,
-  itemConfig: Partial<DownloadConfig>,
-) {
-  const result: Partial<DownloadConfig> = {}
-  for (const key in globalConfig) {
-    // @ts-expect-error 乱报错
-    if (globalConfig[key] !== itemConfig[key]) result[key] = itemConfig[key]
-  }
-  return result
 }
 
 async function selectDir() {

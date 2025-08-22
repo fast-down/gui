@@ -142,6 +142,7 @@
 import { Form, FormResolverOptions, FormSubmitEvent } from '@primevue/forms'
 import { open } from '@tauri-apps/plugin-dialog'
 import { writeMethodOptions } from '../utils/write-method-options'
+import { mergeConfig } from '../utils/merge-config'
 
 const props = defineProps<{
   visible: boolean
@@ -238,20 +239,6 @@ function onFormSubmit(event: FormSubmitEvent) {
     .split('\n')
     .map((e: string) => e.trim())
     .filter(Boolean)
-  store.globalConfig = {
-    threads: formData.threads.value,
-    saveDir: formData.saveDir.value,
-    headers: formData.headers.value,
-    proxy: formData.proxy.value || null,
-    writeBufferSize: formData.writeBufferSize.value,
-    writeQueueCap: formData.writeQueueCap.value,
-    retryGap: formData.retryGap.value,
-    minChunkSize: formData.minChunkSize.value,
-    acceptInvalidCerts: formData.acceptInvalidCerts.value,
-    acceptInvalidHostnames: formData.acceptInvalidHostnames.value,
-    multiplexing: formData.multiplexing.value,
-    writeMethod: formData.writeMethod.value,
-  }
   store.maxConcurrentTasks = formData.maxConcurrentTasks.value
   const target = (event.originalEvent as SubmitEvent)
     .submitter as HTMLButtonElement
@@ -259,6 +246,20 @@ function onFormSubmit(event: FormSubmitEvent) {
     store.add(url, {
       paused: target.dataset.action === 'after',
       needPrefetch: true,
+      config: mergeConfig(store.globalConfig, {
+        threads: formData.threads.value,
+        saveDir: formData.saveDir.value,
+        headers: formData.headers.value,
+        proxy: formData.proxy.value || null,
+        writeBufferSize: formData.writeBufferSize.value,
+        writeQueueCap: formData.writeQueueCap.value,
+        retryGap: formData.retryGap.value,
+        minChunkSize: formData.minChunkSize.value,
+        acceptInvalidCerts: formData.acceptInvalidCerts.value,
+        acceptInvalidHostnames: formData.acceptInvalidHostnames.value,
+        multiplexing: formData.multiplexing.value,
+        writeMethod: formData.writeMethod.value,
+      }),
     }),
   )
 }
