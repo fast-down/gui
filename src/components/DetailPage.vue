@@ -4,7 +4,7 @@
     @update:visible="onUpdateVisible"
     modal
     header="详情"
-    :style="{ width: '25rem' }"
+    :style="{ width: '60vw' }"
     :closable="false"
   >
     <Form v-slot="$form" :initial-values :resolver @submit="onFormSubmit">

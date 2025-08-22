@@ -1,4 +1,4 @@
-use std::path::Path;
+use std::{fs, path::Path};
 
 #[tauri::command]
 pub fn format_dir(dir: &str) -> Result<Option<String>, String> {
@@ -9,7 +9,7 @@ pub fn format_dir(dir: &str) -> Result<Option<String>, String> {
         {
             path = self_path.join(path);
         }
-        path = path_clean::clean(path);
+        path = fs::canonicalize(path).map_err(|e| format!("{e:?}"))?;
         Ok(Some(path.to_string_lossy().to_string()))
     } else {
         Ok(None)

@@ -1,3 +1,4 @@
+extern crate sanitize_filename;
 use crate::puller;
 use fast_down::reqwest::Prefetch;
 use serde::Serialize;
@@ -18,9 +19,20 @@ pub struct UrlInfo {
 
 impl From<fast_down::UrlInfo> for UrlInfo {
     fn from(value: fast_down::UrlInfo) -> Self {
+        let sanitized = sanitize_filename::sanitize_with_options(
+            value.name,
+            sanitize_filename::Options {
+                truncate: true,
+                #[cfg(target_os = "windows")]
+                windows: true,
+                #[cfg(not(target_os = "windows"))]
+                windows: false,
+                replacement: "_",
+            },
+        );
         Self {
             size: value.size,
-            name: value.name,
+            name: sanitized,
             supports_range: value.supports_range,
             fast_download: value.fast_download,
             final_url: value.final_url.to_string(),

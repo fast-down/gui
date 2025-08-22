@@ -79,21 +79,27 @@
       <table class="table">
         <thead class="thead">
           <tr>
-            <th>速度</th>
+            <th>瞬时速度</th>
+            <th>平均速度</th>
             <th>用时</th>
-            <th>剩余</th>
+            <th>剩余时间</th>
             <th>进度</th>
+            <th>百分比</th>
+            <th>剩余字节</th>
           </tr>
         </thead>
         <tbody>
           <tr>
             <td>{{ formatSize(props.speed) }}/s</td>
+            <td>{{ formatSize(avgSpeed) }}/s</td>
             <td>{{ formatTime(props.elapsedMs / 1000) }}</td>
             <td>{{ formatTime(eta) }}</td>
             <td>
               {{ formatSize(props.downloaded) }} /
               {{ formatSize(props.fileSize) }}
             </td>
+            <td>{{ progress.toFixed(2) }}%</td>
+            <td>{{ formatSize(props.fileSize - props.downloaded) }}</td>
           </tr>
         </tbody>
       </table>
@@ -111,6 +117,7 @@
 </template>
 
 <script setup lang="ts">
+import { DownloadStatus } from '../stores/app'
 import { formatSize } from '../utils/format-size'
 import { formatTime } from '../utils/format-time'
 import { lerp } from '../utils/lerp'
@@ -125,7 +132,7 @@ const props = defineProps<{
   fileSize: number
   readProgress: [number, number][][]
   speed: number
-  status: 'pending' | 'downloading' | 'paused'
+  status: DownloadStatus
 }>()
 const emit = defineEmits(['resume', 'pause', 'remove', 'update', 'detail'])
 
@@ -133,9 +140,14 @@ const isShow = ref(false)
 const eta = computed(() =>
   props.speed ? (props.fileSize - props.downloaded) / props.speed : 0,
 )
-const bgProgress = computed(() =>
-  props.fileSize ? (props.downloaded / props.fileSize) * 100 + '%' : '0%',
+const avgSpeed = computed(() => {
+  if (props.fileSize === 0) return 0
+  return props.downloaded / (props.elapsedMs / 1000)
+})
+const progress = computed(() =>
+  props.fileSize ? (props.downloaded / props.fileSize) * 100 : 0,
 )
+const bgProgress = computed(() => progress.value + '%')
 const detailProgressRaw = computed(() => {
   if (!props.fileSize) return []
   return props.readProgress

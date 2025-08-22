@@ -20,6 +20,8 @@ export interface DownloadConfig {
   writeMethod: 'mmap' | 'std'
 }
 
+export type DownloadStatus = 'pending' | 'downloading' | 'paused'
+
 export interface DownloadEntry {
   url: string
   filePath: string
@@ -29,7 +31,7 @@ export interface DownloadEntry {
   readProgress: [number, number][][]
   writeProgress: [number, number][][]
   elapsedMs: number
-  status: 'pending' | 'downloading' | 'paused'
+  status: DownloadStatus
   downloaded: number
   etag: string | null
   lastModified: string | null
@@ -76,8 +78,20 @@ sec-ch-ua-platform: "Windows"`,
     const maxConcurrentTasks = ref(3)
     const showAppMenu = ref(false)
 
-    const runningCount = computed(
-      () => list.value.filter(e => e.status === 'downloading').length,
+    const runningCount = computed(() =>
+      list.value.reduce((acc, e) => {
+        if (e.status === 'downloading') return acc + 1
+        return acc
+      }, 0),
+    )
+    const pendingCount = computed(() =>
+      list.value.reduce((acc, e) => {
+        if (e.status === 'pending') return acc + 1
+        return acc
+      }, 0),
+    )
+    const pausedCount = computed(
+      () => list.value.length - runningCount.value - pendingCount.value,
     )
 
     watch([runningCount, maxConcurrentTasks], async ([curr, max]) => {
@@ -325,6 +339,8 @@ sec-ch-ua-platform: "Windows"`,
       autoStart,
       maxConcurrentTasks,
       runningCount,
+      pendingCount,
+      pausedCount,
       showAppMenu,
       add,
       remove,

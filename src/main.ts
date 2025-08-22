@@ -7,6 +7,9 @@ import Aura from '@primeuix/themes/aura'
 import './styles/index.css'
 import 'primeicons/primeicons.css'
 import ToastService from 'primevue/toastservice'
+import { attachConsole } from '@tauri-apps/plugin-log'
+
+attachConsole()
 
 const pinia = createPinia()
 pinia.use(piniaPluginPersistedstate)

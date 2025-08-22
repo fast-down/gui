@@ -32,6 +32,15 @@
     />
     <Button label="重启" @click="restart" variant="text" icon="pi pi-refresh" />
     <Button label="退出" @click="quit" variant="text" icon="pi pi-power-off" />
+    <SelectButton
+      v-model="showTypes"
+      :options="showOptions"
+      optionValue="value"
+      optionLabel="name"
+      multiple
+      :invalid="showTypes.length === 0"
+      size="small"
+    />
   </header>
   <TransitionGroup
     name="list"
@@ -40,7 +49,7 @@
     @before-leave="onBeforeLeave"
   >
     <DownloadItem
-      v-for="item in store.list"
+      v-for="item in showList"
       :downloaded="item.downloaded"
       :elapsed-ms="item.elapsedMs"
       :file-name="item.fileName"
@@ -67,9 +76,7 @@
 </template>
 
 <script lang="ts" setup>
-import { useToast } from 'primevue'
-import { AddOptions, DownloadEntry } from './stores/app'
-import { error } from '@tauri-apps/plugin-log'
+import { AddOptions, DownloadEntry, DownloadStatus } from './stores/app'
 import { TrayIcon } from '@tauri-apps/api/tray'
 import { defaultWindowIcon } from '@tauri-apps/api/app'
 import { Menu } from '@tauri-apps/api/menu'
@@ -80,48 +87,10 @@ import { getCurrent, onOpenUrl } from '@tauri-apps/plugin-deep-link'
 import { removeUndefined, UndefinedAble } from './utils/remove-undefined'
 import { UrlInfo } from './utils/prefetch'
 import { relaunch } from './utils/relaunch'
+import { useToast } from 'primevue'
+import { error } from '@tauri-apps/plugin-log'
 
 const toast = useToast()
-const store = useAppStore()
-for (const e of store.list) {
-  e.count = 0
-  e.status = 'paused'
-  e.readProgress = structuredClone(toRaw(e.writeProgress))
-  e.speed = e.elapsedMs ? (e.downloaded / e.elapsedMs) * 1000 : 0
-}
-const createTaskVisible = ref(false)
-const settingsPageVisible = ref(false)
-const updatePageVisible = ref(false)
-const detailPageVisible = ref(false)
-let detailItem: Ref<string> = ref('')
-
-function showDetail(filePath: string) {
-  detailItem.value = filePath
-  detailPageVisible.value = true
-}
-
-async function restart() {
-  await store.pauseAll()
-  await relaunch()
-}
-
-async function quit() {
-  await store.pauseAll()
-  await exit(0)
-}
-
-function updateEntry(
-  item: DownloadEntry,
-  data: { elapsedMs: number; speed: number },
-) {
-  item.elapsedMs = data.elapsedMs
-  item.speed = data.speed
-}
-
-function onBeforeLeave(el: Element) {
-  if (el instanceof HTMLElement) el.style.width = el.clientWidth + 'px'
-}
-
 window.addEventListener('error', event => {
   error(
     `Error captured by addEventListener: ${JSON.stringify({
@@ -152,6 +121,56 @@ window.addEventListener('unhandledrejection', event => {
     detail: event.reason,
   })
 })
+
+const store = useAppStore()
+for (const e of store.list) {
+  e.count = 0
+  e.status = 'paused'
+  e.readProgress = structuredClone(toRaw(e.writeProgress))
+  e.speed = e.elapsedMs ? (e.downloaded / e.elapsedMs) * 1000 : 0
+}
+const createTaskVisible = ref(false)
+const settingsPageVisible = ref(false)
+const updatePageVisible = ref(false)
+const detailPageVisible = ref(false)
+let detailItem: Ref<string> = ref('')
+
+function showDetail(filePath: string) {
+  detailItem.value = filePath
+  detailPageVisible.value = true
+}
+
+const showTypes = ref<DownloadStatus[]>(['paused', 'downloading', 'pending'])
+const showOptions = computed<{ name: string; value: DownloadStatus }[]>(() => [
+  { name: `下载中 (${store.runningCount})`, value: 'downloading' },
+  { name: `等待中 (${store.pendingCount})`, value: 'pending' },
+  { name: `已暂停 (${store.pausedCount})`, value: 'paused' },
+])
+const showList = computed(() => {
+  return store.list.filter(e => showTypes.value.includes(e.status))
+})
+
+async function restart() {
+  await store.pauseAll()
+  await relaunch()
+}
+
+async function quit() {
+  await store.pauseAll()
+  await exit(0)
+}
+
+function updateEntry(
+  item: DownloadEntry,
+  data: { elapsedMs: number; speed: number },
+) {
+  item.elapsedMs = data.elapsedMs
+  item.speed = data.speed
+}
+
+function onBeforeLeave(el: Element) {
+  if (el instanceof HTMLElement) el.style.width = el.clientWidth + 'px'
+}
 
 Menu.new({
   items: [

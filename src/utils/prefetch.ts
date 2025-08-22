@@ -1,3 +1,5 @@
+import { InvokeArgs } from '@tauri-apps/api/core'
+
 export interface Prefetch {
   url: string
   headers: Record<string, string>
@@ -16,13 +18,6 @@ export interface UrlInfo {
   lastModified: string | null
 }
 
-export async function prefetch(options: Prefetch) {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const info: UrlInfo = await invoke('prefetch', options as any)
-  try {
-    info.name = decodeURIComponent(info.name)
-  } catch {
-    // ignore
-  }
-  return info
+export function prefetch(options: Prefetch) {
+  return invoke<UrlInfo>('prefetch', options as unknown as InvokeArgs)
 }

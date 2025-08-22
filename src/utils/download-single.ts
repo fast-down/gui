@@ -1,4 +1,4 @@
-import { Channel } from '@tauri-apps/api/core'
+import { Channel, InvokeArgs } from '@tauri-apps/api/core'
 
 export interface DownloadSingle {
   options: DownloadSingleOptions
@@ -19,6 +19,5 @@ export interface DownloadSingleOptions {
 }
 
 export async function downloadSingle(options: DownloadSingle) {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  await invoke('download_single', options as any)
+  await invoke('download_single', options as unknown as InvokeArgs)
 }
