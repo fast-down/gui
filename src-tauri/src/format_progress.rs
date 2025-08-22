@@ -1,4 +1,4 @@
-use fast_pull::ProgressEntry;
+use fast_down::ProgressEntry;
 
 pub fn fmt_progress(progress: &[Vec<ProgressEntry>]) -> Vec<Vec<(u64, u64)>> {
     progress

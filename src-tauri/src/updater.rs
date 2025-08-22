@@ -2,9 +2,8 @@ use crate::{
     puller::{self, FastDownPuller},
     relaunch,
 };
-use fast_pull::{RandPusher, multi, reqwest::Prefetch};
-use spin::mutex::SpinMutex;
-use std::{num::NonZero, sync::Arc, time::Duration};
+use fast_down::{mem::MemPusher, multi, reqwest::Prefetch};
+use std::{num::NonZero, time::Duration};
 use tauri::{Emitter, Listener, Manager, http::HeaderMap};
 use tauri_plugin_updater::UpdaterExt;
 
@@ -26,7 +25,7 @@ pub async fn update(app: tauri::AppHandle) -> tauri_plugin_updater::Result<()> {
             false,
             false,
         )?;
-        let pusher = MemPusher::new(info.size);
+        let pusher = MemPusher::with_capacity(info.size as usize);
         let res = multi::download_multi(
             puller,
             pusher.clone(),
@@ -44,7 +43,8 @@ pub async fn update(app: tauri::AppHandle) -> tauri_plugin_updater::Result<()> {
             let app_clone = app.clone();
             let update_clone = update.clone();
             app.listen("accept_update", move |_| {
-                if update_clone.install(pusher.data.lock().clone()).is_ok() {
+                let bytes = pusher.receive.blocking_lock();
+                if update_clone.install(&bytes[..]).is_ok() {
                     relaunch::relaunch(app_clone.clone());
                 }
             });
@@ -64,30 +64,6 @@ pub async fn update(app: tauri::AppHandle) -> tauri_plugin_updater::Result<()> {
     }
     Ok(())
 }
-
-#[derive(Clone)]
-struct MemPusher {
-    pub data: Arc<SpinMutex<Vec<u8>>>,
-}
-impl RandPusher for MemPusher {
-    type Error = ();
-    async fn push(
-        &mut self,
-        range: fast_pull::ProgressEntry,
-        content: bytes::Bytes,
-    ) -> Result<(), Self::Error> {
-        self.data.lock()[range.start as usize..range.end as usize].copy_from_slice(&content);
-        Ok(())
-    }
-}
-impl MemPusher {
-    fn new(size: u64) -> Self {
-        Self {
-            data: Arc::new(SpinMutex::new(vec![0; size as usize])),
-        }
-    }
-}
-
 #[derive(Debug, Clone, serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct UpdateInfo {

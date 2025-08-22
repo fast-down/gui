@@ -2,7 +2,7 @@ use crate::{
     event::{Event, StopEvent},
     puller::FastDownPuller,
 };
-use fast_pull::{Total, file::SeqFilePusher, single};
+use fast_down::{Total, file::SeqFilePusher, single};
 use std::{
     collections::HashMap,
     time::{Duration, Instant},
@@ -80,7 +80,7 @@ pub async fn download_single(
         let mut write = 0;
         while let Ok(e) = res.event_chain.recv().await {
             match e {
-                fast_pull::Event::PullProgress(_, range) => {
+                fast_down::Event::PullProgress(_, range) => {
                     downloaded += range.total();
                     if last_update_time.elapsed().as_millis() > 100 {
                         last_update_time = Instant::now();
@@ -90,7 +90,7 @@ pub async fn download_single(
                             .unwrap();
                     }
                 }
-                fast_pull::Event::PushProgress(_, range) => {
+                fast_down::Event::PushProgress(_, range) => {
                     write += range.total();
                     if last_update_time.elapsed().as_millis() > 100 {
                         last_update_time = Instant::now();

@@ -3,7 +3,7 @@ use crate::{
     format_progress::fmt_progress,
     puller::FastDownPuller,
 };
-use fast_pull::{
+use fast_down::{
     MergeProgress, ProgressEntry, Total,
     file::{FilePusherError, RandFilePusherMmap, RandFilePusherStd},
     multi,
@@ -175,7 +175,7 @@ pub async fn download_multi(
         let mut downloaded = options.init_downloaded;
         while let Ok(e) = res.event_chain.recv().await {
             match e {
-                fast_pull::Event::PullProgress(id, range) => {
+                fast_down::Event::PullProgress(id, range) => {
                     downloaded += range.total();
                     pull_progress[id].merge_progress(range);
                     if last_update_time.elapsed().as_millis() > 100 {
@@ -189,7 +189,7 @@ pub async fn download_multi(
                             .unwrap();
                     }
                 }
-                fast_pull::Event::PushProgress(id, range) => {
+                fast_down::Event::PushProgress(id, range) => {
                     push_progress[id].merge_progress(range);
                     if last_update_time.elapsed().as_millis() > 100 {
                         last_update_time = Instant::now();

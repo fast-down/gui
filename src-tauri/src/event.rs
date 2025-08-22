@@ -22,14 +22,14 @@ pub enum Event {
     AllFinished,
 }
 
-impl<RE: Debug, WE: Debug> From<fast_pull::Event<RE, WE>> for Event {
-    fn from(value: fast_pull::Event<RE, WE>) -> Self {
+impl<RE: Debug, WE: Debug> From<fast_down::Event<RE, WE>> for Event {
+    fn from(value: fast_down::Event<RE, WE>) -> Self {
         match value {
-            fast_pull::Event::Pulling(id) => Event::Pulling(id),
-            fast_pull::Event::PullError(id, err) => Event::PullError(id, format!("{err:?}")),
-            fast_pull::Event::PushError(id, err) => Event::PushError(id, format!("{err:?}")),
-            fast_pull::Event::FlushError(err) => Event::FlushError(format!("{err:?}")),
-            fast_pull::Event::Finished(id) => Event::Finished(id),
+            fast_down::Event::Pulling(id) => Event::Pulling(id),
+            fast_down::Event::PullError(id, err) => Event::PullError(id, format!("{err:?}")),
+            fast_down::Event::PushError(id, err) => Event::PushError(id, format!("{err:?}")),
+            fast_down::Event::FlushError(err) => Event::FlushError(format!("{err:?}")),
+            fast_down::Event::Finished(id) => Event::Finished(id),
             _ => unimplemented!(),
         }
     }

@@ -1,5 +1,5 @@
 use bytes::Bytes;
-use fast_pull::{RandPuller, SeqPuller, reqwest::ReqwestPuller};
+use fast_down::{RandPuller, SeqPuller, reqwest::ReqwestPuller};
 use futures::TryStream;
 use reqwest::{
     ClientBuilder, Proxy,
@@ -104,7 +104,7 @@ impl RandPuller for FastDownPuller {
     type Error = reqwest::Error;
     fn pull(
         &mut self,
-        range: &fast_pull::ProgressEntry,
+        range: &fast_down::ProgressEntry,
     ) -> impl TryStream<Ok = Bytes, Error = Self::Error> + Send + Unpin {
         RandPuller::pull(&mut self.inner, range)
     }

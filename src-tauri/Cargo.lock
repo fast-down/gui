@@ -1207,7 +1207,7 @@ name = "fast-down"
 version = "0.1.0"
 dependencies = [
  "bytes",
- "fast-pull",
+ "fast-down 3.1.0",
  "futures",
  "libz-sys",
  "log",
@@ -1235,30 +1235,41 @@ dependencies = [
 ]
 
 [[package]]
-name = "fast-pull"
-version = "3.0.5"
+name = "fast-down"
+version = "3.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1a07cb33d018d7c4cf5274f343cbb01068ee5c110e6423298c2ffd97a340b565"
+checksum = "061b51b99d01a1424f97608910b9aedccbd13de9d82c86e1db124d01e6f56873"
 dependencies = [
  "bytes",
  "content_disposition",
- "fast-steal",
+ "fast-pull",
  "futures",
  "kanal",
- "mmap-io",
  "reqwest",
- "sanitize-filename",
- "thiserror 2.0.12",
- "tokio",
  "url",
  "urlencoding",
 ]
 
 [[package]]
-name = "fast-steal"
-version = "6.0.5"
+name = "fast-pull"
+version = "3.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "eee50b135c381b5faad6882143946937ceb8f5104eabe24eb33281401938a0d3"
+checksum = "a30927003273a774530b43e6c6def4df49e4b76bd527b1501929b9396bc6206f"
+dependencies = [
+ "bytes",
+ "fast-steal",
+ "futures",
+ "kanal",
+ "mmap-io",
+ "thiserror 2.0.12",
+ "tokio",
+]
+
+[[package]]
+name = "fast-steal"
+version = "6.0.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "17b4619f6e5092a22e5b6eb299f69c9db42006f77d80aa45e1749a54b3298d33"
 dependencies = [
  "spin",
 ]
@@ -2530,9 +2541,9 @@ dependencies = [
 
 [[package]]
 name = "mmap-io"
-version = "0.8.0"
+version = "0.9.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ffc29ad1905e42e7df92d9ce49d1f06a4fbbdc3a0f144f1be14b168c8db3fe4e"
+checksum = "a34b926fd173419d630eb9d8ee3a485345237bf699d6f7ea6e5c1ee97cf1fa47"
 dependencies = [
  "anyhow",
  "cfg-if",
@@ -3898,15 +3909,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "93fc1dc3aaa9bfed95e02e6eadabb4baf7e3078b0bd1b4d7b6b0b68378900502"
 dependencies = [
  "winapi-util",
-]
-
-[[package]]
-name = "sanitize-filename"
-version = "0.6.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bc984f4f9ceb736a7bb755c3e3bd17dc56370af2600c9780dcc48c66453da34d"
-dependencies = [
- "regex",
 ]
 
 [[package]]

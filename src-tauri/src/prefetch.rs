@@ -1,5 +1,5 @@
 use crate::puller;
-use fast_pull::reqwest::Prefetch;
+use fast_down::reqwest::Prefetch;
 use serde::Serialize;
 use std::collections::HashMap;
 use tauri::http::HeaderMap;
@@ -16,8 +16,8 @@ pub struct UrlInfo {
     pub last_modified: Option<String>,
 }
 
-impl From<fast_pull::UrlInfo> for UrlInfo {
-    fn from(value: fast_pull::UrlInfo) -> Self {
+impl From<fast_down::UrlInfo> for UrlInfo {
+    fn from(value: fast_down::UrlInfo) -> Self {
         Self {
             size: value.size,
             name: value.name,
