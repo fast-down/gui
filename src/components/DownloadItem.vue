@@ -141,7 +141,7 @@ const eta = computed(() =>
   props.speed ? (props.fileSize - props.downloaded) / props.speed : 0,
 )
 const avgSpeed = computed(() => {
-  if (props.fileSize === 0) return 0
+  if (props.elapsedMs === 0) return 0
   return props.downloaded / (props.elapsedMs / 1000)
 })
 const progress = computed(() =>
