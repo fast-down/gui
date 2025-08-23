@@ -24,8 +24,15 @@
    The code stays free and open-source. Thanks to [share121](https://github.com/share121), [Cyan](https://github.com/CyanChanges) and other fast-down contributors.
 6. **💻 Cross platform**
 
-   | Arch   | Windows         | Linux       | Mac OS          |
-   | ------ | --------------- | ----------- | --------------- |
-   | 64 bit | ✅ Supported     | ✅ Supported | ✅ Supported     |
-   | 32 bit | ✅ Supported     | ✅ Supported | ❌ Not Supported |
-   | Arm64  | ❌ Not Supported | ✅ Supported | ✅ Supported     |
+   | Arch   | Windows         | Linux           | Mac OS          |
+   | ------ | --------------- | --------------- | --------------- |
+   | 64 bit | [Download][1]   | [Download][2]   | [Download][3]   |
+   | 32 bit | [Download][4]   | ❌ Not Supported | ❌ Not Supported |
+   | Arm64  | ❌ Not Supported | [Download][5]   | [Download][6]   |
+
+[1]: https://fast-down-update.s121.top/gui/download/latest/windows/64bit
+[2]: https://fast-down-update.s121.top/gui/download/latest/linux/64bit
+[3]: https://fast-down-update.s121.top/gui/download/latest/macos/64bit
+[4]: https://fast-down-update.s121.top/gui/download/latest/windows/32bit
+[5]: https://fast-down-update.s121.top/gui/download/latest/linux/arm64
+[6]: https://fast-down-update.s121.top/gui/download/latest/macos/arm64
