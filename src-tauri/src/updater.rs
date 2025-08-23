@@ -43,7 +43,7 @@ pub async fn update(app: tauri::AppHandle) -> tauri_plugin_updater::Result<()> {
             let app_clone = app.clone();
             let update_clone = update.clone();
             app.listen("accept_update", move |_| {
-                let bytes = pusher.receive.blocking_lock();
+                let bytes = pusher.receive.lock();
                 if update_clone.install(&bytes[..]).is_ok() {
                     relaunch::relaunch(app_clone.clone());
                 }

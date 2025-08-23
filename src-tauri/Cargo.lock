@@ -1207,7 +1207,7 @@ name = "fast-down"
 version = "0.1.0"
 dependencies = [
  "bytes",
- "fast-down 3.1.0",
+ "fast-down 3.1.2",
  "futures",
  "libz-sys",
  "log",
@@ -1236,9 +1236,9 @@ dependencies = [
 
 [[package]]
 name = "fast-down"
-version = "3.1.0"
+version = "3.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "061b51b99d01a1424f97608910b9aedccbd13de9d82c86e1db124d01e6f56873"
+checksum = "34770c446cc787402d1eb4bde2a42f6969476bb6274d9025cf5d2387e163775c"
 dependencies = [
  "bytes",
  "content_disposition",
@@ -1252,24 +1252,25 @@ dependencies = [
 
 [[package]]
 name = "fast-pull"
-version = "3.1.2"
+version = "3.1.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a30927003273a774530b43e6c6def4df49e4b76bd527b1501929b9396bc6206f"
+checksum = "3c3124abf7e5dbbf935177fac1a83b1399debbdc10b478599d15b72ed0913275"
 dependencies = [
  "bytes",
  "fast-steal",
  "futures",
  "kanal",
  "mmap-io",
+ "spin",
  "thiserror 2.0.12",
  "tokio",
 ]
 
 [[package]]
 name = "fast-steal"
-version = "6.0.6"
+version = "6.0.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "17b4619f6e5092a22e5b6eb299f69c9db42006f77d80aa45e1749a54b3298d33"
+checksum = "a3cabf443939b007edd10951890fe97f7ff60597aac2552605529a0429a27fa0"
 dependencies = [
  "spin",
 ]
