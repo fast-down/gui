@@ -1,8 +1,13 @@
 use crate::{
-    event::{Event, StopEvent},
+    download_error::DownloadError,
+    event::{DownloadItemId, Event},
     puller::FastDownPuller,
 };
-use fast_down::{Total, file::SeqFilePusher, single};
+use fast_down::{
+    Total,
+    file::{FilePusherError, SeqFilePusher},
+    single,
+};
 use std::{
     collections::HashMap,
     time::{Duration, Instant},
@@ -31,7 +36,7 @@ pub async fn download_single(
     app: AppHandle,
     options: DownloadOptions,
     tx: Channel<Event>,
-) -> Result<(), Error> {
+) -> Result<(), DownloadError> {
     let url = Url::parse(&options.url)?;
     let headers = options
         .headers
@@ -52,7 +57,8 @@ pub async fn download_single(
         .create(true)
         .truncate(false)
         .open(&options.file_path)
-        .await?;
+        .await
+        .map_err(FilePusherError::from)?;
     let pusher = SeqFilePusher::new(file, options.write_buffer_size);
     let res = single::download_single(
         puller,
@@ -66,7 +72,7 @@ pub async fn download_single(
     let res_clone = res.clone();
     let handle = app.clone();
     let event_id = app.listen("stop-download", move |event| {
-        if let Ok(payload) = serde_json::from_str::<StopEvent>(event.payload())
+        if let Ok(payload) = serde_json::from_str::<DownloadItemId>(event.payload())
             && payload.file_path == options.file_path
         {
             res_clone.abort();
@@ -75,27 +81,25 @@ pub async fn download_single(
     });
     let handle = app.clone();
     tokio::spawn(async move {
-        let mut last_update_time = Instant::now();
+        let mut last_pull_update_time = Instant::now();
+        let mut last_push_update_time = Instant::now();
         let mut downloaded = 0;
         let mut write = 0;
+        const UPDATE_INTERVAL: u128 = 100;
         while let Ok(e) = res.event_chain.recv().await {
             match e {
                 fast_down::Event::PullProgress(_, range) => {
                     downloaded += range.total();
-                    if last_update_time.elapsed().as_millis() > 100 {
-                        last_update_time = Instant::now();
+                    if last_pull_update_time.elapsed().as_millis() > UPDATE_INTERVAL {
+                        last_pull_update_time = Instant::now();
                         tx.send(Event::PullProgress(vec![vec![(0, downloaded)]], downloaded))
-                            .unwrap();
-                        tx.send(Event::PushProgress(vec![vec![(0, write)]]))
                             .unwrap();
                     }
                 }
                 fast_down::Event::PushProgress(_, range) => {
                     write += range.total();
-                    if last_update_time.elapsed().as_millis() > 100 {
-                        last_update_time = Instant::now();
-                        tx.send(Event::PullProgress(vec![vec![(0, downloaded)]], downloaded))
-                            .unwrap();
+                    if last_push_update_time.elapsed().as_millis() > UPDATE_INTERVAL {
+                        last_push_update_time = Instant::now();
                         tx.send(Event::PushProgress(vec![vec![(0, write)]]))
                             .unwrap();
                     }
@@ -112,42 +116,4 @@ pub async fn download_single(
         tx.send(Event::AllFinished).unwrap();
     });
     Ok(())
-}
-
-#[derive(Debug, thiserror::Error)]
-pub enum Error {
-    #[error(transparent)]
-    Io(#[from] std::io::Error),
-    #[error(transparent)]
-    UrlParse(#[from] url::ParseError),
-    #[error(transparent)]
-    Reqwest(#[from] reqwest::Error),
-    #[error(transparent)]
-    Thread(#[from] tokio::task::JoinError),
-}
-
-#[derive(serde::Serialize)]
-#[serde(tag = "kind", content = "message")]
-#[serde(rename_all = "camelCase")]
-enum ErrorKind {
-    Io(String),
-    UrlParse(String),
-    Reqwest(String),
-    Thread(String),
-}
-
-impl serde::Serialize for Error {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: serde::ser::Serializer,
-    {
-        let msg = format!("{self:?}");
-        let kind = match self {
-            Error::Io(_) => ErrorKind::Io(msg),
-            Error::UrlParse(_) => ErrorKind::UrlParse(msg),
-            Error::Reqwest(_) => ErrorKind::Reqwest(msg),
-            Error::Thread(_) => ErrorKind::Thread(msg),
-        };
-        kind.serialize(serializer)
-    }
 }

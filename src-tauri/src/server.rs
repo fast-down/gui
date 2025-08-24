@@ -1,8 +1,9 @@
 use axum::{Json, Router, extract::State, routing::post};
 use reqwest::StatusCode;
 use serde::{Deserialize, Serialize};
-use std::sync::Arc;
 use tauri::Emitter;
+
+use crate::event::DownloadItemId;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -25,10 +26,10 @@ pub struct DownloadOptions {
 
 #[derive(Clone)]
 struct AppState {
-    handle: Arc<tauri::AppHandle>,
+    handle: tauri::AppHandle,
 }
 
-async fn create_download(
+async fn download(
     State(state): State<AppState>,
     Json(payload): Json<DownloadOptions>,
 ) -> StatusCode {
@@ -40,12 +41,6 @@ async fn create_download(
             StatusCode::INTERNAL_SERVER_ERROR
         }
     }
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct DownloadItemId {
-    file_path: String,
 }
 
 async fn pause(State(state): State<AppState>, Json(payload): Json<DownloadItemId>) -> StatusCode {
@@ -110,11 +105,9 @@ async fn remove_all(State(state): State<AppState>) -> StatusCode {
 }
 
 pub async fn start_server(handle: tauri::AppHandle) -> Result<(), axum::Error> {
-    let state = AppState {
-        handle: Arc::new(handle),
-    };
+    let state = AppState { handle };
     let app = Router::new()
-        .route("/download", post(create_download))
+        .route("/download", post(download))
         .route("/pause", post(pause))
         .route("/resume", post(resume))
         .route("/remove", post(remove))

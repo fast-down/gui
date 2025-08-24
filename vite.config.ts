@@ -1,6 +1,5 @@
 import Vue from '@vitejs/plugin-vue'
 import AutoImport from 'unplugin-auto-import/vite'
-import Fonts from 'unplugin-fonts/vite'
 import Components from 'unplugin-vue-components/vite'
 import { defineConfig } from 'vite'
 import { PrimeVueResolver } from '@primevue/auto-import-resolver'
@@ -32,17 +31,6 @@ export default defineConfig({
       eslintrc: {
         enabled: true,
         filepath: 'types/.eslintrc-auto-import.json',
-      },
-    }),
-    Fonts({
-      fontsource: {
-        families: [
-          {
-            name: 'Roboto',
-            weights: [100, 300, 400, 500, 700, 900],
-            styles: ['normal', 'italic'],
-          },
-        ],
       },
     }),
   ],

@@ -68,6 +68,7 @@ pub async fn update(app: tauri::AppHandle) -> tauri_plugin_updater::Result<()> {
     }
     Ok(())
 }
+
 #[derive(Debug, Clone, serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct UpdateInfo {

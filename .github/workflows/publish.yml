@@ -60,15 +60,6 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y xdg-utils libwebkit2gtk-4.0-dev libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
 
-      - name: Configure sccache-cache
-        uses: mozilla-actions /sccache-action@v0.0.9
-        if: matrix.build != 'windows-arm64'
-      - name: Set Rust Caching Env
-        if: matrix.build != 'windows-arm64'
-        run: |
-          echo "SCCACHE_GHA_ENABLED=true" >> $GITHUB_ENV
-          echo "RUSTC_WRAPPER=sccache" >> $GITHUB_ENV
-
       - name: install frontend dependencies
         run: bun install
 

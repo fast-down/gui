@@ -1,5 +1,6 @@
 use crate::{
-    event::{Event, StopEvent},
+    download_error::DownloadError,
+    event::{DownloadItemId, Event},
     format_progress::fmt_progress,
     puller::FastDownPuller,
 };
@@ -54,7 +55,7 @@ pub async fn download_multi(
     app: AppHandle,
     options: DownloadOptions,
     tx: Channel<Event>,
-) -> Result<(), Error> {
+) -> Result<(), DownloadError> {
     let url = Url::parse(&options.url)?;
     let headers = options
         .headers
@@ -89,6 +90,7 @@ pub async fn download_multi(
             )
             .await;
             match res {
+                Ok(pusher) => Pusher::Mmap(pusher),
                 Err(_) => {
                     let file = OpenOptions::new()
                         .write(true)
@@ -102,7 +104,6 @@ pub async fn download_multi(
                             .await?,
                     )
                 }
-                Ok(pusher) => Pusher::Mmap(pusher),
             }
         }
         WriteMethod::Std => {
@@ -118,42 +119,22 @@ pub async fn download_multi(
             )
         }
     };
+    let download_options = multi::DownloadOptions {
+        download_chunks,
+        concurrent: NonZero::new(options.threads).unwrap_or(NonZero::new(1).unwrap()),
+        retry_gap,
+        push_queue_cap: options.write_queue_cap,
+        min_chunk_size: NonZero::new(options.min_chunk_size)
+            .unwrap_or(NonZero::new(8 * 1024).unwrap()),
+    };
     let res = match pusher {
-        Pusher::Mmap(pusher) => {
-            multi::download_multi(
-                puller,
-                pusher,
-                multi::DownloadOptions {
-                    download_chunks,
-                    concurrent: NonZero::new(options.threads).unwrap_or(NonZero::new(1).unwrap()),
-                    retry_gap,
-                    push_queue_cap: options.write_queue_cap,
-                    min_chunk_size: NonZero::new(options.min_chunk_size)
-                        .unwrap_or(NonZero::new(8 * 1024).unwrap()),
-                },
-            )
-            .await
-        }
-        Pusher::Std(pusher) => {
-            multi::download_multi(
-                puller,
-                pusher,
-                multi::DownloadOptions {
-                    download_chunks,
-                    concurrent: NonZero::new(options.threads).unwrap_or(NonZero::new(1).unwrap()),
-                    retry_gap,
-                    push_queue_cap: options.write_queue_cap,
-                    min_chunk_size: NonZero::new(options.min_chunk_size)
-                        .unwrap_or(NonZero::new(8 * 1024).unwrap()),
-                },
-            )
-            .await
-        }
+        Pusher::Mmap(pusher) => multi::download_multi(puller, pusher, download_options).await,
+        Pusher::Std(pusher) => multi::download_multi(puller, pusher, download_options).await,
     };
     let res_clone = res.clone();
     let handle = app.clone();
     let event_id = app.listen("stop-download", move |event| {
-        if let Ok(payload) = serde_json::from_str::<StopEvent>(event.payload())
+        if let Ok(payload) = serde_json::from_str::<DownloadItemId>(event.payload())
             && payload.file_path == options.file_path
         {
             res_clone.abort();
@@ -171,33 +152,28 @@ pub async fn download_multi(
             pull_progress.resize(options.threads, Vec::new());
         }
         let mut push_progress = pull_progress.clone();
-        let mut last_update_time = Instant::now();
+        let mut last_pull_update_time = Instant::now();
+        let mut last_push_update_time = Instant::now();
         let mut downloaded = options.init_downloaded;
+        const UPDATE_INTERVAL: u128 = 100;
         while let Ok(e) = res.event_chain.recv().await {
             match e {
                 fast_down::Event::PullProgress(id, range) => {
                     downloaded += range.total();
                     pull_progress[id].merge_progress(range);
-                    if last_update_time.elapsed().as_millis() > 100 {
-                        last_update_time = Instant::now();
+                    if last_pull_update_time.elapsed().as_millis() > UPDATE_INTERVAL {
+                        last_pull_update_time = Instant::now();
                         tx.send(Event::PullProgress(
                             fmt_progress(&pull_progress),
                             downloaded,
                         ))
                         .unwrap();
-                        tx.send(Event::PushProgress(fmt_progress(&push_progress)))
-                            .unwrap();
                     }
                 }
                 fast_down::Event::PushProgress(id, range) => {
                     push_progress[id].merge_progress(range);
-                    if last_update_time.elapsed().as_millis() > 100 {
-                        last_update_time = Instant::now();
-                        tx.send(Event::PullProgress(
-                            fmt_progress(&pull_progress),
-                            downloaded,
-                        ))
-                        .unwrap();
+                    if last_push_update_time.elapsed().as_millis() > UPDATE_INTERVAL {
+                        last_push_update_time = Instant::now();
                         tx.send(Event::PushProgress(fmt_progress(&push_progress)))
                             .unwrap();
                     }
@@ -217,42 +193,4 @@ pub async fn download_multi(
         tx.send(Event::AllFinished).unwrap();
     });
     Ok(())
-}
-
-#[derive(Debug, thiserror::Error)]
-pub enum Error {
-    #[error(transparent)]
-    Io(#[from] FilePusherError),
-    #[error(transparent)]
-    UrlParse(#[from] url::ParseError),
-    #[error(transparent)]
-    Reqwest(#[from] reqwest::Error),
-    #[error(transparent)]
-    Thread(#[from] tokio::task::JoinError),
-}
-
-#[derive(serde::Serialize)]
-#[serde(tag = "kind", content = "message")]
-#[serde(rename_all = "camelCase")]
-enum ErrorKind {
-    Io(String),
-    UrlParse(String),
-    Reqwest(String),
-    Thread(String),
-}
-
-impl serde::Serialize for Error {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: serde::ser::Serializer,
-    {
-        let msg = format!("{self:?}");
-        let kind = match self {
-            Error::Io(_) => ErrorKind::Io(msg),
-            Error::UrlParse(_) => ErrorKind::UrlParse(msg),
-            Error::Reqwest(_) => ErrorKind::Reqwest(msg),
-            Error::Thread(_) => ErrorKind::Thread(msg),
-        };
-        kind.serialize(serializer)
-    }
 }

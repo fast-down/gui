@@ -6,6 +6,7 @@ use tauri_plugin_log::{Target, TargetKind};
 #[cfg(unix)]
 extern crate libz_sys;
 
+mod download_error;
 mod download_multi;
 mod download_single;
 mod event;

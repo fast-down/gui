@@ -3,10 +3,10 @@ name = "fast-down"
 version = "0.1.0"
 description = "fast-down 多线程下载器的 GUI 版本"
 authors = ["share121 <2854631158@qq.com>", "Cyan Changes <contact@cyans.me>"]
-license = ""
-repository = ""
+license = "MIT"
+repository = "https://github.com/fast-down/gui"
 edition = "2024"
-rust-version = "1.85.0"
+rust-version = "1.88.0"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -15,14 +15,14 @@ name = "fast_down_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [build-dependencies]
-tauri-build = { version = "2.3.1", features = [] }
+tauri-build = { version = "2.4.0", features = [] }
 
 [dependencies]
 serde_json = "1.0"
 serde = { version = "1.0", features = ["derive"] }
 log = "0.4"
 fast-down = "3.1.2"
-reqwest = { version = "0.12.22", features = [
+reqwest = { version = "0.12.23", features = [
   "brotli",
   "deflate",
   "gzip",
@@ -34,21 +34,20 @@ reqwest = { version = "0.12.22", features = [
 ], default-features = false }
 bytes = "1.10.1"
 futures = "0.3.31"
-url = "2.5.4"
+url = "2.5.7"
 tokio = { version = "1.47.1", default-features = false }
-thiserror = "2.0.12"
+thiserror = "2.0.16"
 spin = { version = "0.10.0", features = [
   "spin_mutex",
 ], default-features = false }
 sanitize-filename = "0.6.0"
-tauri = { version = "2.7.0", features = ["tray-icon", "devtools"] }
+tauri = { version = "2.8.2", features = ["tray-icon", "devtools"] }
 tauri-plugin-log = "2"
 tauri-plugin-dialog = "2"
 tauri-plugin-opener = "2"
 tauri-plugin-shell = "2"
 tauri-plugin-os = "2"
 tauri-plugin-fs = "2"
-tauri-plugin-process = "2"
 tauri-plugin-deep-link = "2"
 axum = "0.8.4"
 
@@ -67,3 +66,4 @@ tauri-plugin-autostart = "2"
 tauri-plugin-cli = "2"
 tauri-plugin-single-instance = { version = "2", features = ["deep-link"] }
 tauri-plugin-updater = "2"
+tauri-plugin-process = "2"

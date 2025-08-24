@@ -23,22 +23,13 @@
       "identifier": "shell:allow-execute",
       "allow": [
         {
-          "name": "open-windows",
-          "cmd": "explorer.exe",
-          "args": [
-            {
-              "validator": "/select,.+"
-            }
-          ]
-        },
-        {
           "name": "open-mac",
           "cmd": "open",
           "args": ["-R", "%s"]
         },
         {
           "name": "open-linux",
-          "cmd": "xdg-open",
+          "cmd": "nautilus",
           "args": ["%s"]
         }
       ]

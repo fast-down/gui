@@ -17,6 +17,7 @@ export default defineConfig([
       globals: { ...globals.browser, ...autoImportGlobals.globals },
     },
   },
+  // @ts-expect-error 乱报错
   tseslint.configs.recommended,
   pluginVue.configs['flat/essential'],
   {
