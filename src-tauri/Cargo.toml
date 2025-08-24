@@ -35,7 +35,7 @@ reqwest = { version = "0.12.22", features = [
 bytes = "1.10.1"
 futures = "0.3.31"
 url = "2.5.4"
-tokio = { version = "1.47.1", features = ["full"] }
+tokio = { version = "1.47.1", default-features = false }
 thiserror = "2.0.12"
 spin = { version = "0.10.0", features = [
   "spin_mutex",
@@ -50,6 +50,7 @@ tauri-plugin-os = "2"
 tauri-plugin-fs = "2"
 tauri-plugin-process = "2"
 tauri-plugin-deep-link = "2"
+axum = "0.8.4"
 
 [target.'cfg(unix)'.dependencies]
 libz-sys = "1.1.22"

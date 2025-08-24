@@ -34,3 +34,7 @@ body {
   scrollbar-width: thin;
   scrollbar-color: #27272a transparent;
 }
+
+#app {
+  gap: 4px;
+}

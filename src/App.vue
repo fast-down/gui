@@ -321,6 +321,7 @@ function maybeWriteMethod(str: string | null) {
 .header {
   display: flex;
   padding: 8px;
+  padding-bottom: 4px;
   overflow-x: auto;
 }
 .header > * {

@@ -12,9 +12,11 @@ mod event;
 mod format_dir;
 mod format_progress;
 mod gen_unique_path;
+mod log_if_err;
 mod prefetch;
 mod puller;
 mod relaunch;
+mod server;
 mod updater;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -25,9 +27,12 @@ pub fn run() {
         builder = builder.plugin(tauri_plugin_single_instance::init(|app, argv, cmd| {
             log::info!("[single_instance] {argv:?} {cmd:?}");
             let main_window = app.get_webview_window("main").expect("no main window");
-            let _ = main_window.show();
-            let _ = main_window.unminimize();
-            let _ = main_window.set_focus();
+            log_if_err!(main_window.show(), "failed to show main window");
+            log_if_err!(main_window.unminimize(), "failed to unminimize main window");
+            log_if_err!(
+                main_window.set_focus(),
+                "failed to set focus on main window"
+            );
         }));
     }
     builder = builder
@@ -39,6 +44,7 @@ pub fn run() {
                     Target::new(TargetKind::LogDir { file_name: None }),
                     Target::new(TargetKind::Webview),
                 ])
+                .level(log::LevelFilter::Info)
                 .build(),
         )
         .plugin(tauri_plugin_process::init())
@@ -60,13 +66,21 @@ pub fn run() {
     builder
         .setup(|app| {
             let main_window = app.get_webview_window("main").expect("no main window");
-            let _ = main_window.set_title(&format!("fast-down v{}", app.package_info().version));
+            log_if_err!(
+                main_window.set_title(&format!("fast-down v{}", app.package_info().version)),
+                "set title error"
+            );
+            log_if_err!(
+                app.deep_link().register_all(),
+                "register all deep_link error"
+            );
             let handle = app.handle().clone();
             tauri::async_runtime::spawn(async move {
-                let _ = updater::update(handle).await;
+                log_if_err!(updater::update(handle).await, "update error");
             });
-            app.deep_link().on_open_url(|event| {
-                log::info!("[deep_link] {:?}", event.urls());
+            let handle = app.handle().clone();
+            tauri::async_runtime::spawn(async move {
+                log_if_err!(server::start_server(handle).await, "server error");
             });
             Ok(())
         })
