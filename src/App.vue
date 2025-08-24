@@ -280,7 +280,6 @@ function parseDeepLink(urls: string[]) {
           writeQueueCap: maybeInt(url.searchParams.get('writeQueueCap')),
         }),
       }
-      console.log(downloadUrl, options)
       store.add(downloadUrl, options)
     } else if (url.hostname === 'pause') {
       const filePath = url.searchParams.get('filePath')
@@ -315,6 +314,32 @@ function maybeWriteMethod(str: string | null) {
   if (str === 'mmap') return 'mmap'
   return undefined
 }
+
+// listen<CreateDownloadOptions>('download-request', event => {
+//   const options: AddOptions = {
+//     needPrefetch: true,
+//     urlInfo: removeEmpty<Partial<UrlInfo>>({
+//       name: event.payload.filename,
+//     }),
+//     config: removeEmpty<EmptyAble<DownloadConfig>>({
+//       acceptInvalidCerts: maybeBool(event.payload.acceptInvalidCerts),
+//       acceptInvalidHostnames: maybeBool(
+//         url.searchParams.get('acceptInvalidHostnames'),
+//       ),
+//       headers: url.searchParams.get('headers') || undefined,
+//       proxy: url.searchParams.get('proxy') || undefined,
+//       minChunkSize: maybeInt(url.searchParams.get('minChunkSize')),
+//       multiplexing: maybeBool(url.searchParams.get('multiplexing')),
+//       retryGap: maybeInt(url.searchParams.get('retryGap')),
+//       saveDir: url.searchParams.get('saveDir') || undefined,
+//       threads: maybeInt(url.searchParams.get('threads')),
+//       writeBufferSize: maybeInt(url.searchParams.get('writeBufferSize')),
+//       writeMethod: maybeWriteMethod(url.searchParams.get('writeMethod')),
+//       writeQueueCap: maybeInt(url.searchParams.get('writeQueueCap')),
+//     }),
+//   }
+//   store.add(downloadUrl, options)
+// })
 </script>
 
 <style scoped>

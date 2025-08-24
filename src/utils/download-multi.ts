@@ -1,4 +1,5 @@
 import { Channel, InvokeArgs } from '@tauri-apps/api/core'
+import { info } from '@tauri-apps/plugin-log'
 
 export interface DownloadMulti {
   options: DownloadMultiOptions
@@ -26,5 +27,6 @@ export interface DownloadMultiOptions {
 }
 
 export async function downloadMulti(options: DownloadMulti) {
+  info(`downloadMulti: ${JSON.stringify(options)}`)
   await invoke('download_multi', options as unknown as InvokeArgs)
 }

@@ -1,14 +1,17 @@
 import { path } from '@tauri-apps/api'
 import { exists } from '@tauri-apps/plugin-fs'
+import { info } from '@tauri-apps/plugin-log'
 import { openPath } from '@tauri-apps/plugin-opener'
 import { platform } from '@tauri-apps/plugin-os'
 import { Command } from '@tauri-apps/plugin-shell'
 
 export async function openFile(filePath: string) {
+  info(`open file: ${filePath}`)
   if (!(await exists(filePath))) throw new Error(`"${filePath}" not exists`)
   await openPath(filePath)
 }
 export async function openFolder(filePath: string) {
+  info(`open folder: ${filePath}`)
   if (!(await exists(filePath))) throw new Error(`"${filePath}" not exists`)
   const currentPlatform = platform()
   if (currentPlatform === 'windows') {

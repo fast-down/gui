@@ -31,7 +31,6 @@
 
 <script setup lang="ts">
 import { listen } from '@tauri-apps/api/event'
-import { UpdateInfo } from '../utils/updater'
 import { formatDate } from '@vueuse/core'
 import { acceptUpdate } from '../utils/accept-update'
 
