@@ -76,7 +76,7 @@
 </template>
 
 <script lang="ts" setup>
-import { AddOptions, DownloadEntry, DownloadStatus } from './stores/app'
+import { DownloadEntry, DownloadStatus } from './stores/app'
 import { TrayIcon } from '@tauri-apps/api/tray'
 import { defaultWindowIcon } from '@tauri-apps/api/app'
 import { Menu } from '@tauri-apps/api/menu'
@@ -89,6 +89,8 @@ import { UrlInfo } from './utils/prefetch'
 import { relaunch } from './utils/relaunch'
 import { useToast } from 'primevue'
 import { error } from '@tauri-apps/plugin-log'
+import { listen } from '@tauri-apps/api/event'
+import { CreateDownloadOptions } from './interface/create-download-options'
 
 const toast = useToast()
 window.addEventListener('error', event => {
@@ -256,7 +258,7 @@ function parseDeepLink(urls: string[]) {
     if (url.hostname === 'download') {
       const downloadUrl = url.searchParams.get('url')
       if (!downloadUrl) continue
-      const options: AddOptions = {
+      store.add(downloadUrl, {
         needPrefetch: true,
         urlInfo: removeUndefined<Partial<UrlInfo>>({
           name: url.searchParams.get('filename') || undefined,
@@ -270,17 +272,19 @@ function parseDeepLink(urls: string[]) {
           ),
           headers: url.searchParams.get('headers') || undefined,
           proxy: url.searchParams.get('proxy') || undefined,
-          minChunkSize: maybeInt(url.searchParams.get('minChunkSize')),
+          minChunkSize:
+            maybeInt(url.searchParams.get('minChunkSize')) || undefined,
           multiplexing: maybeBool(url.searchParams.get('multiplexing')),
           retryGap: maybeInt(url.searchParams.get('retryGap')),
           saveDir: url.searchParams.get('saveDir') || undefined,
-          threads: maybeInt(url.searchParams.get('threads')),
-          writeBufferSize: maybeInt(url.searchParams.get('writeBufferSize')),
+          threads: maybeInt(url.searchParams.get('threads')) || undefined,
+          writeBufferSize:
+            maybeInt(url.searchParams.get('writeBufferSize')) || undefined,
           writeMethod: maybeWriteMethod(url.searchParams.get('writeMethod')),
-          writeQueueCap: maybeInt(url.searchParams.get('writeQueueCap')),
+          writeQueueCap:
+            maybeInt(url.searchParams.get('writeQueueCap')) || undefined,
         }),
-      }
-      store.add(downloadUrl, options)
+      })
     } else if (url.hostname === 'pause') {
       const filePath = url.searchParams.get('filePath')
       if (filePath) store.pause(filePath)
@@ -300,7 +304,7 @@ function parseDeepLink(urls: string[]) {
 
 function maybeInt(str: string | null) {
   if (!str) return undefined
-  return parseInt(str) || undefined
+  return parseInt(str) ?? undefined
 }
 
 function maybeBool(str: string | null) {
@@ -315,31 +319,41 @@ function maybeWriteMethod(str: string | null) {
   return undefined
 }
 
-// listen<CreateDownloadOptions>('download-request', event => {
-//   const options: AddOptions = {
-//     needPrefetch: true,
-//     urlInfo: removeEmpty<Partial<UrlInfo>>({
-//       name: event.payload.filename,
-//     }),
-//     config: removeEmpty<EmptyAble<DownloadConfig>>({
-//       acceptInvalidCerts: maybeBool(event.payload.acceptInvalidCerts),
-//       acceptInvalidHostnames: maybeBool(
-//         url.searchParams.get('acceptInvalidHostnames'),
-//       ),
-//       headers: url.searchParams.get('headers') || undefined,
-//       proxy: url.searchParams.get('proxy') || undefined,
-//       minChunkSize: maybeInt(url.searchParams.get('minChunkSize')),
-//       multiplexing: maybeBool(url.searchParams.get('multiplexing')),
-//       retryGap: maybeInt(url.searchParams.get('retryGap')),
-//       saveDir: url.searchParams.get('saveDir') || undefined,
-//       threads: maybeInt(url.searchParams.get('threads')),
-//       writeBufferSize: maybeInt(url.searchParams.get('writeBufferSize')),
-//       writeMethod: maybeWriteMethod(url.searchParams.get('writeMethod')),
-//       writeQueueCap: maybeInt(url.searchParams.get('writeQueueCap')),
-//     }),
-//   }
-//   store.add(downloadUrl, options)
-// })
+listen<CreateDownloadOptions>('download-request', event => {
+  store.add(event.payload.url, {
+    needPrefetch: true,
+    urlInfo: removeUndefined<Partial<UrlInfo>>({
+      name: event.payload.filename || undefined,
+    }),
+    config: removeUndefined<UndefinedAble<DownloadConfig>>({
+      acceptInvalidCerts: event.payload.acceptInvalidCerts ?? undefined,
+      acceptInvalidHostnames: event.payload.acceptInvalidHostnames ?? undefined,
+      headers: event.payload.headers || undefined,
+      proxy: event.payload.proxy || undefined,
+      minChunkSize: event.payload.minChunkSize || undefined,
+      multiplexing: event.payload.multiplexing ?? undefined,
+      retryGap: event.payload.retryGap ?? undefined,
+      saveDir: event.payload.saveDir || undefined,
+      threads: event.payload.threads || undefined,
+      writeBufferSize: event.payload.writeBufferSize || undefined,
+      writeMethod: maybeWriteMethod(event.payload.writeMethod),
+      writeQueueCap: event.payload.writeQueueCap || undefined,
+    }),
+  })
+})
+type DownloadItemId = { filePath: string }
+listen<DownloadItemId>('pause-request', event =>
+  store.pause(event.payload.filePath),
+)
+listen<DownloadItemId>('resume-request', event =>
+  store.resume(event.payload.filePath),
+)
+listen<DownloadItemId>('remove-request', event =>
+  store.remove(event.payload.filePath),
+)
+listen('pause-all-request', () => store.pauseAll())
+listen('resume-all-request', () => store.resumeAll())
+listen('remove-all-request', () => store.removeAll())
 </script>
 
 <style scoped>
