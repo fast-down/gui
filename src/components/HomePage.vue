@@ -1,5 +1,5 @@
 <template>
-  <header class="header">
+  <header>
     <Button
       label="新建"
       variant="text"
@@ -52,12 +52,7 @@
       size="small"
     />
   </header>
-  <TransitionGroup
-    name="list"
-    tag="main"
-    class="main"
-    @before-leave="onBeforeLeave"
-  >
+  <TransitionGroup name="list" tag="main" @before-leave="onBeforeLeave">
     <DownloadItem
       v-for="item in showList"
       :downloaded="item.downloaded"
@@ -120,7 +115,7 @@ function onBeforeLeave(el: Element) {
 </script>
 
 <style scoped lang="postcss">
-.header {
+header {
   display: flex;
   padding: 8px;
   padding-bottom: 4px;
@@ -130,9 +125,9 @@ function onBeforeLeave(el: Element) {
     flex-shrink: 0;
   }
 }
-.main {
+main {
   flex: 1;
-  overflow: auto;
+  overflow: hidden auto;
 }
 .download-item {
   margin: 8px;

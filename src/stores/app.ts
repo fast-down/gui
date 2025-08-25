@@ -165,60 +165,62 @@ sec-ch-ua-platform: "Windows"`,
         ...entry.config,
       }
       const headersObj = buildHeaders(config.headers)
-      const urlInfo = await prefetch({
-        url: entry.url,
-        headers: headersObj,
-        proxy: config.proxy,
-        acceptInvalidCerts: config.acceptInvalidCerts,
-        acceptInvalidHostnames: config.acceptInvalidHostnames,
-      }).catch(e => {
-        entry.status = 'paused'
-        throw e
-      })
-      if (localCount !== entry.count) return (entry.status = 'paused')
-      if (runningCount.value >= maxConcurrentTasks.value) return
-      if (!urlInfo.fastDownload || entry.downloaded >= urlInfo.size) {
-        entry.status = 'paused'
-        return add(entry.url, { urlInfo })
-      }
-      entry.status = 'downloading'
-      const channel = new Channel<DownloadEvent>(res => {
-        if (res.event === 'allFinished') {
-          entry.status = 'paused'
-        } else if (res.event === 'pullProgress') {
-          entry.readProgress = res.data[0]
-          entry.downloaded = res.data[1]
-        } else if (res.event === 'pushProgress') {
-          entry.writeProgress = res.data
-        } else {
-          info(`Event: ${res.event}, Data: ${JSON.stringify(res.data)}`)
-        }
-      })
-      await downloadMulti({
-        options: {
-          url: urlInfo.finalUrl,
-          filePath: entry.filePath,
-          fileSize: urlInfo.size,
-          threads: config.threads,
-          writeBufferSize: config.writeBufferSize,
-          writeQueueCap: config.writeQueueCap,
-          minChunkSize: config.minChunkSize,
-          retryGap: config.retryGap,
-          downloadChunks: invertProgress(
-            mergeProgress(toRaw(entry.writeProgress)),
-            urlInfo.size,
-          ),
+      try {
+        const urlInfo = await prefetch({
+          url: entry.url,
           headers: headersObj,
-          multiplexing: config.multiplexing,
+          proxy: config.proxy,
           acceptInvalidCerts: config.acceptInvalidCerts,
           acceptInvalidHostnames: config.acceptInvalidHostnames,
-          proxy: config.proxy,
-          writeMethod: config.writeMethod,
-          initProgress: entry.writeProgress,
-          initDownloaded: entry.downloaded,
-        },
-        tx: channel,
-      })
+        })
+        if (localCount !== entry.count) return (entry.status = 'paused')
+        if (runningCount.value >= maxConcurrentTasks.value) return
+        if (!urlInfo.fastDownload || entry.downloaded >= urlInfo.size) {
+          entry.status = 'paused'
+          return add(entry.url, { urlInfo })
+        }
+        entry.status = 'downloading'
+        const channel = new Channel<DownloadEvent>(res => {
+          if (res.event === 'allFinished') {
+            entry.status = 'paused'
+          } else if (res.event === 'pullProgress') {
+            entry.readProgress = res.data[0]
+            entry.downloaded = res.data[1]
+          } else if (res.event === 'pushProgress') {
+            entry.writeProgress = res.data
+          } else {
+            info(`Event: ${res.event}, Data: ${JSON.stringify(res.data)}`)
+          }
+        })
+        await downloadMulti({
+          options: {
+            url: urlInfo.finalUrl,
+            filePath: entry.filePath,
+            fileSize: urlInfo.size,
+            threads: config.threads,
+            writeBufferSize: config.writeBufferSize,
+            writeQueueCap: config.writeQueueCap,
+            minChunkSize: config.minChunkSize,
+            retryGap: config.retryGap,
+            downloadChunks: invertProgress(
+              mergeProgress(toRaw(entry.writeProgress)),
+              urlInfo.size,
+            ),
+            headers: headersObj,
+            multiplexing: config.multiplexing,
+            acceptInvalidCerts: config.acceptInvalidCerts,
+            acceptInvalidHostnames: config.acceptInvalidHostnames,
+            proxy: config.proxy,
+            writeMethod: config.writeMethod,
+            initProgress: entry.writeProgress,
+            initDownloaded: entry.downloaded,
+          },
+          tx: channel,
+        })
+      } catch (e) {
+        entry.status = 'paused'
+        throw e
+      }
     }
 
     function resumeAll() {
