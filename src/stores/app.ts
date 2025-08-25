@@ -7,6 +7,7 @@ import { UrlInfo } from '../binding/prefetch'
 import { exit } from '@tauri-apps/plugin-process'
 import { WriteMethod } from '../interface/create-download-options'
 import { DownloadEvent } from '../interface/event'
+import { path } from '@tauri-apps/api'
 
 export interface DownloadConfig {
   threads: number
@@ -56,13 +57,15 @@ export type AddOptions =
       needPrefetch?: false
     }
 
+const downloadDir = await path.downloadDir()
+
 export const useAppStore = defineStore(
   'app',
   () => {
     const list = ref<DownloadEntry[]>([])
     const globalConfig = ref<DownloadConfig>({
       threads: 8,
-      saveDir: '',
+      saveDir: downloadDir,
       headers: String.raw`sec-ch-ua-mobile: ?0
 User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36
 sec-ch-ua: "Not)A;Brand";v="99", "Google Chrome";v="127", "Chromium";v="127"
