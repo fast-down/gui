@@ -15,6 +15,7 @@ const pinia = createPinia()
 pinia.use(PiniaPluginPersistedstate)
 
 const app = createApp(App)
+app.config.throwUnhandledErrorInProduction = true
 app.use(PrimeVue, {
   theme: {
     preset: Aura,
