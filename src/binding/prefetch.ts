@@ -4,7 +4,7 @@ import { info } from '@tauri-apps/plugin-log'
 export interface Prefetch {
   url: string
   headers: Record<string, string>
-  proxy: string | null
+  proxy: string
   acceptInvalidCerts: boolean
   acceptInvalidHostnames: boolean
 }

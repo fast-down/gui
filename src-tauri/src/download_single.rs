@@ -28,7 +28,7 @@ pub struct DownloadOptions {
     pub multiplexing: bool,
     pub accept_invalid_certs: bool,
     pub accept_invalid_hostnames: bool,
-    pub proxy: Option<String>,
+    pub proxy: String,
 }
 
 #[tauri::command]
@@ -47,7 +47,7 @@ pub async fn download_single(
     let puller = FastDownPuller::new(
         url,
         headers,
-        options.proxy,
+        &options.proxy,
         options.multiplexing,
         options.accept_invalid_certs,
         options.accept_invalid_hostnames,

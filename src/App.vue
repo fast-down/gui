@@ -59,7 +59,7 @@ for (const e of store.list) {
   e.count = 0
   e.status = 'paused'
   e.readProgress = structuredClone(toRaw(e.writeProgress))
-  e.speed = e.elapsedMs ? (e.downloaded / e.elapsedMs) * 1000 : 0
+  e.speed = (e.downloaded / e.elapsedMs) * 1000
 }
 
 const createTaskVisible = ref(false)

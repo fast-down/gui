@@ -76,8 +76,8 @@
       <div class="single-line-text">{{ props.filePath }}</div>
     </template>
     <template #content>
-      <table class="table">
-        <thead class="thead">
+      <table>
+        <thead>
           <tr>
             <th>瞬时速度</th>
             <th>平均速度</th>
@@ -99,7 +99,7 @@
               {{ formatSize(props.fileSize) }}
             </td>
             <td>{{ progress.toFixed(2) }}%</td>
-            <td>{{ formatSize(props.fileSize - props.downloaded) }}</td>
+            <td>{{ formatSize(remainBytes) }}</td>
           </tr>
         </tbody>
       </table>
@@ -138,12 +138,12 @@ const emit = defineEmits(['resume', 'pause', 'remove', 'update', 'detail'])
 
 const isShow = ref(false)
 const eta = computed(() =>
-  props.speed ? (props.fileSize - props.downloaded) / props.speed : 0,
+  props.fileSize ? (props.fileSize - props.downloaded) / props.speed : 0,
 )
-const avgSpeed = computed(() => {
-  if (props.elapsedMs === 0) return 0
-  return props.downloaded / (props.elapsedMs / 1000)
-})
+const remainBytes = computed(() =>
+  props.fileSize ? props.fileSize - props.downloaded : 0,
+)
+const avgSpeed = computed(() => (props.downloaded / props.elapsedMs) * 1000)
 const progress = computed(() =>
   props.fileSize ? (props.downloaded / props.fileSize) * 100 : 0,
 )
@@ -220,7 +220,7 @@ async function clickHandler(event: MouseEvent) {
 }
 </script>
 
-<style scoped>
+<style scoped lang="postcss">
 .single-line-text {
   white-space: nowrap;
   overflow: hidden;
@@ -235,10 +235,10 @@ async function clickHandler(event: MouseEvent) {
   width: 100%;
   align-items: center;
 }
-.table {
+table {
   width: 100%;
 }
-.thead th {
+th {
   text-align: start;
 }
 .card {
@@ -258,29 +258,35 @@ async function clickHandler(event: MouseEvent) {
   position: relative;
   height: v-bind('detailProgressHeight');
   transition: height 0.2s ease;
-}
-.details > div {
-  position: absolute;
-  height: 12px;
-  transition: top 0.2s ease, border-radius 0.2s ease;
-  background-color: var(--rgb);
-}
-.details.open > div {
-  border-radius: 6px;
-}
-.details > div:first-child {
-  border-top-left-radius: 6px;
-  border-bottom-left-radius: 6px;
-}
-.details.open > div:first-child {
-  border-radius: 6px;
-}
-.details > div:last-child {
-  border-top-right-radius: 6px;
-  border-bottom-right-radius: 6px;
-}
-.details.open > div:last-child {
-  border-radius: 6px;
+
+  div {
+    position: absolute;
+    height: 12px;
+    transition: top 0.2s ease, border-radius 0.2s ease;
+    background-color: var(--rgb);
+  }
+
+  &.open div {
+    border-radius: 6px;
+  }
+
+  div:first-child {
+    border-top-left-radius: 6px;
+    border-bottom-left-radius: 6px;
+  }
+
+  &.open div:first-child {
+    border-radius: 6px;
+  }
+
+  div:last-child {
+    border-top-right-radius: 6px;
+    border-bottom-right-radius: 6px;
+  }
+
+  &.open div:last-child {
+    border-radius: 6px;
+  }
 }
 .card :deep(.p-card-caption) {
   gap: 0;

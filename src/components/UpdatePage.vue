@@ -5,10 +5,10 @@
     @update:visible="onUpdateVisible"
     modal
     :header="`更新 v${updateInfo.currentVersion} -> v${updateInfo.version}`"
-    :style="{ width: '25rem' }"
+    :style="{ width: '60vw' }"
     :closable="false"
   >
-    <div style="overflow-wrap: break-word">
+    <div>
       <div>修复了一些已知问题</div>
       <Divider />
       <div v-if="updateInfo.date">
@@ -17,7 +17,7 @@
         }}
       </div>
     </div>
-    <div class="action">
+    <div class="dialog-action">
       <Button
         type="button"
         label="取消"
@@ -59,12 +59,3 @@ listen<UpdateInfo>('update', event => {
   onUpdateVisible(true)
 })
 </script>
-
-<style scoped>
-.action {
-  display: flex;
-  margin-top: 16px;
-  justify-content: end;
-  gap: 8px;
-}
-</style>

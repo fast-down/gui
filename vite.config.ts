@@ -26,7 +26,7 @@ export default defineConfig({
           imports: ['invoke'],
         },
       ],
-      dirs: ['src/stores', 'src/utils'],
+      dirs: ['src/stores', 'src/utils', 'src/binding'],
       dts: 'types/auto-imports.d.ts',
       eslintrc: {
         enabled: true,

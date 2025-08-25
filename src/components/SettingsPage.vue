@@ -8,7 +8,7 @@
     :closable="false"
   >
     <Form v-slot="$form" :initial-values :resolver @submit="onFormSubmit">
-      <div class="fields">
+      <div class="form-fields">
         <div>
           <IftaLabel style="display: flex">
             <Textarea name="headers" rows="5" auto-resize style="width: 100%" />
@@ -101,7 +101,7 @@
         <label for="showAppMenu">是否显示菜单栏 (重启后生效)</label>
         <ToggleSwitch name="showAppMenu" />
       </div>
-      <div class="action">
+      <div class="dialog-action">
         <Button
           type="button"
           label="取消"
@@ -116,7 +116,7 @@
 
 <script setup lang="ts">
 import { Form, FormResolverOptions, FormSubmitEvent } from '@primevue/forms'
-import { open } from '@tauri-apps/plugin-dialog'
+import { selectDir } from '../binding/select-dir'
 import { writeMethodOptions } from '../utils/write-method-options'
 import { headerRegex } from '../utils/build-header'
 
@@ -148,7 +148,6 @@ const initialValues = ref({
 watchEffect(() => {
   initialValues.value = {
     ...store.globalConfig,
-    proxy: store.globalConfig.proxy || '',
     autoStart: store.autoStart,
     showAppMenu: store.showAppMenu,
     maxConcurrentTasks: store.maxConcurrentTasks,
@@ -197,7 +196,7 @@ function onFormSubmit(event: FormSubmitEvent) {
     threads: formData.threads.value,
     saveDir: formData.saveDir.value,
     headers: formData.headers.value,
-    proxy: formData.proxy.value || null,
+    proxy: formData.proxy.value,
     writeBufferSize: formData.writeBufferSize.value,
     writeQueueCap: formData.writeQueueCap.value,
     retryGap: formData.retryGap.value,
@@ -212,40 +211,7 @@ function onFormSubmit(event: FormSubmitEvent) {
   store.showAppMenu = formData.showAppMenu.value
 }
 
-async function selectDir() {
-  const dir = await open({
-    directory: true,
-    title: '选择保存文件夹',
-  })
-  const saveDirInput = document.getElementById('save-dir-input') as
-    | HTMLInputElement
-    | undefined
-  if (dir && saveDirInput) {
-    saveDirInput.value = dir
-    saveDirInput.dispatchEvent(new Event('input'))
-  }
-}
-
 function onUpdateVisible(v: boolean) {
   emit('update:visible', v)
 }
 </script>
-
-<style scoped>
-.fields {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-.action {
-  display: flex;
-  margin-top: 16px;
-  justify-content: end;
-  gap: 8px;
-}
-.save-dir-container {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-</style>

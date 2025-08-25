@@ -46,7 +46,7 @@ impl From<fast_down::UrlInfo> for UrlInfo {
 pub async fn prefetch(
     url: &str,
     headers: HashMap<String, String>,
-    proxy: Option<String>,
+    proxy: String,
     accept_invalid_certs: bool,
     accept_invalid_hostnames: bool,
 ) -> Result<UrlInfo, String> {

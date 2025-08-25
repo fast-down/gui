@@ -19,12 +19,12 @@ pub async fn update(app: tauri::AppHandle) -> tauri_plugin_updater::Result<()> {
                 "set title error"
             );
         }
-        let client = puller::build_client(&HeaderMap::new(), &None, false, false)?;
+        let client = puller::build_client(&HeaderMap::new(), "", false, false)?;
         let info = client.prefetch(update.download_url.clone()).await?;
         let puller = FastDownPuller::new(
             update.download_url.clone(),
             HeaderMap::new(),
-            None,
+            "",
             false,
             false,
             false,

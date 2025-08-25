@@ -30,3 +30,20 @@ body {
 #app {
   gap: 4px;
 }
+
+.form-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.dialog-action {
+  display: flex;
+  margin-top: 16px;
+  justify-content: end;
+  gap: 8px;
+}
+.save-dir-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}

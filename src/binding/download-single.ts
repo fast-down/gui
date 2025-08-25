@@ -17,7 +17,7 @@ export interface DownloadSingleOptions {
   multiplexing: boolean
   acceptInvalidCerts: boolean
   acceptInvalidHostnames: boolean
-  proxy: string | null
+  proxy: string
 }
 
 export async function downloadSingle(options: DownloadSingle) {

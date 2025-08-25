@@ -22,7 +22,7 @@ export interface DownloadMultiOptions {
   multiplexing: boolean
   acceptInvalidCerts: boolean
   acceptInvalidHostnames: boolean
-  proxy: string | null
+  proxy: string
   writeMethod: WriteMethod
   initProgress: [number, number][][]
   initDownloaded: number

@@ -10,7 +10,7 @@ use url::Url;
 
 pub fn build_client(
     headers: &HeaderMap,
-    proxy: &Option<String>,
+    proxy: &str,
     accept_invalid_certs: bool,
     accept_invalid_hostnames: bool,
 ) -> Result<reqwest::Client, reqwest::Error> {
@@ -23,7 +23,7 @@ pub fn build_client(
         .gzip(true)
         .deflate(true)
         .zstd(true);
-    if let Some(ref proxy) = *proxy {
+    if !proxy.is_empty() {
         client = client.proxy(Proxy::all(proxy)?);
     }
     let client = client.build()?;
@@ -33,7 +33,7 @@ pub fn build_client(
 pub struct FastDownPuller {
     inner: ReqwestPuller,
     headers: Arc<HeaderMap<HeaderValue>>,
-    proxy: Arc<Option<String>>,
+    proxy: Arc<str>,
     url: Arc<Url>,
     multiplexing: bool,
     accept_invalid_certs: bool,
@@ -44,21 +44,21 @@ impl FastDownPuller {
     pub fn new(
         url: Url,
         headers: HeaderMap<HeaderValue>,
-        proxy: Option<String>,
+        proxy: &str,
         multiplexing: bool,
         accept_invalid_certs: bool,
         accept_invalid_hostnames: bool,
     ) -> Result<Self, reqwest::Error> {
         let client = build_client(
             &headers,
-            &proxy,
+            proxy,
             accept_invalid_certs,
             accept_invalid_hostnames,
         )?;
         Ok(Self {
             inner: ReqwestPuller::new(url.clone(), client),
             headers: Arc::new(headers),
-            proxy: Arc::new(proxy),
+            proxy: Arc::from(proxy),
             url: Arc::new(url),
             multiplexing,
             accept_invalid_certs,

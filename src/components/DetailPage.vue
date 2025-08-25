@@ -8,7 +8,7 @@
     :closable="false"
   >
     <Form v-slot="$form" :initial-values :resolver @submit="onFormSubmit">
-      <div class="fields">
+      <div class="form-fields">
         <div>
           <IftaLabel style="display: flex">
             <Textarea name="url" rows="5" auto-resize style="width: 100%" />
@@ -77,11 +77,11 @@
           >
         </div>
         <IftaLabel>
-          <InputNumber name="writeBufferSize" :min="0" fluid />
+          <InputNumber name="writeBufferSize" :min="1" fluid />
           <label for="writeBufferSize">写入缓冲区大小 (字节)</label>
         </IftaLabel>
         <IftaLabel>
-          <InputNumber name="writeQueueCap" :min="0" fluid />
+          <InputNumber name="writeQueueCap" :min="1" fluid />
           <label for="writeQueueCap">写入队列容量</label>
         </IftaLabel>
         <IftaLabel>
@@ -89,7 +89,7 @@
           <label for="retryGap">重试间隔 (ms)</label>
         </IftaLabel>
         <IftaLabel>
-          <InputNumber name="minChunkSize" :min="0" fluid />
+          <InputNumber name="minChunkSize" :min="2" fluid />
           <label for="minChunkSize">最小分块大小 (字节)</label>
         </IftaLabel>
         <Select
@@ -107,7 +107,7 @@
         <label for="acceptInvalidHostnames">是否接受无效主机名 (不安全)</label>
         <ToggleSwitch name="acceptInvalidHostnames" />
       </div>
-      <div class="action">
+      <div class="dialog-action">
         <Button
           type="button"
           label="取消"
@@ -122,7 +122,7 @@
 
 <script setup lang="ts">
 import { Form, FormResolverOptions, FormSubmitEvent } from '@primevue/forms'
-import { open } from '@tauri-apps/plugin-dialog'
+import { selectDir } from '../binding/select-dir'
 import { writeMethodOptions } from '../utils/write-method-options'
 import { diffConfig } from '../utils/diff-config'
 import { headerRegex } from '../utils/build-header'
@@ -159,10 +159,6 @@ watchEffect(() => {
   initialValues.value = {
     ...store.globalConfig,
     ...store.list[itemIndex.value]?.config,
-    proxy:
-      store.list[itemIndex.value]?.config?.proxy ||
-      store.globalConfig.proxy ||
-      '',
     url: store.list[itemIndex.value]?.url || '',
   }
 })
@@ -207,7 +203,7 @@ async function resolver({ values }: FormResolverOptions) {
     .map((e: string) => e.trim())
   for (const [i, item] of headers.entries()) {
     if (!item) continue
-    if (!item.match(headerRegex)) {
+    if (!headerRegex.test(item)) {
       errors.headers ??= []
       errors.headers.push({ message: `第 ${i + 1} 行请求头格式不正确` })
     }
@@ -227,7 +223,7 @@ function onFormSubmit(event: FormSubmitEvent) {
     headers: formData.headers.value,
     minChunkSize: formData.minChunkSize.value,
     multiplexing: formData.multiplexing.value,
-    proxy: formData.proxy.value || null,
+    proxy: formData.proxy.value,
     retryGap: formData.retryGap.value,
     saveDir: formData.saveDir.value,
     threads: formData.threads.value,
@@ -237,40 +233,7 @@ function onFormSubmit(event: FormSubmitEvent) {
   })
 }
 
-async function selectDir() {
-  const dir = await open({
-    directory: true,
-    title: '选择保存文件夹',
-  })
-  const saveDirInput = document.getElementById('save-dir-input') as
-    | HTMLInputElement
-    | undefined
-  if (dir && saveDirInput) {
-    saveDirInput.value = dir
-    saveDirInput.dispatchEvent(new Event('input'))
-  }
-}
-
 function onUpdateVisible(v: boolean) {
   emit('update:visible', v)
 }
 </script>
-
-<style scoped>
-.fields {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-.action {
-  display: flex;
-  margin-top: 16px;
-  justify-content: end;
-  gap: 8px;
-}
-.save-dir-container {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-</style>

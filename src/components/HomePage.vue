@@ -119,15 +119,16 @@ function onBeforeLeave(el: Element) {
 }
 </script>
 
-<style scoped>
+<style scoped lang="postcss">
 .header {
   display: flex;
   padding: 8px;
   padding-bottom: 4px;
   overflow-x: auto;
-}
-.header > * {
-  flex-shrink: 0;
+
+  & > * {
+    flex-shrink: 0;
+  }
 }
 .main {
   flex: 1;
@@ -135,8 +136,9 @@ function onBeforeLeave(el: Element) {
 }
 .download-item {
   margin: 8px;
-}
-.download-item:first-child {
-  margin-top: 0;
+
+  &:first-child {
+    margin-top: 0;
+  }
 }
 </style>

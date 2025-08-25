@@ -12,7 +12,7 @@ export interface DownloadConfig {
   threads: number
   saveDir: string
   headers: string
-  proxy: string | null
+  proxy: string
   writeBufferSize: number
   writeQueueCap: number
   retryGap: number
@@ -67,7 +67,7 @@ export const useAppStore = defineStore(
 User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36
 sec-ch-ua: "Not)A;Brand";v="99", "Google Chrome";v="127", "Chromium";v="127"
 sec-ch-ua-platform: "Windows"`,
-      proxy: null,
+      proxy: '',
       writeBufferSize: 8 * 1024 * 1024,
       writeQueueCap: 10240,
       retryGap: 500,

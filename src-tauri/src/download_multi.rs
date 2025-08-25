@@ -44,7 +44,7 @@ pub struct DownloadOptions {
     pub multiplexing: bool,
     pub accept_invalid_certs: bool,
     pub accept_invalid_hostnames: bool,
-    pub proxy: Option<String>,
+    pub proxy: String,
     pub write_method: String,
     pub init_progress: Vec<Vec<(u64, u64)>>,
     pub init_downloaded: u64,
@@ -76,7 +76,7 @@ pub async fn download_multi(
     let puller = FastDownPuller::new(
         url,
         headers,
-        options.proxy,
+        &options.proxy,
         options.multiplexing,
         options.accept_invalid_certs,
         options.accept_invalid_hostnames,
