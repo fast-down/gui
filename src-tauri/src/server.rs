@@ -1,6 +1,7 @@
 use axum::{Json, Router, extract::State, routing::post};
 use reqwest::StatusCode;
 use serde::{Deserialize, Serialize};
+use std::io;
 use tauri::Emitter;
 
 use crate::event::DownloadItemId;
@@ -104,7 +105,7 @@ async fn remove_all(State(state): State<AppState>) -> StatusCode {
     }
 }
 
-pub async fn start_server(handle: tauri::AppHandle) -> Result<(), axum::Error> {
+pub async fn start_server(handle: tauri::AppHandle) -> io::Result<()> {
     let state = AppState { handle };
     let app = Router::new()
         .route("/download", post(download))
@@ -115,7 +116,7 @@ pub async fn start_server(handle: tauri::AppHandle) -> Result<(), axum::Error> {
         .route("/resume-all", post(resume_all))
         .route("/remove-all", post(remove_all))
         .with_state(state);
-    let listener = tokio::net::TcpListener::bind("0.0.0.0:6121").await.unwrap();
-    axum::serve(listener, app).await.unwrap();
+    let listener = tokio::net::TcpListener::bind("0.0.0.0:6121").await?;
+    axum::serve(listener, app).await?;
     Ok(())
 }
