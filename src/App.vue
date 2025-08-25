@@ -1,92 +1,22 @@
 <template>
-  <header class="header">
-    <Button
-      label="新建"
-      variant="text"
-      icon="pi pi-plus"
-      @click="createTaskVisible = true"
-    />
-    <Button
-      label="开始"
-      @click="store.resumeAll"
-      variant="text"
-      icon="pi pi-play"
-    />
-    <Button
-      label="暂停"
-      @click="store.pauseAll"
-      variant="text"
-      icon="pi pi-pause"
-    />
-    <Button
-      label="删除"
-      @click="store.removeAll"
-      variant="text"
-      icon="pi pi-trash"
-    />
-    <Button
-      label="设置"
-      variant="text"
-      icon="pi pi-cog"
-      @click="settingsPageVisible = true"
-    />
-    <Button label="重启" @click="restart" variant="text" icon="pi pi-refresh" />
-    <Button label="退出" @click="quit" variant="text" icon="pi pi-power-off" />
-    <SelectButton
-      v-model="showTypes"
-      :options="showOptions"
-      optionValue="value"
-      optionLabel="name"
-      multiple
-      :invalid="showTypes.length === 0"
-      size="small"
-    />
-  </header>
-  <TransitionGroup
-    name="list"
-    tag="main"
-    class="main"
-    @before-leave="onBeforeLeave"
-  >
-    <DownloadItem
-      v-for="item in showList"
-      :downloaded="item.downloaded"
-      :elapsed-ms="item.elapsedMs"
-      :file-name="item.fileName"
-      :file-size="item.fileSize"
-      :speed="item.speed"
-      :status="item.status"
-      :file-path="item.filePath"
-      :read-progress="item.readProgress"
-      :key="item.filePath"
-      class="download-item"
-      @remove="store.remove(item.filePath)"
-      @pause="store.pause(item.filePath)"
-      @resume="store.resume(item.filePath)"
-      @update="updateEntry(item, $event)"
-      @detail="showDetail(item.filePath)"
-    >
-    </DownloadItem>
-  </TransitionGroup>
+  <HomePage
+    @create-task="createTaskVisible = true"
+    @open-settings="settingsPageVisible = true"
+  />
   <CreateTask v-model:visible="createTaskVisible" />
   <SettingsPage v-model:visible="settingsPageVisible" />
-  <UpdatePage v-model:visible="updatePageVisible" />
-  <DetailPage v-model:visible="detailPageVisible" :file-path="detailItem" />
   <Toast />
 </template>
 
 <script lang="ts" setup>
-import { DownloadEntry, DownloadStatus } from './stores/app'
 import { TrayIcon } from '@tauri-apps/api/tray'
 import { defaultWindowIcon } from '@tauri-apps/api/app'
 import { Menu } from '@tauri-apps/api/menu'
-import { exit } from '@tauri-apps/plugin-process'
-import { focusWindow } from './utils/focus-window'
+import { focusWindow } from './binding/focus-window'
 import { getCurrentWindow } from '@tauri-apps/api/window'
 import { getCurrent, onOpenUrl } from '@tauri-apps/plugin-deep-link'
 import { removeUndefined, UndefinedAble } from './utils/remove-undefined'
-import { UrlInfo } from './utils/prefetch'
-import { relaunch } from './utils/relaunch'
+import { UrlInfo } from './binding/prefetch'
 import { useToast } from 'primevue'
 import { error } from '@tauri-apps/plugin-log'
 import { listen } from '@tauri-apps/api/event'
@@ -131,48 +61,9 @@ for (const e of store.list) {
   e.readProgress = structuredClone(toRaw(e.writeProgress))
   e.speed = e.elapsedMs ? (e.downloaded / e.elapsedMs) * 1000 : 0
 }
+
 const createTaskVisible = ref(false)
 const settingsPageVisible = ref(false)
-const updatePageVisible = ref(false)
-const detailPageVisible = ref(false)
-let detailItem: Ref<string> = ref('')
-
-function showDetail(filePath: string) {
-  detailItem.value = filePath
-  detailPageVisible.value = true
-}
-
-const showTypes = ref<DownloadStatus[]>(['paused', 'downloading', 'pending'])
-const showOptions = computed<{ name: string; value: DownloadStatus }[]>(() => [
-  { name: `下载中 (${store.runningCount})`, value: 'downloading' },
-  { name: `等待中 (${store.pendingCount})`, value: 'pending' },
-  { name: `已暂停 (${store.pausedCount})`, value: 'paused' },
-])
-const showList = computed(() => {
-  return store.list.filter(e => showTypes.value.includes(e.status))
-})
-
-async function restart() {
-  await store.pauseAll()
-  await relaunch()
-}
-
-async function quit() {
-  await store.pauseAll()
-  await exit(0)
-}
-
-function updateEntry(
-  item: DownloadEntry,
-  data: { elapsedMs: number; speed: number },
-) {
-  item.elapsedMs = data.elapsedMs
-  item.speed = data.speed
-}
-
-function onBeforeLeave(el: Element) {
-  if (el instanceof HTMLElement) el.style.width = el.clientWidth + 'px'
-}
 
 Menu.new({
   items: [
@@ -187,23 +78,17 @@ Menu.new({
     {
       id: 'resumeAll',
       text: '全部开始',
-      action() {
-        return store.resumeAll()
-      },
+      action: () => store.resumeAll(),
     },
     {
       id: 'pauseAll',
       text: '全部暂停',
-      action() {
-        return store.pauseAll()
-      },
+      action: () => store.pauseAll(),
     },
     {
       id: 'removeAll',
       text: '全部删除',
-      action() {
-        return store.removeAll()
-      },
+      action: () => store.removeAll(),
     },
     {
       id: 'settings',
@@ -216,16 +101,12 @@ Menu.new({
     {
       id: 'relaunch',
       text: '重启',
-      action() {
-        return restart()
-      },
+      action: () => store.restart(),
     },
     {
       id: 'quit',
       text: '退出',
-      action() {
-        return quit()
-      },
+      action: () => store.quit(),
     },
   ],
 }).then(async menu => {
@@ -297,8 +178,8 @@ function parseDeepLink(urls: string[]) {
     } else if (url.hostname === 'pauseAll') store.pauseAll()
     else if (url.hostname === 'resumeAll') store.resumeAll()
     else if (url.hostname === 'removeAll') store.removeAll()
-    else if (url.hostname === 'relaunch') restart()
-    else if (url.hostname === 'exit') exit(0)
+    else if (url.hostname === 'relaunch') store.restart()
+    else if (url.hostname === 'exit') store.quit()
   }
 }
 
@@ -355,25 +236,3 @@ listen('pause-all-request', () => store.pauseAll())
 listen('resume-all-request', () => store.resumeAll())
 listen('remove-all-request', () => store.removeAll())
 </script>
-
-<style scoped>
-.header {
-  display: flex;
-  padding: 8px;
-  padding-bottom: 4px;
-  overflow-x: auto;
-}
-.header > * {
-  flex-shrink: 0;
-}
-.main {
-  flex: 1;
-  overflow: auto;
-}
-.download-item {
-  margin: 8px;
-}
-.download-item:first-child {
-  margin-top: 0;
-}
-</style>

@@ -7,12 +7,9 @@ export interface UniquePath {
 }
 
 export async function genUniquePath(dir: string, name: string) {
-  info(`genUniquePath(${JSON.stringify(dir)}, ${JSON.stringify(name)})`)
+  const start = `genUniquePath(${JSON.stringify(dir)}, ${JSON.stringify(name)})`
+  info(start)
   const res = await invoke<UniquePath>('gen_unique_path', { dir, name })
-  info(
-    `genUniquePath(${JSON.stringify(dir)}, ${JSON.stringify(
-      name,
-    )}) => ${JSON.stringify(res)}`,
-  )
+  info(`${start} => ${JSON.stringify(res)}`)
   return res
 }

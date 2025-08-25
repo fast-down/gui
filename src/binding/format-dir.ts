@@ -1,8 +1,9 @@
 import { info } from '@tauri-apps/plugin-log'
 
 export async function formatDir(dir: string) {
-  info(`formatDir(${JSON.stringify(dir)})`)
+  const start = `formatDir(${JSON.stringify(dir)})`
+  info(start)
   const res = await invoke<string | null>('format_dir', { dir })
-  info(`formatDir(${JSON.stringify(dir)}) => ${JSON.stringify(res)}`)
+  info(`${start} => ${JSON.stringify(res)}`)
   return res
 }

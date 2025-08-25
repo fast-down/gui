@@ -1,4 +1,4 @@
-type WorkerId = number
+export type WorkerId = number
 interface Pulling {
   event: 'pulling'
   data: WorkerId
@@ -30,7 +30,7 @@ interface Finished {
 interface AllFinished {
   event: 'allFinished'
 }
-type DownloadEvent =
+export type DownloadEvent =
   | Pulling
   | PullError
   | PullProgress

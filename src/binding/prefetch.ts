@@ -20,11 +20,12 @@ export interface UrlInfo {
 }
 
 export async function prefetch(options: Prefetch) {
-  info(`prefetch(${JSON.stringify(options)})`)
+  const start = `prefetch(${JSON.stringify(options)})`
+  info(start)
   const res = await invoke<UrlInfo>(
     'prefetch',
     options as unknown as InvokeArgs,
   )
-  info(`prefetch(${JSON.stringify(options)}) => ${JSON.stringify(res)}`)
+  info(`${start} => ${JSON.stringify(res)}`)
   return res
 }

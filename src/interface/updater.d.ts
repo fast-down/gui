@@ -1,4 +1,4 @@
-interface UpdateInfo {
+export interface UpdateInfo {
   /** Update description */
   body: string | null
   /** Version used to check for update */

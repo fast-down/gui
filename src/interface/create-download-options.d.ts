@@ -1,3 +1,5 @@
+export type WriteMethod = 'mmap' | 'std'
+
 export interface CreateDownloadOptions {
   url: string
   filename: string | null
@@ -11,6 +13,6 @@ export interface CreateDownloadOptions {
   saveDir: string | null
   threads: number | null
   writeBufferSize: number | null
-  writeMethod: string | null
+  writeMethod: WriteMethod | null
   writeQueueCap: number | null
 }

@@ -1,5 +1,6 @@
 import { Channel, InvokeArgs } from '@tauri-apps/api/core'
 import { info } from '@tauri-apps/plugin-log'
+import { DownloadEvent } from '../interface/event'
 
 export interface DownloadSingle {
   options: DownloadSingleOptions

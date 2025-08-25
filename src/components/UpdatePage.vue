@@ -32,7 +32,8 @@
 <script setup lang="ts">
 import { listen } from '@tauri-apps/api/event'
 import { formatDate } from '@vueuse/core'
-import { acceptUpdate } from '../utils/accept-update'
+import { acceptUpdate } from '../binding/accept-update'
+import { UpdateInfo } from '../interface/updater'
 
 const props = defineProps<{
   visible: boolean

@@ -122,7 +122,7 @@ import { formatSize } from '../utils/format-size'
 import { formatTime } from '../utils/format-time'
 import { lerp } from '../utils/lerp'
 import { oklchToRgb } from '../utils/oklch2rgb'
-import { openFile, openFolder } from '../utils/open'
+import { openFile, openFolder } from '../binding/open'
 
 const props = defineProps<{
   downloaded: number

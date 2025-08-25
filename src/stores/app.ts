@@ -1,9 +1,12 @@
 import { Channel } from '@tauri-apps/api/core'
-import { stopDownload } from '../utils/stop-download'
+import { stopDownload } from '../binding/stop-download'
 import { disable, enable } from '@tauri-apps/plugin-autostart'
 import { info } from '@tauri-apps/plugin-log'
 import { Mutex } from '../utils/mutex'
-import { UrlInfo } from '../utils/prefetch'
+import { UrlInfo } from '../binding/prefetch'
+import { exit } from '@tauri-apps/plugin-process'
+import { WriteMethod } from '../interface/create-download-options'
+import { DownloadEvent } from '../interface/event'
 
 export interface DownloadConfig {
   threads: number
@@ -17,7 +20,7 @@ export interface DownloadConfig {
   acceptInvalidHostnames: boolean
   minChunkSize: number
   multiplexing: boolean
-  writeMethod: 'mmap' | 'std'
+  writeMethod: WriteMethod
 }
 
 export type DownloadStatus = 'pending' | 'downloading' | 'paused'
@@ -333,6 +336,16 @@ sec-ch-ua-platform: "Windows"`,
       }
     }
 
+    async function restart() {
+      await pauseAll()
+      await relaunch()
+    }
+
+    async function quit() {
+      await pauseAll()
+      await exit(0)
+    }
+
     return {
       list,
       globalConfig,
@@ -349,6 +362,8 @@ sec-ch-ua-platform: "Windows"`,
       resumeAll,
       pause,
       pauseAll,
+      restart,
+      quit,
     }
   },
   {

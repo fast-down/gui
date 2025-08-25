@@ -1,4 +1,4 @@
-export function mergeConfig(
+export function diffConfig(
   globalConfig: DownloadConfig,
   itemConfig: Partial<DownloadConfig>,
 ) {

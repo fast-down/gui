@@ -142,7 +142,8 @@
 import { Form, FormResolverOptions, FormSubmitEvent } from '@primevue/forms'
 import { open } from '@tauri-apps/plugin-dialog'
 import { writeMethodOptions } from '../utils/write-method-options'
-import { mergeConfig } from '../utils/merge-config'
+import { diffConfig } from '../utils/diff-config'
+import { headerRegex } from '../utils/build-header'
 
 const props = defineProps<{
   visible: boolean
@@ -223,7 +224,7 @@ async function resolver({ values }: FormResolverOptions) {
     .map((e: string) => e.trim())
   for (const [i, item] of headers.entries()) {
     if (!item) continue
-    if (!item.match(/^\s*([^:]+?)\s*:\s*(.+)\s*$/)) {
+    if (!item.match(headerRegex)) {
       errors.headers ??= []
       errors.headers.push({ message: `第 ${i + 1} 行请求头格式不正确` })
     }
@@ -246,7 +247,7 @@ function onFormSubmit(event: FormSubmitEvent) {
     store.add(url, {
       paused: target.dataset.action === 'after',
       needPrefetch: true,
-      config: mergeConfig(store.globalConfig, {
+      config: diffConfig(store.globalConfig, {
         threads: formData.threads.value,
         saveDir: formData.saveDir.value,
         headers: formData.headers.value,

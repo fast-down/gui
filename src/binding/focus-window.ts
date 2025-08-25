@@ -3,8 +3,9 @@ import { info } from '@tauri-apps/plugin-log'
 
 export async function focusWindow() {
   info('focusWindow')
-  return getCurrentWindow()
+  const window = getCurrentWindow()
+  return window
     .show()
-    .finally(() => getCurrentWindow().unminimize())
-    .finally(() => getCurrentWindow().setFocus())
+    .finally(() => window.unminimize())
+    .finally(() => window.setFocus())
 }

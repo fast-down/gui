@@ -1,5 +1,7 @@
 import { Channel, InvokeArgs } from '@tauri-apps/api/core'
 import { info } from '@tauri-apps/plugin-log'
+import { WriteMethod } from '../interface/create-download-options'
+import { DownloadEvent } from '../interface/event'
 
 export interface DownloadMulti {
   options: DownloadMultiOptions
@@ -21,7 +23,7 @@ export interface DownloadMultiOptions {
   acceptInvalidCerts: boolean
   acceptInvalidHostnames: boolean
   proxy: string | null
-  writeMethod: string
+  writeMethod: WriteMethod
   initProgress: [number, number][][]
   initDownloaded: number
 }

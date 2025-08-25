@@ -49,6 +49,21 @@
       "desktop": {
         "schemes": ["fast-down"]
       }
+    },
+    "cli": {
+      "description": "fast-down cli",
+      "subcommands": {
+        "download": {
+          "description": "download file",
+          "args": [
+            {
+              "name": "url",
+              "index": 1,
+              "takesValue": true
+            }
+          ]
+        }
+      }
     }
   }
 }

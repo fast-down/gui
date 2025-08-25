@@ -1,7 +1,3 @@
-html {
-  overflow: hidden;
-}
-
 body {
   margin: 0;
 }
@@ -10,10 +6,6 @@ body {
   display: flex;
   flex-direction: column;
   height: 100vh;
-}
-
-:root {
-  font-family: "Roboto", sans-serif, system-ui;
 }
 
 .list-move,
