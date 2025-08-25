@@ -35,6 +35,7 @@ impl<RE: Debug, WE: Debug> From<fast_down::Event<RE, WE>> for Event {
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct DownloadItemId {
     pub file_path: String,
 }

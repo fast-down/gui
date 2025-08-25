@@ -8,12 +8,12 @@
 
 ![Gui Interface](/docs/gui.png)
 
-**[Download](https://github.com/fast-down/gui/releases)**
+**[Official Website (Simplified Chinese)](https://fast.s121.top/)**
 
 ## Features
 
 1. **⚡️ Fastest Download** \
-   We created [fast-steal](https://github.com/fast-down/fast-steal) With optimized Work Stealing, **6.258 x faster** than IDM.
+   We created [fast-steal](https://github.com/fast-down/core) With optimized Work Stealing, **6.258 x faster** than IDM.
 2. **🔄 File consistency** \
    Switching Wi-Fi, Turn Off Wi-Fi, Switch proxies. **We guarantee the consistency**.
 3. **⛓️‍💥 Resuming Downloads** \
@@ -29,6 +29,10 @@
    | 64 bit | [Download][1]   | [Download][2]   | [Download][3]   |
    | 32 bit | [Download][4]   | ❌ Not Supported | ❌ Not Supported |
    | Arm64  | ❌ Not Supported | [Download][5]   | [Download][6]   |
+
+7. **Support deep link calls**
+8. **Support HTTP API calls** \
+   [API Example](./api.http)
 
 [1]: https://fast-down-update.s121.top/gui/download/latest/windows/64bit
 [2]: https://fast-down-update.s121.top/gui/download/latest/linux/64bit

@@ -1,0 +1,47 @@
+POST http://127.0.0.1:6121/download HTTP/1.1
+Content-Type: application/json
+
+{
+  "url": "https://fastcdn.mihoyo.com/content-v2/hk4e/129675/6c71b15557641609fc076c6b70e17d26_7388405100347344470.mp4",
+  "filename": "test.mp4",
+  "threads": 32
+}
+
+###
+
+POST http://127.0.0.1:6121/resume HTTP/1.1
+Content-Type: application/json
+
+{
+  "filePath": "\\\\?\\D:\\Download\\test (5).mp4"
+}
+
+###
+
+POST http://127.0.0.1:6121/pause HTTP/1.1
+Content-Type: application/json
+
+{
+  "filePath": "\\\\?\\D:\\Download\\test (5).mp4"
+}
+
+###
+
+POST http://127.0.0.1:6121/remove HTTP/1.1
+Content-Type: application/json
+
+{
+  "filePath": "\\\\?\\D:\\Download\\test (5).mp4"
+}
+
+###
+
+POST http://127.0.0.1:6121/resume-all HTTP/1.1
+
+###
+
+POST http://127.0.0.1:6121/pause-all HTTP/1.1
+
+###
+
+POST http://127.0.0.1:6121/remove-all HTTP/1.1
