@@ -8,6 +8,8 @@ import { exit } from '@tauri-apps/plugin-process'
 import { WriteMethod } from '../interface/create-download-options'
 import { DownloadEvent } from '../interface/event'
 import { path } from '@tauri-apps/api'
+import { showNotification } from '../binding/notification'
+import { isFocusWindow } from '../binding/focus-window'
 
 export interface DownloadConfig {
   threads: number
@@ -279,6 +281,10 @@ sec-ch-ua-platform: "Windows"`,
           lastModified: urlInfo.lastModified,
           count: 0,
           config: options.config,
+        })
+        isFocusWindow().then(isFocus => {
+          if (isFocus) return
+          showNotification({ title: '添加任务成功', body: urlInfo.name })
         })
         const entry = list.value[0]
         if (options.paused || entry.status !== 'downloading') {

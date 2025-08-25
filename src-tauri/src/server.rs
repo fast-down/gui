@@ -1,10 +1,9 @@
+use crate::event::DownloadItemId;
 use axum::{Json, Router, extract::State, routing::post};
 use reqwest::StatusCode;
 use serde::{Deserialize, Serialize};
-use std::io;
+use std::{io, time::Duration};
 use tauri::Emitter;
-
-use crate::event::DownloadItemId;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -116,7 +115,14 @@ pub async fn start_server(handle: tauri::AppHandle) -> io::Result<()> {
         .route("/resume-all", post(resume_all))
         .route("/remove-all", post(remove_all))
         .with_state(state);
-    let listener = tokio::net::TcpListener::bind("0.0.0.0:6121").await?;
+    let listener = loop {
+        let res = tokio::net::TcpListener::bind("0.0.0.0:6121").await;
+        match res {
+            Ok(listener) => break listener,
+            Err(e) => log::error!("Failed to bind to port 6121: {e:?}"),
+        }
+        tokio::time::sleep(Duration::from_secs(1)).await;
+    };
     axum::serve(listener, app).await?;
     Ok(())
 }

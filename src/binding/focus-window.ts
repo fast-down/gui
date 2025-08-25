@@ -9,3 +9,7 @@ export async function focusWindow() {
     .finally(() => window.unminimize())
     .finally(() => window.setFocus())
 }
+
+export async function isFocusWindow() {
+  return getCurrentWindow().isFocused()
+}
