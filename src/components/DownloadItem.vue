@@ -105,7 +105,7 @@
       </table>
     </template>
     <template #footer v-if="detailProgressRaw.length">
-      <div class="details" :class="{ open: isShow }">
+      <div class="details" :class="{ open: props.opened }">
         <div
           v-for="info in detailProgress"
           :style="info"
@@ -133,10 +133,17 @@ const props = defineProps<{
   readProgress: [number, number][][]
   speed: number
   status: DownloadStatus
+  opened: boolean
 }>()
-const emit = defineEmits(['resume', 'pause', 'remove', 'update', 'detail'])
+const emit = defineEmits([
+  'resume',
+  'pause',
+  'remove',
+  'update',
+  'detail',
+  'toggle-open',
+])
 
-const isShow = ref(false)
 const eta = computed(() =>
   props.fileSize ? (props.fileSize - props.downloaded) / props.speed : 0,
 )
@@ -150,24 +157,15 @@ const progress = computed(() =>
 const bgProgress = computed(() => progress.value + '%')
 const detailProgressRaw = computed(() => {
   if (!props.fileSize) return []
-  return props.readProgress
-    .map((progress, i, arr) =>
-      progress
-        .map(p => ({
-          width: ((p[1] - p[0]) / props.fileSize) * 100,
-          left: (p[0] / props.fileSize) * 100,
-          '--rgb': oklchToRgb(0.8, 0.18, lerp(0, 360, i / arr.length)),
-          backgroundColor: `oklch(0.8 0.18 ${lerp(0, 360, i / arr.length)})`,
-        }))
-        .filter(e => e.width >= 1),
-    )
-    .filter(e => e.length)
-    .map((e, i) =>
-      e.map(e => ({
-        ...e,
-        top: isShow.value ? i * 12 : 0,
-      })),
-    )
+  return props.readProgress.map((progress, i, arr) =>
+    progress.map(p => ({
+      width: ((p[1] - p[0]) / props.fileSize) * 100,
+      left: (p[0] / props.fileSize) * 100,
+      '--rgb': oklchToRgb(0.8, 0.18, lerp(0, 360, i / arr.length)),
+      backgroundColor: `oklch(0.8 0.18 ${lerp(0, 360, i / arr.length)})`,
+      top: props.opened ? i * 12 : 0,
+    })),
+  )
 })
 const detailProgress = computed(() => {
   if (!props.fileSize) return []
@@ -181,7 +179,7 @@ const detailProgress = computed(() => {
   }))
 })
 const detailProgressHeight = computed(() =>
-  isShow.value ? detailProgressRaw.value.length * 12 + 'px' : '12px',
+  props.opened ? detailProgressRaw.value.length * 12 + 'px' : '12px',
 )
 
 let timer: number | null = null
@@ -216,7 +214,7 @@ async function clickHandler(event: MouseEvent) {
     if (target instanceof HTMLButtonElement) return
     target = target.parentElement as HTMLElement
   }
-  isShow.value = !isShow.value
+  emit('toggle-open')
 }
 </script>
 
@@ -258,6 +256,8 @@ th {
   position: relative;
   height: v-bind('detailProgressHeight');
   transition: height 0.2s ease;
+  border-radius: 6px;
+  overflow: hidden;
 
   div {
     position: absolute;

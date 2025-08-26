@@ -43,6 +43,7 @@ export interface DownloadEntry {
   lastModified: string | null
   count: number
   config?: Partial<DownloadConfig>
+  opened: boolean
 }
 
 export type AddOptions =
@@ -79,7 +80,7 @@ sec-ch-ua-platform: "Windows"`,
       acceptInvalidCerts: false,
       acceptInvalidHostnames: false,
       minChunkSize: 8 * 1024,
-      multiplexing: true,
+      multiplexing: false,
       writeMethod: 'mmap',
     })
     const autoStart = ref(false)
@@ -282,6 +283,7 @@ sec-ch-ua-platform: "Windows"`,
           lastModified: urlInfo.lastModified,
           count: 0,
           config: options.config,
+          opened: false,
         })
         isFocusWindow().then(isFocus => {
           if (isFocus) return

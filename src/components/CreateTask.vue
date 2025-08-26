@@ -166,7 +166,7 @@ const initialValues = ref({
   minChunkSize: 8 * 1024,
   acceptInvalidCerts: false,
   acceptInvalidHostnames: false,
-  multiplexing: true,
+  multiplexing: false,
   writeMethod: 'mmap',
 })
 watchEffect(() => {
