@@ -179,6 +179,7 @@ sec-ch-ua-platform: "Windows"`,
           acceptInvalidHostnames: config.acceptInvalidHostnames,
         })
         if (localCount !== entry.count) return (entry.status = 'paused')
+        entry.fileSize = urlInfo.size
         if (runningCount.value >= maxConcurrentTasks.value) return
         if (!urlInfo.fastDownload || entry.downloaded >= urlInfo.size) {
           entry.status = 'paused'
