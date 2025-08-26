@@ -52,16 +52,22 @@
       size="small"
     />
   </header>
-  <TransitionGroup
-    name="list"
-    tag="main"
-    ref="main"
-    @before-leave="onBeforeLeave"
-  >
-    <template v-for="[index, item] in showList.entries()" :key="item.filePath">
-      <div class="download-item" :style="{ height: itemSize[index] + 'px' }">
+  <main ref="main">
+    <TransitionGroup
+      name="list"
+      tag="div"
+      :style="{ height: itemHeight + 'px' }"
+      style="position: relative"
+      @before-leave="onBeforeLeave"
+    >
+      <template
+        v-for="[index, item] in showList.entries()"
+        :key="item.filePath"
+      >
         <DownloadItem
           v-if="itemVisible[index]"
+          class="download-item"
+          :style="{ top: itemVisibleRange[index].start + 'px' }"
           :downloaded="item.downloaded"
           :elapsed-ms="item.elapsedMs"
           :file-name="item.fileName"
@@ -78,9 +84,9 @@
           @detail="showDetail(item.filePath)"
           @toggle-open="item.opened = !item.opened"
         />
-      </div>
-    </template>
-  </TransitionGroup>
+      </template>
+    </TransitionGroup>
+  </main>
   <UpdatePage v-model:visible="updatePageVisible" />
   <DetailPage v-model:visible="detailPageVisible" :file-path="detailItem" />
 </template>
@@ -109,10 +115,8 @@ const showList = computed(() =>
   store.list.filter(e => showTypes.value.includes(e.status)),
 )
 const itemSize = computed(() =>
-  showList.value.map((item, i, arr) => {
-    let height = 164
-    if (i !== 0) height += 8 // margin-top
-    if (i === arr.length - 1) height += 8 // margin-bottom
+  showList.value.map(item => {
+    let height = 172
     if (item.fileSize && item.readProgress.length) {
       height += 8 // footer gap
       if (item.opened) height += item.readProgress.length * 12
@@ -121,6 +125,7 @@ const itemSize = computed(() =>
     return height
   }),
 )
+const itemHeight = computed(() => itemSize.value.reduce((a, b) => a + b, 0))
 const itemVisibleRange = computed(() => {
   let current = 0
   return itemSize.value.map(size => {
@@ -170,14 +175,8 @@ main {
   overflow: hidden auto;
 }
 .download-item {
-  box-sizing: border-box;
-  padding: 8px 8px 0 8px;
-
-  &:first-child {
-    padding-top: 0;
-  }
-  &:last-child {
-    padding-bottom: 8px;
-  }
+  position: absolute;
+  left: 8px;
+  right: 8px;
 }
 </style>
