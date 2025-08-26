@@ -182,7 +182,7 @@ sec-ch-ua-platform: "Windows"`,
         if (runningCount.value >= maxConcurrentTasks.value) return
         if (!urlInfo.fastDownload || entry.downloaded >= urlInfo.size) {
           entry.status = 'paused'
-          return add(entry.url, { urlInfo })
+          return add(entry.url, { urlInfo, config: entry.config })
         }
         entry.status = 'downloading'
         const channel = new Channel<DownloadEvent>(res => {
