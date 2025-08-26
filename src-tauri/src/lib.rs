@@ -1,6 +1,8 @@
+use spin::mutex::SpinMutex;
 use tauri::Manager;
 use tauri_plugin_deep_link::DeepLinkExt;
 use tauri_plugin_log::{Target, TargetKind};
+use tokio::sync::oneshot;
 
 // fix someone who's linking libz without making sure it exist
 #[cfg(unix)]
@@ -19,6 +21,11 @@ mod puller;
 mod relaunch;
 mod server;
 mod updater;
+
+pub struct AppData {
+    shutdown_sender: SpinMutex<Option<oneshot::Sender<()>>>,
+    shutdown_finished_receiver: SpinMutex<Option<oneshot::Receiver<()>>>,
+}
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -49,7 +56,6 @@ pub fn run() {
                 .build(),
         )
         .plugin(tauri_plugin_notification::init())
-        .plugin(tauri_plugin_cli::init())
         .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_autostart::init(
@@ -77,13 +83,22 @@ pub fn run() {
                 app.deep_link().register_all(),
                 "register all deep_link error"
             );
+            let (shutdown_sender, shutdown_receiver) = oneshot::channel();
+            let (shutdown_finished_sender, shutdown_finished_receiver) = oneshot::channel();
+            app.manage(AppData {
+                shutdown_sender: SpinMutex::new(Some(shutdown_sender)),
+                shutdown_finished_receiver: SpinMutex::new(Some(shutdown_finished_receiver)),
+            });
             let handle = app.handle().clone();
             tauri::async_runtime::spawn(async move {
                 log_if_err!(updater::update(handle).await, "update error");
             });
             let handle = app.handle().clone();
             tauri::async_runtime::spawn(async move {
-                log_if_err!(server::start_server(handle).await, "server error");
+                log_if_err!(
+                    server::start_server(handle, shutdown_receiver, shutdown_finished_sender).await,
+                    "server error"
+                );
             });
             Ok(())
         })

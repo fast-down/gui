@@ -1,9 +1,10 @@
-use crate::event::DownloadItemId;
+use crate::{event::DownloadItemId, log_if_err};
 use axum::{Json, Router, extract::State, routing::post};
 use reqwest::StatusCode;
 use serde::{Deserialize, Serialize};
 use std::{io, time::Duration};
 use tauri::Emitter;
+use tokio::sync::oneshot;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -104,7 +105,11 @@ async fn remove_all(State(state): State<AppState>) -> StatusCode {
     }
 }
 
-pub async fn start_server(handle: tauri::AppHandle) -> io::Result<()> {
+pub async fn start_server(
+    handle: tauri::AppHandle,
+    shutdown_receiver: oneshot::Receiver<()>,
+    shutdown_finished_sender: oneshot::Sender<()>,
+) -> io::Result<()> {
     let state = AppState { handle };
     let app = Router::new()
         .route("/download", post(download))
@@ -123,6 +128,12 @@ pub async fn start_server(handle: tauri::AppHandle) -> io::Result<()> {
         }
         tokio::time::sleep(Duration::from_secs(1)).await;
     };
-    axum::serve(listener, app).await?;
+    axum::serve(listener, app)
+        .with_graceful_shutdown(async {
+            log_if_err!(shutdown_receiver.await, "Failed to receive shutdown signal");
+            log::info!("Server is shutting down gracefully...");
+            shutdown_finished_sender.send(()).ok();
+        })
+        .await?;
     Ok(())
 }
