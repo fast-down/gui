@@ -9,7 +9,7 @@
     :closable="false"
   >
     <div>
-      <div>修复了一些已知问题</div>
+      <div class="markdown-body" v-html="updateInfo.body"></div>
       <Divider />
       <div v-if="updateInfo.date">
         发布时间：{{

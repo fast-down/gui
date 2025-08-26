@@ -1,7 +1,7 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "fast-down-gui",
-  "version": "0.1.28",
+  "version": "0.1.29",
   "identifier": "com.fast-down.fast-down-gui",
   "build": {
     "beforeDevCommand": "bun run dev",
@@ -39,10 +39,7 @@
   "plugins": {
     "updater": {
       "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDI1RUMwNkFDQjI1MTE4NQpSV1NGRVNYTGFzQmVBbmNqQXd0OUNFNW5tQndSM1loMi9DSFNiRHhwU0RJWXVaWE1oSVp5YWpOZgo=",
-      "endpoints": [
-        "https://github.com/fast-down/gui/releases/latest/download/latest.json",
-        "https://fast-down-update.s121.top/gui/latest"
-      ]
+      "endpoints": ["https://fast-down-update.s121.top/gui/latest"]
     },
     "deep-link": {
       "mobile": [{ "host": "fast.s121.top", "pathPrefix": ["/open"] }],

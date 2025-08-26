@@ -51,3 +51,7 @@ body {
   align-items: center;
   gap: 8px;
 }
+
+.markdown-body {
+  background-color: transparent !important;
+}
