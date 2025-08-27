@@ -24,7 +24,13 @@
           >
         </div>
         <IftaLabel>
-          <InputNumber name="threads" :min="1" fluid />
+          <InputNumber
+            name="threads"
+            :min="1"
+            :format="false"
+            show-buttons
+            fluid
+          />
           <label for="threads">线程数</label>
         </IftaLabel>
         <div>
@@ -63,23 +69,53 @@
           >
         </div>
         <IftaLabel>
-          <InputNumber name="maxConcurrentTasks" :min="1" fluid />
+          <InputNumber
+            name="maxConcurrentTasks"
+            :min="1"
+            :format="false"
+            show-buttons
+            fluid
+          />
           <label for="maxConcurrentTasks">最大并发任务数</label>
         </IftaLabel>
         <IftaLabel>
-          <InputNumber name="writeBufferSize" :min="0" fluid />
+          <InputNumber
+            name="writeBufferSize"
+            :min="1"
+            :format="false"
+            show-buttons
+            fluid
+          />
           <label for="writeBufferSize">写入缓冲区大小 (字节)</label>
         </IftaLabel>
         <IftaLabel>
-          <InputNumber name="writeQueueCap" :min="0" fluid />
+          <InputNumber
+            name="writeQueueCap"
+            :min="1"
+            :format="false"
+            show-buttons
+            fluid
+          />
           <label for="writeQueueCap">写入队列容量</label>
         </IftaLabel>
         <IftaLabel>
-          <InputNumber name="retryGap" :min="0" fluid />
+          <InputNumber
+            name="retryGap"
+            :min="0"
+            :format="false"
+            show-buttons
+            fluid
+          />
           <label for="retryGap">重试间隔 (ms)</label>
         </IftaLabel>
         <IftaLabel>
-          <InputNumber name="minChunkSize" :min="0" fluid />
+          <InputNumber
+            name="minChunkSize"
+            :min="2"
+            :format="false"
+            show-buttons
+            fluid
+          />
           <label for="minChunkSize">最小分块大小 (字节)</label>
         </IftaLabel>
         <Select
