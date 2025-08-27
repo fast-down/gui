@@ -53,13 +53,7 @@
     />
   </header>
   <main ref="main">
-    <TransitionGroup
-      name="list"
-      tag="div"
-      :style="{ height: itemHeight + 'px' }"
-      style="position: relative"
-      @before-leave="onBeforeLeave"
-    >
+    <div :style="{ height: itemHeight + 'px' }" style="position: relative">
       <template
         v-for="[index, item] in showList.entries()"
         :key="item.filePath"
@@ -85,7 +79,7 @@
           @toggle-open="item.opened = !item.opened"
         />
       </template>
-    </TransitionGroup>
+    </div>
   </main>
   <UpdatePage v-model:visible="updatePageVisible" />
   <DetailPage v-model:visible="detailPageVisible" :file-path="detailItem" />
@@ -153,10 +147,6 @@ function updateEntry(
   item.elapsedMs = data.elapsedMs
   item.speed = data.speed
 }
-
-function onBeforeLeave(el: Element) {
-  if (el instanceof HTMLElement) el.style.width = el.clientWidth + 'px'
-}
 </script>
 
 <style scoped lang="postcss">
@@ -178,5 +168,6 @@ main {
   position: absolute;
   left: 8px;
   right: 8px;
+  transition: top 0.2s ease;
 }
 </style>
