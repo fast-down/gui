@@ -28,7 +28,8 @@ export interface DownloadConfig {
 
 export type DownloadStatus = 'pending' | 'downloading' | 'paused'
 
-export interface DownloadEntry {
+export interface KnownDownloadEntry {
+  id: number
   url: string
   filePath: string
   fileName: string
@@ -44,7 +45,18 @@ export interface DownloadEntry {
   count: number
   config?: Partial<DownloadConfig>
   opened: boolean
+  needPrefetch: false
 }
+export interface UnknownDownloadEntry {
+  id: number
+  url: string
+  status: DownloadStatus
+  count: number
+  config?: Partial<DownloadConfig>
+  opened: boolean
+  needPrefetch: true
+}
+export type DownloadEntry = KnownDownloadEntry | UnknownDownloadEntry
 
 export type AddOptions =
   | {
@@ -118,15 +130,22 @@ sec-ch-ua-platform: "Windows"`,
       }
     })
 
-    function remove(filePath: string) {
-      const i = list.value.findIndex(e => e.filePath === filePath)
-      if (i != -1) list.value.splice(i, 1)[0].count++
-      return stopDownload(filePath)
+    function remove(id: number) {
+      const i = list.value.findIndex(e => e.id === id)
+      if (i != -1) {
+        const e = list.value.splice(i, 1)[0]
+        e.count++
+        if (!e.needPrefetch) return stopDownload(e.filePath)
+      }
     }
 
     function removeAll() {
       const p: Promise<void>[] = []
       list.value = list.value.filter(e => {
+        if (e.needPrefetch) {
+          e.count++
+          return false
+        }
         const r = e.status === 'paused' && e.downloaded >= e.fileSize
         if (r) {
           e.count++
@@ -137,31 +156,31 @@ sec-ch-ua-platform: "Windows"`,
       return Promise.all(p)
     }
 
-    function pause(filePath: string) {
-      const entry = list.value.find(e => e.filePath === filePath)
+    function pause(id: number) {
+      const entry = list.value.find(e => e.id === id)
       if (!entry) return
       entry.count++
       if (entry.status === 'pending') entry.status = 'paused'
-      else return stopDownload(filePath)
+      else if (!entry.needPrefetch) return stopDownload(entry.filePath)
     }
 
     function pauseAll() {
       list.value
-        .filter(e => e.status === 'pending')
+        .filter(e => e.status === 'pending' || e.needPrefetch)
         .forEach(e => (e.status = 'paused'))
       return Promise.all(
         list.value.map(e => {
           e.count++
-          return stopDownload(e.filePath)
+          return e.needPrefetch || stopDownload(e.filePath)
         }),
       )
     }
 
-    async function resume(filePathOrEntry: string | DownloadEntry) {
+    async function resume(idOrEntry: number | DownloadEntry) {
       const entry =
-        typeof filePathOrEntry === 'string'
-          ? list.value.find(e => e.filePath === filePathOrEntry)
-          : filePathOrEntry
+        typeof idOrEntry === 'number'
+          ? list.value.find(e => e.id === idOrEntry)
+          : idOrEntry
       if (!entry || entry.status === 'downloading') return
       entry.status = 'pending'
       if (runningCount.value >= maxConcurrentTasks.value) return
@@ -180,7 +199,17 @@ sec-ch-ua-platform: "Windows"`,
           acceptInvalidHostnames: config.acceptInvalidHostnames,
         })
         if (localCount !== entry.count) return (entry.status = 'paused')
-        entry.fileSize = urlInfo.size
+        entry.needPrefetch = false
+        if (entry.needPrefetch) return // type infer
+        Object.assign(entry, {
+          etag,
+          fastDownload,
+          finalUrl,
+          lastModified,
+          name,
+          size,
+          supportsRange,
+        } as UrlInfo)
         if (runningCount.value >= maxConcurrentTasks.value) return
         if (!urlInfo.fastDownload || entry.downloaded >= urlInfo.size) {
           entry.status = 'paused'
@@ -265,6 +294,7 @@ sec-ch-ua-platform: "Windows"`,
         const filePath = await genUniquePath(config.saveDir, urlInfo.name)
         await remove(filePath.path)
         list.value.unshift({
+          id: list.value.length ? list.value[0].id + 1 : 0,
           url: urlInfo.finalUrl,
           filePath: filePath.path,
           fileName: filePath.name,
