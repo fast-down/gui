@@ -1,8 +1,11 @@
 use bytes::Bytes;
-use fast_down::{RandPuller, SeqPuller, reqwest::ReqwestPuller};
+use fast_down::{
+    FileId, RandPuller, SeqPuller,
+    http::{HttpError, HttpPuller},
+};
 use futures::TryStream;
 use reqwest::{
-    ClientBuilder, Proxy,
+    Client, ClientBuilder, Proxy, Response,
     header::{HeaderMap, HeaderValue},
 };
 use std::sync::Arc;
@@ -31,77 +34,85 @@ pub fn build_client(
 }
 
 pub struct FastDownPuller {
-    inner: ReqwestPuller,
+    inner: HttpPuller<Client>,
     headers: Arc<HeaderMap<HeaderValue>>,
     proxy: Arc<str>,
     url: Arc<Url>,
     multiplexing: bool,
     accept_invalid_certs: bool,
     accept_invalid_hostnames: bool,
+    file_id: FileId,
+}
+
+pub struct FastDownPullerOptions<'a> {
+    pub url: Url,
+    pub resp: Option<Response>,
+    pub headers: HeaderMap<HeaderValue>,
+    pub proxy: &'a str,
+    pub multiplexing: bool,
+    pub accept_invalid_certs: bool,
+    pub accept_invalid_hostnames: bool,
+    pub file_id: FileId,
 }
 
 impl FastDownPuller {
-    pub fn new(
-        url: Url,
-        headers: HeaderMap<HeaderValue>,
-        proxy: &str,
-        multiplexing: bool,
-        accept_invalid_certs: bool,
-        accept_invalid_hostnames: bool,
-    ) -> Result<Self, reqwest::Error> {
+    pub fn new(option: FastDownPullerOptions) -> Result<Self, reqwest::Error> {
         let client = build_client(
-            &headers,
-            proxy,
-            accept_invalid_certs,
-            accept_invalid_hostnames,
+            &option.headers,
+            option.proxy,
+            option.accept_invalid_certs,
+            option.accept_invalid_hostnames,
         )?;
         Ok(Self {
-            inner: ReqwestPuller::new(url.clone(), client),
-            headers: Arc::new(headers),
-            proxy: Arc::from(proxy),
-            url: Arc::new(url),
-            multiplexing,
-            accept_invalid_certs,
-            accept_invalid_hostnames,
+            inner: HttpPuller::new(
+                option.url.clone(),
+                client,
+                option.resp,
+                option.file_id.clone(),
+            ),
+            headers: Arc::new(option.headers),
+            proxy: Arc::from(option.proxy),
+            url: Arc::new(option.url),
+            multiplexing: option.multiplexing,
+            accept_invalid_certs: option.accept_invalid_certs,
+            accept_invalid_hostnames: option.accept_invalid_hostnames,
+            file_id: option.file_id,
         })
     }
 }
 
 impl Clone for FastDownPuller {
     fn clone(&self) -> Self {
-        if self.multiplexing {
-            Self {
-                inner: self.inner.clone(),
-                headers: self.headers.clone(),
-                proxy: self.proxy.clone(),
-                url: self.url.clone(),
-                multiplexing: self.multiplexing,
-                accept_invalid_certs: self.accept_invalid_certs,
-                accept_invalid_hostnames: self.accept_invalid_hostnames,
-            }
-        } else {
-            let client = build_client(
-                &self.headers,
-                &self.proxy,
-                self.accept_invalid_certs,
-                self.accept_invalid_hostnames,
-            )
-            .unwrap();
-            Self {
-                inner: ReqwestPuller::new(self.url.as_ref().clone(), client),
-                headers: self.headers.clone(),
-                proxy: self.proxy.clone(),
-                url: self.url.clone(),
-                multiplexing: self.multiplexing,
-                accept_invalid_certs: self.accept_invalid_certs,
-                accept_invalid_hostnames: self.accept_invalid_hostnames,
-            }
+        Self {
+            inner: if !self.multiplexing
+                && let Ok(client) = build_client(
+                    &self.headers,
+                    &self.proxy,
+                    self.accept_invalid_certs,
+                    self.accept_invalid_hostnames,
+                ) {
+                HttpPuller::new(
+                    self.url.as_ref().clone(),
+                    client,
+                    None,
+                    self.file_id.clone(),
+                )
+            } else {
+                self.inner.clone()
+            },
+            headers: self.headers.clone(),
+            proxy: self.proxy.clone(),
+            url: self.url.clone(),
+            multiplexing: self.multiplexing,
+            accept_invalid_certs: self.accept_invalid_certs,
+            accept_invalid_hostnames: self.accept_invalid_hostnames,
+            file_id: self.file_id.clone(),
         }
     }
 }
 
 impl RandPuller for FastDownPuller {
-    type Error = reqwest::Error;
+    type Error = HttpError<Client>;
     fn pull(
         &mut self,
         range: &fast_down::ProgressEntry,
@@ -111,7 +122,7 @@ impl RandPuller for FastDownPuller {
 }
 
 impl SeqPuller for FastDownPuller {
-    type Error = reqwest::Error;
+    type Error = HttpError<Client>;
     fn pull(&mut self) -> impl TryStream<Ok = Bytes, Error = Self::Error> + Send + Unpin {
         SeqPuller::pull(&mut self.inner)
     }

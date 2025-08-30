@@ -1,8 +1,8 @@
 extern crate sanitize_filename;
 use crate::puller;
-use fast_down::reqwest::Prefetch;
+use fast_down::http::Prefetch;
 use serde::Serialize;
-use std::collections::HashMap;
+use std::{collections::HashMap, sync::Arc};
 use tauri::http::HeaderMap;
 
 #[derive(Debug, Serialize)]
@@ -13,8 +13,8 @@ pub struct UrlInfo {
     pub supports_range: bool,
     pub fast_download: bool,
     pub final_url: String,
-    pub etag: Option<String>,
-    pub last_modified: Option<String>,
+    pub etag: Option<Arc<str>>,
+    pub last_modified: Option<Arc<str>>,
 }
 
 impl From<fast_down::UrlInfo> for UrlInfo {
@@ -36,8 +36,8 @@ impl From<fast_down::UrlInfo> for UrlInfo {
             supports_range: value.supports_range,
             fast_download: value.fast_download,
             final_url: value.final_url.to_string(),
-            etag: value.etag,
-            last_modified: value.last_modified,
+            etag: value.file_id.etag,
+            last_modified: value.file_id.last_modified,
         }
     }
 }
@@ -61,9 +61,7 @@ pub async fn prefetch(
         accept_invalid_hostnames,
     )
     .map_err(|e| format!("{e:?}"))?;
-    client
-        .prefetch(url)
-        .await
-        .map_err(|e| format!("{e:?}"))
-        .map(UrlInfo::from)
+    let url = url.parse().map_err(|e| format!("{e:?}"))?;
+    let (info, _resp) = client.prefetch(url).await.map_err(|e| format!("{e:?}"))?;
+    Ok(UrlInfo::from(info))
 }

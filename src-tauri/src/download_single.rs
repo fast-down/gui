@@ -1,15 +1,16 @@
 use crate::{
     download_error::DownloadError,
     event::{DownloadItemId, Event},
-    puller::FastDownPuller,
+    puller::{FastDownPuller, FastDownPullerOptions},
 };
 use fast_down::{
-    Total,
+    FileId, Total,
     file::{FilePusherError, SeqFilePusher},
     single,
 };
 use std::{
     collections::HashMap,
+    sync::Arc,
     time::{Duration, Instant},
 };
 use tauri::{AppHandle, Listener, http::HeaderMap, ipc::Channel};
@@ -29,6 +30,8 @@ pub struct DownloadOptions {
     pub accept_invalid_certs: bool,
     pub accept_invalid_hostnames: bool,
     pub proxy: String,
+    pub etag: Option<Arc<str>>,
+    pub last_modified: Option<Arc<str>>,
 }
 
 #[tauri::command]
@@ -44,14 +47,19 @@ pub async fn download_single(
         .filter_map(|(k, v)| Some((k.parse().ok()?, v.parse().ok()?)))
         .collect::<HeaderMap>();
     let retry_gap = Duration::from_millis(options.retry_gap);
-    let puller = FastDownPuller::new(
+    let puller = FastDownPuller::new(FastDownPullerOptions {
         url,
         headers,
-        &options.proxy,
-        options.multiplexing,
-        options.accept_invalid_certs,
-        options.accept_invalid_hostnames,
-    )?;
+        proxy: &options.proxy,
+        multiplexing: options.multiplexing,
+        accept_invalid_certs: options.accept_invalid_certs,
+        accept_invalid_hostnames: options.accept_invalid_hostnames,
+        file_id: FileId {
+            etag: options.etag,
+            last_modified: options.last_modified,
+        },
+        resp: None,
+    })?;
     let file = OpenOptions::new()
         .write(true)
         .create(true)

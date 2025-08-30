@@ -2,16 +2,17 @@ use crate::{
     download_error::DownloadError,
     event::{DownloadItemId, Event},
     format_progress::fmt_progress,
-    puller::FastDownPuller,
+    puller::{FastDownPuller, FastDownPullerOptions},
 };
 use fast_down::{
-    MergeProgress, ProgressEntry, Total,
+    FileId, MergeProgress, ProgressEntry, Total,
     file::{FilePusherError, RandFilePusherMmap, RandFilePusherStd},
     multi,
 };
 use std::{
     collections::HashMap,
     num::NonZero,
+    sync::Arc,
     time::{Duration, Instant},
 };
 use tauri::{AppHandle, Listener, http::HeaderMap, ipc::Channel};
@@ -48,6 +49,8 @@ pub struct DownloadOptions {
     pub write_method: String,
     pub init_progress: Vec<Vec<(u64, u64)>>,
     pub init_downloaded: u64,
+    pub etag: Option<Arc<str>>,
+    pub last_modified: Option<Arc<str>>,
 }
 
 #[tauri::command]
@@ -73,14 +76,19 @@ pub async fn download_multi(
         "std" => WriteMethod::Std,
         _ => WriteMethod::Std,
     };
-    let puller = FastDownPuller::new(
+    let puller = FastDownPuller::new(FastDownPullerOptions {
         url,
         headers,
-        &options.proxy,
-        options.multiplexing,
-        options.accept_invalid_certs,
-        options.accept_invalid_hostnames,
-    )?;
+        proxy: &options.proxy,
+        multiplexing: options.multiplexing,
+        accept_invalid_certs: options.accept_invalid_certs,
+        accept_invalid_hostnames: options.accept_invalid_hostnames,
+        resp: None,
+        file_id: FileId {
+            etag: options.etag,
+            last_modified: options.last_modified,
+        },
+    })?;
     let pusher = match write_method {
         WriteMethod::Mmap => {
             let res = RandFilePusherMmap::new(

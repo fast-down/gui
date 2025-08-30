@@ -1,14 +1,19 @@
 use crate::{
     log_if_err,
-    puller::{self, FastDownPuller},
+    puller::{self, FastDownPuller, FastDownPullerOptions},
     relaunch,
 };
-use fast_down::{mem::MemPusher, multi, reqwest::Prefetch};
+use fast_down::{
+    http::{HttpError, Prefetch},
+    mem::MemPusher,
+    multi,
+};
+use reqwest::Client;
 use std::{num::NonZero, time::Duration};
 use tauri::{Emitter, Listener, Manager, http::HeaderMap};
 use tauri_plugin_updater::UpdaterExt;
 
-pub async fn update(app: tauri::AppHandle) -> tauri_plugin_updater::Result<()> {
+pub async fn update(app: tauri::AppHandle) -> Result<(), UpdateError> {
     if let Some(update) = app.updater()?.check().await? {
         if let Some(main_window) = app.get_webview_window("main") {
             log_if_err!(
@@ -20,15 +25,20 @@ pub async fn update(app: tauri::AppHandle) -> tauri_plugin_updater::Result<()> {
             );
         }
         let client = puller::build_client(&HeaderMap::new(), "", false, false)?;
-        let info = client.prefetch(update.download_url.clone()).await?;
-        let puller = FastDownPuller::new(
-            update.download_url.clone(),
-            HeaderMap::new(),
-            "",
-            false,
-            false,
-            false,
-        )?;
+        let (info, resp) = client
+            .prefetch(update.download_url.clone())
+            .await
+            .map_err(UpdateError::Prefetch)?;
+        let puller = FastDownPuller::new(FastDownPullerOptions {
+            url: update.download_url.clone(),
+            resp: Some(resp),
+            headers: HeaderMap::new(),
+            proxy: "",
+            multiplexing: false,
+            accept_invalid_certs: false,
+            accept_invalid_hostnames: false,
+            file_id: info.file_id,
+        })?;
         let pusher = MemPusher::with_capacity(info.size as usize);
         let res = multi::download_multi(
             puller,
@@ -65,7 +75,8 @@ pub async fn update(app: tauri::AppHandle) -> tauri_plugin_updater::Result<()> {
                     download_url: update.download_url.to_string(),
                     signature: update.signature,
                 },
-            )?;
+            )
+            .map_err(tauri_plugin_updater::Error::Tauri)?;
         }
     }
     Ok(())
@@ -88,4 +99,14 @@ pub struct UpdateInfo {
     pub download_url: String,
     /// Signature announced
     pub signature: String,
+}
+
+#[derive(Debug, thiserror::Error)]
+pub enum UpdateError {
+    #[error(transparent)]
+    Updater(#[from] tauri_plugin_updater::Error),
+    #[error(transparent)]
+    Reqwest(#[from] reqwest::Error),
+    #[error("{0:?}")]
+    Prefetch(HttpError<Client>),
 }
