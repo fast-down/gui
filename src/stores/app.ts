@@ -60,17 +60,17 @@ export type DownloadEntry = KnownDownloadEntry | UnknownDownloadEntry
 
 export type AddOptions =
   | {
-      urlInfo?: Partial<UrlInfo>
-      paused?: boolean
-      config?: Partial<DownloadConfig>
-      needPrefetch: true
-    }
+    urlInfo?: Partial<UrlInfo>
+    paused?: boolean
+    config?: Partial<DownloadConfig>
+    needPrefetch: true
+  }
   | {
-      urlInfo: UrlInfo
-      paused?: boolean
-      config?: Partial<DownloadConfig>
-      needPrefetch?: false
-    }
+    urlInfo: UrlInfo
+    paused?: boolean
+    config?: Partial<DownloadConfig>
+    needPrefetch?: false
+  }
 
 const downloadDir = await path.downloadDir()
 
@@ -201,15 +201,15 @@ sec-ch-ua-platform: "Windows"`,
         if (localCount !== entry.count) return (entry.status = 'paused')
         entry.needPrefetch = false
         if (entry.needPrefetch) return // type infer
-        Object.assign(entry, {
-          etag,
-          fastDownload,
-          finalUrl,
-          lastModified,
-          name,
-          size,
-          supportsRange,
-        } as UrlInfo)
+        // Object.assign(entry, {
+        //   etag,
+        //   fastDownload,
+        //   finalUrl,
+        //   lastModified,
+        //   name,
+        //   size,
+        //   supportsRange,
+        // } as UrlInfo)
         if (runningCount.value >= maxConcurrentTasks.value) return
         if (!urlInfo.fastDownload || entry.downloaded >= urlInfo.size) {
           entry.status = 'paused'
@@ -282,12 +282,12 @@ sec-ch-ua-platform: "Windows"`,
         const urlInfo = {
           ...(options.needPrefetch
             ? await prefetch({
-                url,
-                headers: headersObj,
-                proxy: config.proxy,
-                acceptInvalidCerts: config.acceptInvalidCerts,
-                acceptInvalidHostnames: config.acceptInvalidHostnames,
-              })
+              url,
+              headers: headersObj,
+              proxy: config.proxy,
+              acceptInvalidCerts: config.acceptInvalidCerts,
+              acceptInvalidHostnames: config.acceptInvalidHostnames,
+            })
             : {}),
           ...options.urlInfo,
         } as UrlInfo
@@ -306,8 +306,8 @@ sec-ch-ua-platform: "Windows"`,
           status: options.paused
             ? 'paused'
             : runningCount.value < maxConcurrentTasks.value
-            ? 'downloading'
-            : 'pending',
+              ? 'downloading'
+              : 'pending',
           downloaded: 0,
           etag: urlInfo.etag,
           lastModified: urlInfo.lastModified,

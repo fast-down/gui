@@ -1286,7 +1286,7 @@ version = "0.1.0"
 dependencies = [
  "axum",
  "bytes",
- "fast-down 3.2.5",
+ "fast-down 3.2.6",
  "futures",
  "libz-sys",
  "log",
@@ -1316,7 +1316,9 @@ dependencies = [
 
 [[package]]
 name = "fast-down"
-version = "3.2.5"
+version = "3.2.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f95418329ac4204c2fec418a897e5b2656387e75ab84de23a809727d64ec81b5"
 dependencies = [
  "bytes",
  "content_disposition",
@@ -1333,7 +1335,9 @@ dependencies = [
 
 [[package]]
 name = "fast-pull"
-version = "3.2.1"
+version = "3.2.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d9c1e981467534ed9c7d9cca25f5092552d3a7693bc48ee3947b7039db126ad1"
 dependencies = [
  "bytes",
  "fast-steal",
@@ -1348,6 +1352,8 @@ dependencies = [
 [[package]]
 name = "fast-steal"
 version = "6.0.10"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e063e071590c6e0b15f971897d735ec246ea160ef36e9aad5900554e43fe33a2"
 dependencies = [
  "spin",
 ]
