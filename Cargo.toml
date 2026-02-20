@@ -2,6 +2,20 @@
 name = "fast-down-gui"
 version = "0.1.0"
 edition = "2024"
+license = "MIT"
+authors = ["share121 <2854631158@qq.com>"]
+repository = "https://github.com/fast-down/gui"
+readme = "README.md"
+exclude = ["/.github"]
+description = "超级快的下载器图形化界面"
+documentation = "https://docs.rs/fast-down-gui"
+homepage = "https://github.com/fast-down/gui"
+keywords = ["concurrency", "downloader", "parallel", "performance", "thread"]
+categories = ["asynchronous", "concurrency", "network-programming"]
+
+[[bin]]
+name = "fast-down"
+path = "src/main.rs"
 
 [dependencies]
 arboard = "3.6.1"

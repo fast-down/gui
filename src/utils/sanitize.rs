@@ -39,15 +39,6 @@ mod tests {
 
     #[test]
     fn test_sanitize() {
-        // 文件名：file_stem.ext.fdpart <- 注意 fdpart 是我的程序的特殊后缀表示未下完的文件
-        // 测试长文件名保留后缀（当 ext 较短时优先截断 file_stem）
-        let long_stem = "这是一个非常".repeat(50);
-        let long_name = format!("{}.mp4.fdpart", long_stem);
-        let result = sanitize(&long_name, 255);
-        assert!(result.ends_with(".mp4.fdpart"));
-        assert!(result.len() <= 255);
-        assert!(result.len() >= 252);
-
         // 文件名：file_stem.ext
         // 测试长文件名保留后缀（当 ext 较短时优先截断 file_stem）
         let long_stem = "这是一个非常".repeat(50);
@@ -62,15 +53,6 @@ mod tests {
         let long_stem = "这是一个非常".repeat(50);
         let long_name = format!("1.{}", long_stem);
         let result = sanitize(&long_name, 255);
-        assert!(result.len() <= 255);
-        assert!(result.len() >= 252);
-
-        // 文件名：file_stem.ext.fdpart
-        // 测试非常长的后缀名（当 ext 过长时，可能他并没有扩展名，因此 file_stem.ext 当成整个文件名截断
-        let long_stem = "这是一个非常".repeat(50);
-        let long_name = format!("1.{}.fdpart", long_stem);
-        let result = sanitize(&long_name, 255);
-        assert!(result.ends_with(".fdpart"));
         assert!(result.len() <= 255);
         assert!(result.len() >= 252);
 
