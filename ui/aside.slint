@@ -1,0 +1,78 @@
+import { VerticalBox, Button } from "std-widgets.slint";
+import { HDivider } from "divider.slint";
+
+struct NavItem {
+    name: string,
+    count: int,
+}
+
+export component Aside inherits Rectangle {
+    min-width: 120px;
+
+    in property <int> running_count: 0;
+    in property <int> waiting_count: 0;
+    in property <int> paused_count: 0;
+    in property <int> completed_count: 0;
+    in property <int> error_count: 0;
+    in property <string> speed: "0 B/s";
+    in-out property <int> current_page: 0;
+    callback add_task();
+    callback exit();
+
+    horizontal-stretch: 0;
+    property <[NavItem]> items: [
+        {
+            name: "全部",
+            count: running_count + waiting_count + paused_count + completed_count + error_count
+        },
+        { name: "下载中", count: running_count },
+        { name: "等待中", count: waiting_count },
+        { name: "已暂停", count: paused_count },
+        { name: "已完成", count: completed_count },
+        { name: "出错", count: error_count },
+    ];
+
+    VerticalBox {
+        for item[i] in items: Button {
+            text: "\{item.name} (\{item.count})";
+            primary: current_page == i;
+            clicked => {
+                current_page = i;
+            }
+        }
+
+        HDivider { }
+
+        Button {
+            text: "新建任务";
+            clicked => {
+                add_task()
+            }
+        }
+
+        Rectangle {
+            vertical-stretch: 1;
+        }
+
+        Button {
+            text: "设置";
+            primary: current_page == 6;
+            clicked => {
+                current_page = 6;
+            }
+        }
+
+        Button {
+            text: "退出";
+            clicked => {
+                exit()
+            }
+        }
+
+        Text {
+            horizontal-alignment: TextHorizontalAlignment.center;
+            text: "速度: " + speed;
+            font-size: 14px;
+        }
+    }
+}

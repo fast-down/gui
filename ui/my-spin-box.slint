@@ -1,0 +1,34 @@
+import { LineEdit } from "std-widgets.slint";
+
+export component NoScrollSpinBox inherits LineEdit {
+    in-out property <int> value: 0;
+    in property <int> minimum: 0;
+
+    placeholder-text: value;
+    input-type: number;
+
+    edited(text) => {
+        if (text == "") {
+            return;
+        }
+        let num = text.to-float();
+        if (num >= minimum) {
+            value = Math.round(num);
+        } else if (num < minimum) {
+            value = minimum;
+            self.text = minimum;
+        }
+    }
+
+    accepted => {
+        self.text = value;
+    }
+
+    init => {
+        self.text = value;
+    }
+
+    changed value => {
+        self.text = value;
+    }
+}

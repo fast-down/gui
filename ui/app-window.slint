@@ -1,0 +1,125 @@
+import { Aside } from "aside.slint";
+import { List } from "list.slint";
+import { VDivider } from "divider.slint";
+import { Status, EntryData } from "entry.slint";
+import { TaskDialog } from "task-dialog.slint";
+import { Settings, Config } from "settings.slint";
+import "../assets/HarmonyOSSans.ttf";
+
+export {
+    TaskDialog,
+}
+
+export enum ListType {
+    All,
+    Running,
+    Waiting,
+    Paused,
+    Completed,
+    Error,
+}
+
+export component MainWindow inherits Window {
+    title: "fast-down v" + version;
+    icon: @image-url("../assets/icon.png");
+
+    min-width: 800px;
+    min-height: 600px;
+    default-font-family: "HarmonyOS Sans SC";
+
+    callback start_entry(int);
+    callback pause_entry(int);
+    callback detail_entry(int);
+    callback open_entry(int);
+    callback open_folder_entry(int);
+    callback remove_entry(int);
+
+    callback add_task();
+    callback exit();
+    callback browse_folder();
+    callback config_change(Config);
+
+    callback start_all(ListType);
+    callback pause_all(ListType);
+    callback remove_all(ListType);
+
+    in property <string> speed: "90 MB/s";
+    in property <string> version;
+    in-out property <Config> config;
+    public function set_save_dir(dir: string) {
+        config.save-dir = dir;
+    }
+
+    property <[EntryData]> active_list:
+            aside.current_page == 0 ? all_list : aside.current_page == 1 ? running_list : aside.current_page == 2 ? waiting_list : aside.current_page == 3 ? paused_list : aside.current_page == 4 ? completed_list : error_list;
+
+    property <ListType> active_list_type:
+            aside.current_page == 0 ? ListType.All : aside.current_page == 1 ? ListType.Running : aside.current_page == 2 ? ListType.Waiting : aside.current_page == 3 ? ListType.Paused : aside.current_page == 4 ? ListType.Completed : ListType.Error;
+
+    in property <[EntryData]> raw_list;
+    in property <[EntryData]> all_list;
+    in property <[EntryData]> running_list;
+    in property <[EntryData]> waiting_list;
+    in property <[EntryData]> paused_list;
+    in property <[EntryData]> completed_list;
+    in property <[EntryData]> error_list;
+
+    HorizontalLayout {
+        aside := Aside {
+            running_count: running_list.length;
+            waiting_count: waiting_list.length;
+            paused_count: paused_list.length;
+            completed_count: completed_list.length;
+            error_count: error_list.length;
+            speed: speed;
+            add_task => {
+                add_task();
+            }
+            exit => {
+                exit()
+            }
+        }
+
+        VDivider { }
+
+        if aside.current_page < 6: List {
+            list: active_list;
+            start_all => {
+                root.start_all(active_list_type);
+            }
+            pause_all => {
+                root.pause_all(active_list_type);
+            }
+            remove_all => {
+                root.remove_all(active_list_type);
+            }
+            start(gid) => {
+                start_entry(gid)
+            }
+            pause(gid) => {
+                pause_entry(gid)
+            }
+            detail(gid) => {
+                detail_entry(gid)
+            }
+            open(gid) => {
+                open_entry(gid)
+            }
+            open_folder(gid) => {
+                open_folder_entry(gid)
+            }
+            remove(gid) => {
+                remove_entry(gid)
+            }
+        }
+        if aside.current_page == 6: Settings {
+            config <=> config;
+            browse_folder => {
+                browse_folder()
+            }
+            config_change(config) => {
+                config_change(config);
+            }
+        }
+    }
+}

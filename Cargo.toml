@@ -1,0 +1,60 @@
+[package]
+name = "fast-down-gui"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+arboard = "3.6.1"
+bitcode = { version = "0.6.9", features = ["serde"] }
+color-eyre = "0.6.5"
+dashmap = { version = "6.1.0", features = ["serde"] }
+dirs = "6.0.0"
+# fast-down = { path = "../core/crates/fast-down/", features = ["serde", "utils"] }
+fast-down = { version = "3.7.6", features = ["serde", "utils"] }
+fs4 = "0.13.1"
+interprocess = { version = "2.3.1", features = ["tokio"] }
+itertools = "0.14.0"
+lazy_static = "1.5.0"
+mimalloc = "0.1.48"
+parking_lot = { version = "0.12.5", features = ["serde"] }
+reqwest = { version = "0.13.2", default-features = false, features = [
+  "default-tls",
+  "brotli",
+  "deflate",
+  "gzip",
+  "http2",
+  "socks",
+  "system-proxy",
+  "zstd"
+] }
+rfd = "0.17.2"
+sanitize-filename = "0.6.0"
+serde = { version = "1.0.228", features = ["rc"] }
+slint = { version = "1.15.1", features = ["raw-window-handle-06"] }
+soft-canonicalize = "0.5.4"
+tokio = { version = "1.49.0", features = ["full"] }
+tokio-util = "0.7.18"
+tracing = "0.1.44"
+tracing-error = "0.2.1"
+tracing-subscriber = { version = "0.3.22", features = ["env-filter"] }
+url = { version = "2.5.8", features = ["serde"] }
+
+[build-dependencies]
+slint-build = "1.15.1"
+winresource = "0.1.30"
+
+[target.'cfg(windows)'.dependencies]
+raw-window-handle = "0.6.2"
+windows = { version = "0.62", features = [
+  "Win32_Foundation",
+  "Win32_System_Console",
+  "Win32_System_Threading",
+  "Win32_UI_WindowsAndMessaging",
+] }
+
+[profile.release]
+opt-level = 3
+strip = true
+lto = true
+panic = "abort"
+codegen-units = 1

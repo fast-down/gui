@@ -1,0 +1,182 @@
+import {
+    VerticalBox,
+    HorizontalBox,
+    StandardTableView,
+    Button,
+    ProgressIndicator,
+    Palette,
+} from "std-widgets.slint";
+
+export enum Status {
+    Running,
+    Waiting,
+    Paused,
+    Completed,
+    Error,
+}
+
+export struct Progress {
+    start: float,
+    width: float,
+}
+
+export struct EntryData {
+    gid: int,
+    filename: string,
+    path: string,
+    status: Status,
+    speed: string,
+    avg_speed: string,
+    time: string,
+    remaining_time: string,
+    downloaded: string,
+    total: string,
+    percentage: string,
+    remaining_size: string,
+    progress: [Progress]
+}
+
+component StatItem {
+    in property <string> label;
+    in property <string> value;
+    VerticalLayout {
+        spacing: 4px;
+        Text {
+            text: label;
+            font-weight: 600;
+            font-size: 15px;
+        }
+
+        Text {
+            text: value;
+            font-size: 15px;
+        }
+    }
+}
+
+export component Entry inherits Rectangle {
+    in property <EntryData> data;
+    callback start();
+    callback pause();
+    callback detail();
+    callback open();
+    callback open_folder();
+    callback remove();
+
+    VerticalBox {
+        padding: 16px;
+
+        Text {
+            text: data.filename.is-empty ? "空文件名" : data.filename;
+            font-size: 20px;
+            font-weight: 600;
+            overflow: TextOverflow.elide;
+        }
+
+        Text {
+            text: data.path.is-empty ? "空路径" : data.path;
+            font-size: 16px;
+            overflow: TextOverflow.elide;
+        }
+
+        HorizontalBox {
+            padding: 0px;
+
+            StatItem {
+                label: "瞬时速度";
+                value: data.speed.is-empty ? "0 B/s" : data.speed;
+            }
+
+            StatItem {
+                label: "平均速度";
+                value: data.avg-speed.is-empty ? "0 B/s" : data.avg-speed;
+            }
+
+            StatItem {
+                label: "用时";
+                value: data.time.is-empty ? "00:00:00" : data.time;
+            }
+
+            StatItem {
+                label: "剩余用时";
+                value: data.remaining-time.is-empty ? "00:00:00" : data.remaining-time;
+            }
+
+            StatItem {
+                label: "已下载";
+                value: data.downloaded.is-empty ? "0 B" : data.downloaded;
+            }
+
+            StatItem {
+                label: "总大小";
+                value: data.total.is-empty ? "0 B" : data.total;
+            }
+
+            StatItem {
+                label: "百分比";
+                value: data.percentage.is-empty ? "0%" : data.percentage;
+            }
+
+            StatItem {
+                label: "剩余大小";
+                value: data.remaining-size.is-empty ? "0 B" : data.remaining-size;
+            }
+        }
+
+        if data.progress.length > 0:  Rectangle {
+            height: 4px;
+            border-radius: 2px;
+            clip: true;
+            for p in data.progress: Rectangle {
+                x: p.start * parent.width;
+                width: p.width * parent.width;
+                background: Palette.accent-background;
+                border-radius: 3px;
+            }
+        }
+
+        HorizontalBox {
+            padding: 0px;
+
+            Button {
+                text: data.status == Status.Running ? "暂停" : data.status == Status.Waiting ? "取消" : data.status == Status.Paused ? "开始" : data.status == Status.Completed ? "重下" : "重试";
+                primary: data.status == Status.Running || data.status == Status.Waiting;
+                clicked => {
+                    if data.status == Status.Running || data.status == Status.Waiting {
+                        pause()
+                    } else {
+                        start()
+                    }
+                }
+            }
+
+            Button {
+                text: "详情";
+                clicked => {
+                    detail()
+                }
+            }
+
+            Button {
+                text: "打开";
+                clicked => {
+                    open()
+                }
+            }
+
+            Button {
+                text: "定位文件夹";
+                clicked => {
+                    open_folder()
+                }
+            }
+
+            Button {
+                text: "删除任务";
+                clicked => {
+                    remove()
+                }
+            }
+        }
+    }
+}

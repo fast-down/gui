@@ -1,0 +1,244 @@
+import {
+    Button,
+    LineEdit,
+    VerticalBox,
+    ScrollView,
+    HorizontalBox,
+    StandardButton,
+    TextEdit,
+    CheckBox,
+    ComboBox,
+} from "std-widgets.slint";
+import { HDivider } from "divider.slint";
+import { NoScrollSpinBox } from "my-spin-box.slint";
+
+export struct Config {
+    save_dir: string,
+    threads: int,
+    proxy: string,
+    headers: string,
+    min_chunk_size: int,
+    write_buffer_size: int,
+    write_queue_cap: int,
+    retry_gap_ms: int,
+    pull_timeout_ms: int,
+    accept_invalid_certs: bool,
+    accept_invalid_hostnames: bool,
+    ips: string,
+    max_speculative: int,
+    write_method: int,
+    max_concurrency: int,
+}
+
+export component Settings inherits VerticalLayout {
+    horizontal-stretch: 1;
+
+    in-out property <Config> config;
+
+    callback browse_folder();
+    callback config_change(Config);
+
+    changed config => {
+        config_change(config);
+    }
+
+    HorizontalBox {
+        Text {
+            text: "设置";
+            font-size: 25px;
+            font-weight: 600;
+        }
+    }
+
+    HDivider { }
+
+    ScrollView {
+        mouse-drag-pan-enabled: true;
+
+        VerticalBox {
+            padding: 16px;
+            alignment: LayoutAlignment.start;
+
+            Text {
+                text: "基础选项";
+                font-size: 20px;
+                font-weight: 600;
+            }
+
+            Text {
+                text: "保存文件夹";
+            }
+
+            HorizontalBox {
+                padding: 0px;
+
+                LineEdit {
+                    text <=> config.save-dir;
+                    placeholder-text: "留空默认为下载目录";
+                }
+
+                Button {
+                    text: "浏览";
+                    clicked => {
+                        browse_folder();
+                    }
+                }
+            }
+
+            Text {
+                text: "线程数";
+            }
+
+            NoScrollSpinBox {
+                minimum: 1;
+                value <=> config.threads;
+            }
+
+            Text {
+                text: "并发任务数";
+            }
+
+            NoScrollSpinBox {
+                minimum: 1;
+                value <=> config.max-concurrency;
+            }
+
+            Text {
+                text: "代理";
+            }
+
+            LineEdit {
+                text <=> config.proxy;
+                placeholder-text: "留空为系统代理，输入 null 为不使用代理";
+            }
+
+            Text {
+                text: "请求头";
+            }
+
+            TextEdit {
+                text <=> config.headers;
+                min-height: 150px;
+                wrap: word-wrap;
+                placeholder-text: "Cookie: value\nUser-Agent: Mozilla/5.0";
+            }
+
+            HDivider { }
+
+            Text {
+                text: "高级选项";
+                font-size: 20px;
+                font-weight: 600;
+            }
+
+            HorizontalBox {
+                padding: 0px;
+                VerticalBox {
+                    padding: 0px;
+                    Text {
+                        text: "最小分片大小 (字节)";
+                    }
+
+                    NoScrollSpinBox {
+                        minimum: 1;
+                        value <=> config.min-chunk-size;
+                    }
+                }
+
+                VerticalBox {
+                    padding: 0px;
+                    Text {
+                        text: "写入缓冲区大小 (字节)";
+                    }
+
+                    NoScrollSpinBox {
+                        value <=> config.write-buffer-size;
+                    }
+                }
+            }
+
+            HorizontalBox {
+                padding: 0px;
+                VerticalBox {
+                    padding: 0px;
+                    Text {
+                        text: "投机线程数";
+                    }
+
+                    NoScrollSpinBox {
+                        value <=> config.max-speculative;
+                    }
+                }
+
+                VerticalBox {
+                    padding: 0px;
+                    Text {
+                        text: "写入队列大小";
+                    }
+
+                    NoScrollSpinBox {
+                        minimum: 1;
+                        value <=> config.write-queue-cap;
+                    }
+                }
+            }
+
+            HorizontalBox {
+                padding: 0px;
+                VerticalBox {
+                    padding: 0px;
+                    Text {
+                        text: "重试间隔 (毫秒)";
+                    }
+
+                    NoScrollSpinBox {
+                        value <=> config.retry-gap-ms;
+                    }
+                }
+
+                VerticalBox {
+                    padding: 0px;
+                    Text {
+                        text: "拉取超时 (毫秒)";
+                    }
+
+                    NoScrollSpinBox {
+                        value <=> config.pull-timeout-ms;
+                    }
+                }
+            }
+
+            HorizontalLayout {
+                CheckBox {
+                    text: "接受无效证书";
+                    checked <=> config.accept-invalid-certs;
+                }
+
+                CheckBox {
+                    text: "接受无效主机名";
+                    checked <=> config.accept-invalid-hostnames;
+                }
+            }
+
+            Text {
+                text: "写入方法";
+            }
+
+            ComboBox {
+                model: ["内存映射文件 (推荐)", "标准库 (兼容性好)"];
+                current-index <=> config.write-method;
+            }
+
+            Text {
+                text: "网卡池";
+            }
+
+            TextEdit {
+                text <=> config.ips;
+                min-height: 150px;
+                wrap: word-wrap;
+                placeholder-text: "192.168.1.8\n192.168.1.9\n留空则使用默认网卡发送请求";
+            }
+        }
+    }
+}

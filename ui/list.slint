@@ -1,0 +1,85 @@
+import {
+    VerticalBox,
+    Button,
+    HorizontalBox,
+    ListView,
+} from "std-widgets.slint";
+import { EntryData, Entry } from "entry.slint";
+import { HDivider } from "divider.slint";
+
+export component List inherits Rectangle {
+    horizontal-stretch: 1;
+
+    in property <[EntryData]> list;
+    callback start(int);
+    callback pause(int);
+    callback detail(int);
+    callback open(int);
+    callback open_folder(int);
+    callback remove(int);
+
+    callback start_all();
+    callback pause_all();
+    callback remove_all();
+
+    VerticalLayout {
+        VerticalLayout {
+            vertical-stretch: 0;
+            HorizontalBox {
+                alignment: LayoutAlignment.start;
+                Button {
+                    text: "全部开始";
+                    clicked => {
+                        start_all()
+                    }
+                }
+
+                Button {
+                    text: "全部暂停";
+                    clicked => {
+                        pause_all()
+                    }
+                }
+
+                Button {
+                    text: "全部删除";
+                    clicked => {
+                        remove_all()
+                    }
+                }
+            }
+
+            HDivider { }
+        }
+
+        ListView {
+            mouse-drag-pan-enabled: true;
+
+            for entry in list: VerticalLayout {
+                Entry {
+                    data: entry;
+                    start => {
+                        start(entry.gid)
+                    }
+                    pause => {
+                        pause(entry.gid)
+                    }
+                    detail => {
+                        detail(entry.gid)
+                    }
+                    open => {
+                        open(entry.gid)
+                    }
+                    open_folder => {
+                        open_folder(entry.gid)
+                    }
+                    remove => {
+                        remove(entry.gid)
+                    }
+                }
+
+                HDivider { }
+            }
+        }
+    }
+}
