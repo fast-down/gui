@@ -31,6 +31,21 @@ jobs:
       - name: Rust Cache
         uses: swatinem/rust-cache@v2
 
+      - name: Install Slint dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libfontconfig1-dev \
+            libxcb-shape0-dev \
+            libxcb-xfixes0-dev \
+            libxkbcommon-dev \
+            libxcb1-dev \
+            libxcb-render0-dev \
+            libxcb-composite0-dev \
+            libxcb-cursor-dev \
+            libxcb-xkb-dev \
+            pkg-config
+
       - name: Test
         run: cargo test --all-features --verbose
 
@@ -52,6 +67,21 @@ jobs:
 
       - name: Rust Cache
         uses: swatinem/rust-cache@v2
+
+      - name: Install Slint dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libfontconfig1-dev \
+            libxcb-shape0-dev \
+            libxcb-xfixes0-dev \
+            libxkbcommon-dev \
+            libxcb1-dev \
+            libxcb-render0-dev \
+            libxcb-composite0-dev \
+            libxcb-cursor-dev \
+            libxcb-xkb-dev \
+            pkg-config
 
       - name: Run Clippy
         run: cargo clippy --all-features --all-targets --verbose -- -Dwarnings
@@ -91,6 +121,21 @@ jobs:
       - name: Rust Cache
         uses: swatinem/rust-cache@v2
 
+      - name: Install Slint dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libfontconfig1-dev \
+            libxcb-shape0-dev \
+            libxcb-xfixes0-dev \
+            libxkbcommon-dev \
+            libxcb1-dev \
+            libxcb-render0-dev \
+            libxcb-composite0-dev \
+            libxcb-cursor-dev \
+            libxcb-xkb-dev \
+            pkg-config
+
       - name: Install cargo-deny
         run: cargo install cargo-deny
 
@@ -111,6 +156,21 @@ jobs:
 
       - name: Rust Cache
         uses: swatinem/rust-cache@v2
+
+      - name: Install Slint dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libfontconfig1-dev \
+            libxcb-shape0-dev \
+            libxcb-xfixes0-dev \
+            libxkbcommon-dev \
+            libxcb1-dev \
+            libxcb-render0-dev \
+            libxcb-composite0-dev \
+            libxcb-cursor-dev \
+            libxcb-xkb-dev \
+            pkg-config
 
       - name: Install cargo-udeps
         run: cargo install cargo-udeps
