@@ -6,6 +6,7 @@ import {
     ProgressIndicator,
     Palette,
 } from "std-widgets.slint";
+import { Header2 } from "headers.slint";
 
 export enum Status {
     Running,
@@ -40,16 +41,15 @@ component StatItem {
     in property <string> label;
     in property <string> value;
     VerticalLayout {
-        spacing: 4px;
         Text {
             text: label;
-            font-weight: 600;
-            font-size: 15px;
+            font-weight: 700;
+            font-size: 14px;
         }
 
         Text {
             text: value;
-            font-size: 15px;
+            font-size: 14px;
         }
     }
 }
@@ -66,17 +66,15 @@ export component Entry inherits Rectangle {
     VerticalBox {
         padding: 16px;
 
-        Text {
+        Header2 {
             text: data.filename.is-empty ? "空文件名" : data.filename;
-            font-size: 20px;
-            font-weight: 600;
             overflow: TextOverflow.elide;
         }
 
         Text {
             text: data.path.is-empty ? "空路径" : data.path;
-            font-size: 16px;
             overflow: TextOverflow.elide;
+            font-size: 14px;
         }
 
         HorizontalBox {

@@ -87,17 +87,15 @@ pub async fn download(
             }
         };
         let total_size = info.size;
-        let file_name = if let Some(entry) = &entry {
-            entry.file_name.clone()
+        let (file_name, save_path) = if let Some(entry) = &entry {
+            (entry.file_name.clone(), entry.file_path.clone())
         } else {
-            sanitize(info.raw_name, 248)
-        };
-        let save_path = if let Some(entry) = &entry {
-            entry.file_path.clone()
-        } else {
+            let file_name = sanitize(info.raw_name, 248);
             let save_dir = soft_canonicalize::soft_canonicalize(Path::new(&config.save_dir))?;
             let _ = fs::create_dir_all(&save_dir).await;
-            gen_unique_path(&save_dir.join(&file_name)).await?
+            let save_path = gen_unique_path(&save_dir.join(&file_name)).await?;
+            let file_name = save_path.file_name().unwrap().to_string_lossy().to_string();
+            (file_name, save_path)
         };
         let entry = entry.unwrap_or_else(|| DatabaseEntry {
             file_name,

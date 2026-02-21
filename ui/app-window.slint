@@ -4,7 +4,8 @@ import { VDivider } from "divider.slint";
 import { Status, EntryData } from "entry.slint";
 import { TaskDialog } from "task-dialog.slint";
 import { Settings, Config } from "settings.slint";
-import "../assets/HarmonyOSSans.ttf";
+import { TaskDialog } from "task-dialog.slint";
+import { Theme } from "theme.slint";
 
 export {
     TaskDialog,
@@ -21,11 +22,11 @@ export enum ListType {
 
 export component MainWindow inherits Window {
     title: "fast-down v" + version;
-    icon: @image-url("../assets/icon.png");
+    icon: Theme.app-icon;
 
     min-width: 800px;
     min-height: 600px;
-    default-font-family: "HarmonyOS Sans SC";
+    default-font-family: Theme.default-font;
 
     callback start_entry(int);
     callback pause_entry(int);

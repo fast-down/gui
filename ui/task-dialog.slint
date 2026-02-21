@@ -14,7 +14,8 @@ import {
 import { HDivider } from "divider.slint";
 import { NoScrollSpinBox } from "my-spin-box.slint";
 import { Config } from "settings.slint";
-import "../assets/HarmonyOSSans.ttf";
+import { Theme } from "theme.slint";
+import { Header2 } from "headers.slint";
 
 export enum DialogType {
     AddTask,
@@ -23,10 +24,10 @@ export enum DialogType {
 
 export component TaskDialog inherits Window {
     title: type == DialogType.AddTask ? "添加任务" : "编辑任务";
-    icon: @image-url("../assets/icon.png");
+    icon: Theme.app-icon;
     width: 500px;
     min-height: 500px;
-    default-font-family: "HarmonyOS Sans SC";
+    default-font-family: Theme.default-font;
 
     in property <DialogType> type;
     in-out property <string> urls;
@@ -46,10 +47,8 @@ export component TaskDialog inherits Window {
 
             VerticalBox {
                 padding: 16px;
-                Text {
+                Header2 {
                     text: "基础选项";
-                    font-size: 20px;
-                    font-weight: 600;
                 }
 
                 Text {
@@ -60,7 +59,7 @@ export component TaskDialog inherits Window {
                     text <=> urls;
                     min-height: 150px;
                     wrap: word-wrap;
-                    placeholder-text: "https://example.com/file.zip\nhttp://example.com/file2.zip";
+                    placeholder-text: urls;
                 }
 
                 Text {
@@ -83,30 +82,37 @@ export component TaskDialog inherits Window {
                     }
                 }
 
-                Text {
-                    text: "线程数";
-                }
+                HorizontalBox {
+                    padding: 0px;
+                    VerticalBox {
+                        padding: 0px;
+                        Text {
+                            text: "线程数";
+                        }
 
-                NoScrollSpinBox {
-                    minimum: 1;
-                    value <=> config.threads;
-                }
+                        NoScrollSpinBox {
+                            minimum: 1;
+                            value <=> config.threads;
+                        }
+                    }
 
-                Text {
-                    text: "并发任务数";
-                }
+                    VerticalBox {
+                        padding: 0px;
+                        Text {
+                            text: "并发任务数";
+                        }
 
-                NoScrollSpinBox {
-                    minimum: 1;
-                    value <=> config.max-concurrency;
+                        NoScrollSpinBox {
+                            minimum: 1;
+                            value <=> config.max-concurrency;
+                        }
+                    }
                 }
 
                 HDivider { }
 
-                Text {
+                Header2 {
                     text: "高级选项";
-                    font-size: 20px;
-                    font-weight: 600;
                 }
 
                 Text {
@@ -206,14 +212,15 @@ export component TaskDialog inherits Window {
                     }
                 }
 
-                HorizontalLayout {
+                HorizontalBox {
+                    padding: 0px;
                     CheckBox {
                         text: "接受无效证书";
                         checked <=> config.accept-invalid-certs;
                     }
 
                     CheckBox {
-                        text: "接受无效主机名";
+                        text: "接受无效主机";
                         checked <=> config.accept-invalid-hostnames;
                     }
                 }

@@ -55,7 +55,7 @@ export component List inherits Rectangle {
         ListView {
             mouse-drag-pan-enabled: true;
 
-            for entry in list: VerticalLayout {
+            for entry[i] in list: VerticalLayout {
                 Entry {
                     data: entry;
                     start => {

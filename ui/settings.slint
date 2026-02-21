@@ -11,6 +11,7 @@ import {
 } from "std-widgets.slint";
 import { HDivider } from "divider.slint";
 import { NoScrollSpinBox } from "my-spin-box.slint";
+import { Header1, Header2 } from "headers.slint";
 
 export struct Config {
     save_dir: string,
@@ -43,10 +44,8 @@ export component Settings inherits VerticalLayout {
     }
 
     HorizontalBox {
-        Text {
+        Header1 {
             text: "设置";
-            font-size: 25px;
-            font-weight: 600;
         }
     }
 
@@ -59,10 +58,8 @@ export component Settings inherits VerticalLayout {
             padding: 16px;
             alignment: LayoutAlignment.start;
 
-            Text {
+            Header2 {
                 text: "基础选项";
-                font-size: 20px;
-                font-weight: 600;
             }
 
             Text {
@@ -85,22 +82,31 @@ export component Settings inherits VerticalLayout {
                 }
             }
 
-            Text {
-                text: "线程数";
-            }
+            HorizontalBox {
+                padding: 0px;
+                VerticalBox {
+                    padding: 0px;
+                    Text {
+                        text: "线程数";
+                    }
 
-            NoScrollSpinBox {
-                minimum: 1;
-                value <=> config.threads;
-            }
+                    NoScrollSpinBox {
+                        minimum: 1;
+                        value <=> config.threads;
+                    }
+                }
 
-            Text {
-                text: "并发任务数";
-            }
+                VerticalBox {
+                    padding: 0px;
+                    Text {
+                        text: "并发任务数";
+                    }
 
-            NoScrollSpinBox {
-                minimum: 1;
-                value <=> config.max-concurrency;
+                    NoScrollSpinBox {
+                        minimum: 1;
+                        value <=> config.max-concurrency;
+                    }
+                }
             }
 
             Text {
@@ -125,10 +131,8 @@ export component Settings inherits VerticalLayout {
 
             HDivider { }
 
-            Text {
+            Header2 {
                 text: "高级选项";
-                font-size: 20px;
-                font-weight: 600;
             }
 
             HorizontalBox {
@@ -208,14 +212,15 @@ export component Settings inherits VerticalLayout {
                 }
             }
 
-            HorizontalLayout {
+            HorizontalBox {
+                padding: 0px;
                 CheckBox {
                     text: "接受无效证书";
                     checked <=> config.accept-invalid-certs;
                 }
 
                 CheckBox {
-                    text: "接受无效主机名";
+                    text: "接受无效主机";
                     checked <=> config.accept-invalid-hostnames;
                 }
             }
