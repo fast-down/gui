@@ -195,7 +195,7 @@ async fn main() -> color_eyre::Result<()> {
                 let is_started = start_entry(&app, &entry, config.clone(), &list_model);
                 if is_started {
                     entry.status = Status::Waiting;
-                    list_model.set_row_data(i, entry);
+                    list.set_row_data(i, entry);
                 }
             }
         }
