@@ -9,6 +9,7 @@ use dashmap::DashMap;
 use parking_lot::Mutex;
 use serde::{Deserialize, Serialize};
 use std::{
+    io::Write,
     ops::Range,
     path::PathBuf,
     sync::{
@@ -19,6 +20,8 @@ use std::{
 };
 use tokio::{fs, task::JoinHandle};
 use tracing::{error, info};
+
+use crate::utils::LogErr;
 
 lazy_static::lazy_static! {
     pub static ref DB_NAME: String = format!("fd-state-v{}-gui.fdb", DB_VERSION);
@@ -45,7 +48,15 @@ pub struct DatabaseInner {
 impl DatabaseInner {
     pub fn flush(&self) -> color_eyre::Result<()> {
         let content = bitcode::serialize(self)?;
-        std::fs::write(&*DB_PATH, content)?;
+        let tmp_path = DB_PATH.with_added_extension("tmp");
+        let mut file = std::fs::OpenOptions::new()
+            .truncate(true)
+            .create(true)
+            .write(true)
+            .open(&tmp_path)?;
+        file.write_all(&content)?;
+        file.sync_all()?;
+        std::fs::rename(tmp_path, &*DB_PATH)?;
         Ok(())
     }
 
@@ -63,12 +74,16 @@ pub struct Database {
 
 impl Database {
     pub async fn new() -> Self {
-        let inner: Arc<_> = fs::read(&*DB_PATH)
+        let inner = fs::read(&*DB_PATH)
             .await
             .ok()
-            .and_then(|bytes| bitcode::deserialize::<DatabaseInner>(&bytes).ok())
-            .unwrap_or_default()
-            .into();
+            .and_then(|bytes| bitcode::deserialize::<DatabaseInner>(&bytes).ok());
+        if inner.is_none() {
+            let _ = tokio::fs::rename(&*DB_PATH, DB_PATH.with_added_extension("bak"))
+                .await
+                .log_err("数据库重命名失败");
+        }
+        let inner: Arc<_> = inner.unwrap_or_default().into();
         let is_dirty = Arc::new(AtomicBool::new(false));
         let handle = tokio::spawn({
             let inner = inner.clone();
@@ -76,16 +91,19 @@ impl Database {
             async move {
                 loop {
                     tokio::time::sleep(Duration::from_secs(5)).await;
-                    if is_dirty.load(Ordering::Relaxed) {
+                    if is_dirty.swap(false, Ordering::Relaxed) {
                         let inner = inner.clone();
                         let res = tokio::task::spawn_blocking(move || inner.flush()).await;
                         match res {
-                            Ok(Ok(())) => {
-                                info!("数据库保存成功");
-                                is_dirty.store(false, Ordering::Relaxed);
+                            Ok(Ok(())) => info!("数据库保存成功"),
+                            Ok(Err(e)) => {
+                                error!(err = ?e, "无法保存到数据库");
+                                is_dirty.store(true, Ordering::Relaxed);
                             }
-                            Ok(Err(e)) => error!(err = ?e, "无法保存到数据库"),
-                            Err(e) => error!(err = ?e, "无法保存到数据库"),
+                            Err(e) => {
+                                error!(err = ?e, "无法保存到数据库");
+                                is_dirty.store(true, Ordering::Relaxed);
+                            }
                         }
                     }
                 }
@@ -143,8 +161,16 @@ impl Database {
     }
 
     pub fn flush_force_sync(&self) -> Result<()> {
-        self.inner.clone().flush()?;
-        self.is_dirty.store(false, Ordering::Relaxed);
+        if self.is_dirty.swap(false, Ordering::Relaxed) {
+            match self.inner.flush() {
+                Ok(()) => info!("数据库保存成功"),
+                Err(e) => {
+                    error!(err = ?e, "无法保存到数据库");
+                    self.is_dirty.store(true, Ordering::Relaxed);
+                    Err(e)?
+                }
+            }
+        }
         Ok(())
     }
 }

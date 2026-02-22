@@ -8,11 +8,11 @@ use fast_down_gui::{
     ipc::{check_ipc, init_ipc},
     persist::{self, Database, DatabaseEntry},
     ui::*,
-    utils::{ForceSendExt, attach_console},
+    utils::{ForceSendExt, LogErr, attach_console},
 };
 use rfd::FileDialog;
-use slint::{Model, ModelRc, SharedString, VecModel, Weak};
-use std::{path::PathBuf, process::exit, rc::Rc, time::Duration};
+use slint::{Model, ModelRc, SharedString, ToSharedString, VecModel, Weak};
+use std::{collections::HashSet, path::PathBuf, process::exit, rc::Rc, time::Duration};
 use tokio_util::sync::CancellationToken;
 use tracing::{error, info, level_filters::LevelFilter};
 use tracing_error::ErrorLayer;
@@ -23,6 +23,86 @@ use url::Url;
 static GLOBAL_ALLOCATOR: mimalloc::MiMalloc = mimalloc::MiMalloc;
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
+
+#[derive(Clone)]
+struct App {
+    db: Database,
+    task_set: TaskSet<i32>,
+    ui: Weak<MainWindow>,
+}
+
+impl App {
+    fn update_ui_row<F>(&self, gid: i32, mutator: F)
+    where
+        F: FnOnce(usize, &mut EntryData) + Send + 'static,
+    {
+        let _ = self.ui.upgrade_in_event_loop(move |ui| {
+            let list_model = ui.get_all_list();
+            for (row, mut data) in list_model.iter().enumerate() {
+                if data.gid == gid {
+                    mutator(row, &mut data);
+                    list_model.set_row_data(row, data);
+                    break;
+                }
+            }
+        });
+    }
+
+    /// 创建下载过程中的事件处理器
+    fn create_download_handler(&self, gid: i32) -> impl FnMut(DownloadEvent) + Send + 'static {
+        let app = self.clone();
+        let mut file_size = 0;
+        move |event| match event {
+            DownloadEvent::Info(info) => {
+                file_size = info.file_size;
+                let _ = app
+                    .db
+                    .init_entry(gid, *info.clone())
+                    .log_err("数据库插入条目失败");
+                app.update_ui_row(gid, move |_, data| {
+                    data.status = Status::Running;
+                    data.filename = info.file_name.into();
+                    data.path = info.file_path.to_string_lossy().as_ref().into();
+                    data.total = format_size(info.file_size as f64).into();
+                });
+            }
+            DownloadEvent::Progress(p) => {
+                app.db.update_entry(gid, p.progress.clone(), p.elapsed);
+                app.update_ui_row(gid, move |_, data| {
+                    data.downloaded = p.downloaded;
+                    data.speed = p.speed;
+                    data.avg_speed = p.avg_speed;
+                    data.percentage = p.percentage;
+                    data.remaining_time = p.remaining_time;
+                    data.remaining_size = p.remaining_size;
+                    data.time = p.time;
+                    if file_size > 0 {
+                        data.progress =
+                            Rc::new(VecModel::from_iter(p.progress.iter().map(|r| Progress {
+                                start: r.start as f32 / file_size as f32,
+                                width: r.total() as f32 / file_size as f32,
+                            })))
+                            .into();
+                    }
+                });
+            }
+            DownloadEvent::End { is_cancelled } => {
+                let db_status = if is_cancelled {
+                    persist::Status::Paused
+                } else {
+                    persist::Status::Completed
+                };
+                let ui_status = if is_cancelled {
+                    Status::Paused
+                } else {
+                    Status::Completed
+                };
+                app.db.update_status(gid, db_status);
+                app.update_ui_row(gid, move |_, data| data.status = ui_status);
+            }
+        }
+    }
+}
 
 fn init_tracing() {
     Registry::default()
@@ -40,56 +120,28 @@ fn init_tracing() {
 async fn main() -> color_eyre::Result<()> {
     attach_console();
     init_tracing();
-    if let Err(e) = check_ipc().await {
-        error!(err = ?e, "检查 ipc 通道错误");
-    }
+
+    let _ = check_ipc().await.log_err("检查 ipc 通道错误");
     let main_window = MainWindow::new()?;
-    if let Err(e) = init_ipc(main_window.as_weak()).await {
-        error!(err = ?e, "初始化 ipc 通道错误");
-    }
+    let _ = init_ipc(main_window.as_weak())
+        .await
+        .log_err("初始化 ipc 通道错误");
 
     let db = Database::new().await;
     let task_set = TaskSet::new(db.inner.config.lock().max_concurrency);
 
-    main_window.set_config(db.get_ui_config());
-    main_window.set_version(VERSION.into());
-
     let entries = db.inner.data.iter().map(|e| e.to_entry_data(*e.key()));
     let list_model = Rc::new(VecModel::from_iter(entries));
-    main_window.set_raw_list(ModelRc::new(list_model.clone()));
-    main_window.set_all_list(ModelRc::new(
-        list_model.clone().sort_by(|a, b| b.gid.cmp(&a.gid)),
-    ));
-    main_window.set_running_list(ModelRc::new(
-        list_model
-            .clone()
-            .filter(|e| e.status == Status::Running)
-            .sort_by(|a, b| b.gid.cmp(&a.gid)),
-    ));
-    main_window.set_waiting_list(ModelRc::new(
-        list_model
-            .clone()
-            .filter(|e| e.status == Status::Waiting)
-            .sort_by(|a, b| b.gid.cmp(&a.gid)),
-    ));
-    main_window.set_paused_list(ModelRc::new(
-        list_model
-            .clone()
-            .filter(|e| e.status == Status::Paused)
-            .sort_by(|a, b| b.gid.cmp(&a.gid)),
-    ));
-    main_window.set_completed_list(ModelRc::new(
-        list_model
-            .clone()
-            .filter(|e| e.status == Status::Completed)
-            .sort_by(|a, b| b.gid.cmp(&a.gid)),
-    ));
-    main_window.set_error_list(ModelRc::new(
-        list_model
-            .clone()
-            .filter(|e| e.status == Status::Error)
-            .sort_by(|a, b| b.gid.cmp(&a.gid)),
-    ));
+
+    let app = App {
+        db: db.clone(),
+        task_set: task_set.clone(),
+        ui: main_window.as_weak(),
+    };
+
+    setup_ui_lists(&main_window, list_model.clone());
+    main_window.set_config(db.get_ui_config());
+    main_window.set_version(VERSION.into());
 
     main_window.on_exit({
         let db = db.clone();
@@ -106,6 +158,7 @@ async fn main() -> color_eyre::Result<()> {
             });
         }
     });
+
     main_window.on_browse_folder({
         let ui = main_window.as_weak();
         move || {
@@ -113,45 +166,174 @@ async fn main() -> color_eyre::Result<()> {
             std::thread::spawn(move || {
                 if let Some(folder) = FileDialog::new().pick_folder() {
                     let _ = ui.upgrade_in_event_loop(move |ui| {
-                        let path = folder.to_string_lossy().to_string();
-                        ui.invoke_set_save_dir(path.into());
+                        ui.invoke_set_save_dir(folder.to_string_lossy().to_shared_string());
                     });
                 }
             });
         }
     });
+
     main_window.on_config_change({
         let db = db.clone();
         let task_set = task_set.clone();
         move |c| {
-            tracing::info!(config = ?c, "配置已更新");
+            info!(config = ?c, "配置已更新");
             task_set.set_concurrency(c.max_concurrency as usize);
-            db.set_config(c);
+            db.set_config(&c);
         }
     });
-    main_window.on_add_task({
-        let db = db.clone();
-        let ui = main_window.as_weak();
+
+    main_window.on_start_all({
+        let app = app.clone();
         let list_model = list_model.clone();
+        move |list| {
+            let config = app.db.get_ui_config();
+            for (i, mut entry) in list.iter().enumerate() {
+                if entry.status == Status::Completed {
+                    continue;
+                }
+                let is_started = start_entry(&app, &entry, config.clone(), &list_model);
+                if is_started {
+                    entry.status = Status::Waiting;
+                    list_model.set_row_data(i, entry);
+                }
+            }
+        }
+    });
+    main_window.on_start_entry({
+        let app = app.clone();
+        let list_model = list_model.clone();
+        move |gid| {
+            let config = app.db.get_ui_config();
+            for i in (0..list_model.row_count()).rev() {
+                let Some(mut entry) = list_model.row_data(i) else {
+                    break;
+                };
+                if entry.gid == gid {
+                    let is_started = start_entry(&app, &entry, config.clone(), &list_model);
+                    if is_started {
+                        entry.status = Status::Waiting;
+                        list_model.set_row_data(i, entry);
+                    }
+                    break;
+                }
+            }
+        }
+    });
+
+    main_window.on_pause_all({
+        let task_set = task_set.clone();
+        move |list| {
+            for entry in list.iter() {
+                task_set.cancel_task(&entry.gid);
+            }
+        }
+    });
+    main_window.on_pause_entry({
+        let task_set = task_set.clone();
+        move |gid| {
+            task_set.cancel_task(&gid);
+        }
+    });
+
+    main_window.on_remove_all({
+        let task_set = task_set.clone();
+        let list_model = list_model.clone();
+        let db = db.clone();
+        move |list| {
+            let ids_to_remove: HashSet<_> = list.iter().map(|e| e.gid).collect();
+            let mut kept_items = Vec::new();
+            for item in list_model.iter() {
+                if !ids_to_remove.contains(&item.gid) {
+                    kept_items.push(item);
+                }
+            }
+            list_model.set_vec(kept_items);
+            for gid in ids_to_remove.iter() {
+                task_set.cancel_task(gid);
+                let _ = db.remove_entry(*gid).log_err("数据库移除条目失败");
+            }
+        }
+    });
+    main_window.on_remove_entry({
+        let task_set = task_set.clone();
+        let list_model = list_model.clone();
+        move |gid| {
+            for i in (0..list_model.row_count()).rev() {
+                let Some(item) = list_model.row_data(i) else {
+                    break;
+                };
+                if item.gid == gid {
+                    list_model.remove(i);
+                    break;
+                }
+            }
+            task_set.cancel_task(&gid);
+            let _ = db.remove_entry(gid).log_err("数据库移除条目失败");
+        }
+    });
+
+    main_window.on_add_task({
+        let app = app.clone();
+        let list_model = list_model.clone();
+        let db = app.db.clone();
         move || {
-            let config = db.get_ui_config();
             let url = Clipboard::new()
                 .ok()
                 .and_then(|mut c| c.get_text().ok())
-                .filter(|s| Url::parse(s).is_ok_and(|u| ["http", "https"].contains(&u.scheme())))
+                .filter(|s| Url::parse(s).is_ok_and(|u| matches!(u.scheme(), "http" | "https")))
                 .unwrap_or_default();
-            let res = show_task_dialog(
+            let app = app.clone();
+            let list_model = list_model.clone();
+            let _ = show_task_dialog(
                 url.into(),
-                config,
                 DialogType::AddTask,
-                list_model.clone(),
-                db.clone(),
-                ui.clone(),
-                task_set.clone(),
-            );
-            if let Err(e) = res {
-                error!(err = ?e, "添加任务失败");
-            }
+                db.get_ui_config(),
+                move |urls, config| {
+                    let valid_urls = urls.lines().filter_map(|s| {
+                        Url::parse(s)
+                            .ok()
+                            .filter(|u| matches!(u.scheme(), "http" | "https"))
+                    });
+                    for url in valid_urls {
+                        start_new_entry(&app, url, &config, &list_model);
+                    }
+                },
+            )
+            .log_err("添加任务对话框启动失败");
+        }
+    });
+
+    main_window.on_open_entry(|path| {
+        let _ = open::that(path).log_err("打开文件失败");
+    });
+    main_window.on_open_folder_entry(showfile::show_path_in_file_manager);
+
+    main_window.on_detail_entry({
+        let db = app.db.clone();
+        move |gid| {
+            let Some(mut entry) = db.inner.data.get(&gid).map(|e| e.clone()) else {
+                return;
+            };
+            let db = db.clone();
+            let _ = show_task_dialog(
+                entry.url.to_shared_string(),
+                DialogType::EditTask,
+                entry.config.to_ui_config(),
+                move |urls, config| {
+                    let mut valid_urls = urls.lines().filter_map(|s| {
+                        Url::parse(s)
+                            .ok()
+                            .filter(|u| matches!(u.scheme(), "http" | "https"))
+                    });
+                    if let Some(url) = valid_urls.next() {
+                        entry.url = url;
+                        entry.config = (&config).into();
+                        let _ = db.init_entry(gid, entry).log_err("更新任务配置失败");
+                    }
+                },
+            )
+            .log_err("添加任务对话框启动失败");
         }
     });
 
@@ -160,199 +342,140 @@ async fn main() -> color_eyre::Result<()> {
     Ok(())
 }
 
-fn download_handler(gid: i32, db: Database, ui: Weak<MainWindow>) -> impl FnMut(DownloadEvent) {
-    let mut file_size = 0;
-    move |event| match event {
-        DownloadEvent::Info(info) => {
-            file_size = info.file_size;
-            if let Err(e) = db.init_entry(gid, *info.clone()) {
-                error!(gid = %gid, err = %e, "初始化下载项失败");
-            }
-            let res = ui.upgrade_in_event_loop(move |ui| {
-                let list_model = ui.get_raw_list();
-                if let Some(index) = (0..list_model.row_count())
-                    .rev()
-                    .find(|&i| list_model.row_data(i).unwrap().gid == gid)
-                {
-                    let mut data = list_model.row_data(index).unwrap();
-                    data.status = Status::Running;
-                    data.filename = info.file_name.into();
-                    data.path = info.file_path.to_string_lossy().as_ref().into();
-                    data.total = format_size(info.file_size as f64).into();
-                    list_model.set_row_data(index, data);
-                }
-            });
-            if let Err(e) = res {
-                error!(gid = gid, err = ?e, "更新界面失败");
-            }
-        }
-        DownloadEvent::Progress(p) => {
-            db.update_entry(gid, p.progress.clone(), p.elapsed);
-            let res = ui.upgrade_in_event_loop(move |ui| {
-                let list_model = ui.get_raw_list();
-                if let Some(index) = (0..list_model.row_count())
-                    .rev()
-                    .find(|&i| list_model.row_data(i).unwrap().gid == gid)
-                {
-                    let mut data = list_model.row_data(index).unwrap();
-                    data.downloaded = p.downloaded;
-                    data.speed = p.speed;
-                    data.avg_speed = p.avg_speed;
-                    data.percentage = p.percentage;
-                    data.remaining_time = p.remaining_time;
-                    data.remaining_size = p.remaining_size;
-                    data.time = p.time;
-                    if file_size > 0 {
-                        data.progress =
-                            Rc::new(VecModel::from_iter(p.progress.iter().map(|r| Progress {
-                                start: r.start as f32 / file_size as f32,
-                                width: r.total() as f32 / file_size as f32,
-                            })))
-                            .into();
-                    }
-                    list_model.set_row_data(index, data);
-                }
-            });
-            if let Err(e) = res {
-                error!(gid = gid, err = ?e, "更新界面失败");
-            }
-        }
-        DownloadEvent::End { is_cancelled } => {
-            info!(is_cancelled = is_cancelled, "下载完成");
-            db.update_status(
-                gid,
-                if is_cancelled {
-                    persist::Status::Paused
-                } else {
-                    persist::Status::Completed
-                },
-            );
-            let res = ui.upgrade_in_event_loop(move |ui| {
-                let list_model = ui.get_raw_list();
-                if let Some(index) = (0..list_model.row_count())
-                    .rev()
-                    .find(|&i| list_model.row_data(i).unwrap().gid == gid)
-                {
-                    let mut data = list_model.row_data(index).unwrap();
-                    data.status = if is_cancelled {
-                        Status::Paused
-                    } else {
-                        Status::Completed
-                    };
-                    list_model.set_row_data(index, data);
-                }
-            });
-            if let Err(e) = res {
-                error!(gid = gid, err = ?e, "更新界面失败");
-            }
-        }
-    }
+/// 设置 UI 列表的各种过滤视图
+fn setup_ui_lists(ui: &MainWindow, list_model: Rc<VecModel<EntryData>>) {
+    ui.set_all_list(ModelRc::new(
+        list_model.clone().sort_by(|a, b| b.gid.cmp(&a.gid)),
+    ));
+    let filter_view = |status: Status| {
+        ModelRc::new(
+            list_model
+                .clone()
+                .filter(move |e| e.status == status)
+                .sort_by(|a, b| b.gid.cmp(&a.gid)),
+        )
+    };
+    ui.set_running_list(filter_view(Status::Running));
+    ui.set_waiting_list(filter_view(Status::Waiting));
+    ui.set_paused_list(filter_view(Status::Paused));
+    ui.set_completed_list(filter_view(Status::Completed));
+    ui.set_error_list(filter_view(Status::Error));
 }
 
+/// 显示添加任务对话框
 fn show_task_dialog(
     urls: SharedString,
-    config: Config,
     dialog_type: DialogType,
-    list_model: Rc<VecModel<EntryData>>,
-    db: Database,
-    ui: Weak<MainWindow>,
-    task_set: TaskSet<i32>,
+    config: Config,
+    on_comfirm: impl FnOnce(SharedString, Config) + 'static,
 ) -> color_eyre::Result<()> {
     let dialog = TaskDialog::new()?;
     dialog.set_urls(urls);
-    dialog.set_config(config);
     dialog.set_type(dialog_type);
-    dialog.on_canceled({
-        let dialog = dialog.as_weak();
-        move || {
-            let _ = dialog.upgrade_in_event_loop(|dialog| {
-                if let Err(e) = dialog.hide() {
-                    tracing::error!(err = %e, "隐藏对话框出错");
-                }
-            });
-        }
-    });
+    dialog.set_config(config);
+
+    let dialog_weak = dialog.as_weak();
+    let hide_dialog = move || {
+        let _ = dialog_weak.upgrade_in_event_loop(|d| {
+            let _ = d.hide().log_err("隐藏窗口失败");
+        });
+    };
+
+    dialog.on_canceled(hide_dialog.clone());
+
     dialog.on_browse_folder({
         let dialog = dialog.as_weak();
         move || {
             let dialog = dialog.clone();
             std::thread::spawn(move || {
                 if let Some(folder) = FileDialog::new().pick_folder() {
-                    let _ = dialog.upgrade_in_event_loop(move |dialog| {
-                        let path = folder.to_string_lossy().to_string();
-                        dialog.invoke_set_save_dir(path.into());
+                    let _ = dialog.upgrade_in_event_loop(move |d| {
+                        d.invoke_set_save_dir(folder.to_string_lossy().to_shared_string());
                     });
                 }
             });
         }
     });
-    dialog.on_comfirm({
-        let dialog = dialog.as_weak();
-        move |urls, config| {
-            let _ = dialog.upgrade_in_event_loop(|dialog| {
-                if let Err(e) = dialog.hide() {
-                    tracing::error!(err = %e, "隐藏对话框出错");
-                }
-            });
-            let urls = urls
-                .lines()
-                .filter_map(|s| {
-                    Url::parse(s)
-                        .ok()
-                        .filter(|s| ["http", "https"].contains(&s.scheme()))
-                })
-                .map(|url| (db.next_gid(), url));
-            for (gid, url) in urls {
-                let entry = DatabaseEntry {
-                    file_name: url.to_string(),
-                    file_path: PathBuf::new(),
-                    file_size: 0,
-                    file_id: FileId::default(),
-                    progress: Vec::new(),
-                    elapsed: Duration::ZERO,
-                    url: url.clone(),
-                    config: config.clone().into(),
-                    status: persist::Status::Paused,
-                };
-                list_model.push(entry.to_entry_data(gid));
-                if let Err(e) = db.init_entry(gid, entry) {
-                    error!(gid = %gid, err = %e, "初始化下载项失败");
-                }
-                let handler = download_handler(gid, db.clone(), ui.clone());
-                let config = config.clone();
-                let cancel_token = CancellationToken::new();
-                let token_clone = cancel_token.clone();
-                let db = db.clone();
-                let ui = ui.clone();
-                let fut = async move {
-                    let res = download(url, config, token_clone, None, handler).await;
-                    match res {
-                        Ok(()) => info!("下载完成"),
-                        Err(e) => {
-                            error!(err = %e, "下载出错");
-                            db.update_status(gid, persist::Status::Error);
-                            let res = ui.upgrade_in_event_loop(move |ui| {
-                                let list_model = ui.get_raw_list();
-                                if let Some(index) = (0..list_model.row_count())
-                                    .rev()
-                                    .find(|&i| list_model.row_data(i).unwrap().gid == gid)
-                                {
-                                    let mut data = list_model.row_data(index).unwrap();
-                                    data.status = Status::Error;
-                                    list_model.set_row_data(index, data);
-                                }
-                            });
-                            if let Err(e) = res {
-                                error!(gid = gid, err = ?e, "更新界面失败");
-                            }
-                        }
-                    }
-                }
-                .force_send();
-                task_set.add_task(gid, cancel_token, fut);
-            }
+
+    let mut handle = Some(on_comfirm);
+    dialog.on_comfirm(move |urls, config| {
+        hide_dialog();
+        if let Some(h) = handle.take() {
+            h(urls, config);
         }
     });
+
     dialog.show()?;
     Ok(())
+}
+
+/// 返回 false 意味任务没有成功添加到 task_set 中
+fn start_entry(app: &App, entry: &EntryData, config: Config, list: &VecModel<EntryData>) -> bool {
+    if matches!(entry.status, Status::Running | Status::Waiting) {
+        return false;
+    }
+    let gid = entry.gid;
+    let Some(db_entry) = app.db.inner.data.get(&gid).map(|e| e.clone()) else {
+        return false;
+    };
+    let url = db_entry.url.clone();
+    if db_entry.status == persist::Status::Completed {
+        start_new_entry(app, url, &config, list);
+        return false;
+    }
+    let app_c = app.clone();
+    let cancel_token = CancellationToken::new();
+    let token = cancel_token.clone();
+    let fut = async move {
+        let handler = app_c.create_download_handler(gid);
+        match download(url, &config, token, Some(db_entry), handler).await {
+            Ok(()) => info!(gid = gid, "任务下载完成"),
+            Err(e) => {
+                error!(gid = gid, err = ?e, "下载任务出错");
+                app_c.db.update_status(gid, persist::Status::Error);
+                app_c.update_ui_row(gid, |_, data| data.status = Status::Error);
+            }
+        }
+    }
+    .force_send();
+    app.task_set.add_task(gid, cancel_token, fut);
+    true
+}
+
+fn start_new_entry(app: &App, url: Url, config: &Config, list_model: &VecModel<EntryData>) {
+    let gid = app.db.next_gid();
+    let entry = DatabaseEntry {
+        file_name: url.to_string(),
+        file_path: PathBuf::new(),
+        file_size: 0,
+        file_id: FileId::default(),
+        progress: Vec::new(),
+        elapsed: Duration::ZERO,
+        url: url.clone(),
+        config: config.into(),
+        status: persist::Status::Paused,
+    };
+    let mut ui_entry = entry.to_entry_data(gid);
+    ui_entry.status = Status::Waiting;
+    list_model.push(ui_entry);
+    let _ = app.db.init_entry(gid, entry).log_err("数据库插入条目失败");
+
+    let app_c = app.clone();
+    let cancel_token = CancellationToken::new();
+    let token = cancel_token.clone();
+    let config = config.clone();
+
+    let fut = async move {
+        let handler = app_c.create_download_handler(gid);
+        match download(url, &config, token, None, handler).await {
+            Ok(()) => info!(gid = gid, "任务下载完成"),
+            Err(e) => {
+                error!(gid = gid, err = ?e, "下载任务出错");
+                app_c.db.update_status(gid, persist::Status::Error);
+                app_c.update_ui_row(gid, |_, data| data.status = Status::Error);
+            }
+        }
+    }
+    .force_send();
+    app.task_set.add_task(gid, cancel_token, fut);
 }

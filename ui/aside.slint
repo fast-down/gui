@@ -14,7 +14,6 @@ export component Aside inherits Rectangle {
     in property <int> paused_count: 0;
     in property <int> completed_count: 0;
     in property <int> error_count: 0;
-    in property <string> speed: "0 B/s";
     in-out property <int> current_page: 0;
     callback add_task();
     callback exit();
@@ -67,12 +66,6 @@ export component Aside inherits Rectangle {
             clicked => {
                 exit()
             }
-        }
-
-        Text {
-            horizontal-alignment: TextHorizontalAlignment.center;
-            text: "速度: " + speed;
-            font-size: 14px;
         }
     }
 }

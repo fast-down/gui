@@ -43,8 +43,6 @@ export component TaskDialog inherits Window {
 
     VerticalLayout {
         ScrollView {
-            mouse-drag-pan-enabled: true;
-
             VerticalBox {
                 padding: 16px;
                 Header2 {
@@ -58,7 +56,6 @@ export component TaskDialog inherits Window {
                 TextEdit {
                     text <=> urls;
                     min-height: 150px;
-                    wrap: word-wrap;
                     placeholder-text: "https://example.com/file1.zip\nhttp://example.com/file2.zip";
                 }
 
@@ -82,31 +79,13 @@ export component TaskDialog inherits Window {
                     }
                 }
 
-                HorizontalBox {
-                    padding: 0px;
-                    VerticalBox {
-                        padding: 0px;
-                        Text {
-                            text: "线程数";
-                        }
+                Text {
+                    text: "线程数";
+                }
 
-                        NoScrollSpinBox {
-                            minimum: 1;
-                            value <=> config.threads;
-                        }
-                    }
-
-                    VerticalBox {
-                        padding: 0px;
-                        Text {
-                            text: "并发任务数";
-                        }
-
-                        NoScrollSpinBox {
-                            minimum: 1;
-                            value <=> config.max-concurrency;
-                        }
-                    }
+                NoScrollSpinBox {
+                    minimum: 1;
+                    value <=> config.threads;
                 }
 
                 HDivider { }
@@ -122,7 +101,6 @@ export component TaskDialog inherits Window {
                 TextEdit {
                     text <=> config.headers;
                     min-height: 150px;
-                    wrap: word-wrap;
                     placeholder-text: "Cookie: value\nUser-Agent: Mozilla/5.0";
                 }
 
@@ -241,7 +219,6 @@ export component TaskDialog inherits Window {
                 TextEdit {
                     text <=> config.ips;
                     min-height: 150px;
-                    wrap: word-wrap;
                     placeholder-text: "192.168.1.8\n192.168.1.9\n留空则使用默认网卡发送请求";
                 }
             }

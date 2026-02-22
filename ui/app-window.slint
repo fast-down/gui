@@ -11,15 +11,6 @@ export {
     TaskDialog,
 }
 
-export enum ListType {
-    All,
-    Running,
-    Waiting,
-    Paused,
-    Completed,
-    Error,
-}
-
 export component MainWindow inherits Window {
     title: "fast-down v" + version;
     icon: Theme.app-icon;
@@ -31,8 +22,8 @@ export component MainWindow inherits Window {
     callback start_entry(int);
     callback pause_entry(int);
     callback detail_entry(int);
-    callback open_entry(int);
-    callback open_folder_entry(int);
+    callback open_entry(string);
+    callback open_folder_entry(string);
     callback remove_entry(int);
 
     callback add_task();
@@ -40,11 +31,10 @@ export component MainWindow inherits Window {
     callback browse_folder();
     callback config_change(Config);
 
-    callback start_all(ListType);
-    callback pause_all(ListType);
-    callback remove_all(ListType);
+    callback start_all([EntryData]);
+    callback pause_all([EntryData]);
+    callback remove_all([EntryData]);
 
-    in property <string> speed: "90 MB/s";
     in property <string> version;
     in-out property <Config> config;
     public function set_save_dir(dir: string) {
@@ -54,10 +44,6 @@ export component MainWindow inherits Window {
     property <[EntryData]> active_list:
             aside.current_page == 0 ? all_list : aside.current_page == 1 ? running_list : aside.current_page == 2 ? waiting_list : aside.current_page == 3 ? paused_list : aside.current_page == 4 ? completed_list : error_list;
 
-    property <ListType> active_list_type:
-            aside.current_page == 0 ? ListType.All : aside.current_page == 1 ? ListType.Running : aside.current_page == 2 ? ListType.Waiting : aside.current_page == 3 ? ListType.Paused : aside.current_page == 4 ? ListType.Completed : ListType.Error;
-
-    in property <[EntryData]> raw_list;
     in property <[EntryData]> all_list;
     in property <[EntryData]> running_list;
     in property <[EntryData]> waiting_list;
@@ -72,7 +58,6 @@ export component MainWindow inherits Window {
             paused_count: paused_list.length;
             completed_count: completed_list.length;
             error_count: error_list.length;
-            speed: speed;
             add_task => {
                 add_task();
             }
@@ -86,31 +71,31 @@ export component MainWindow inherits Window {
         if aside.current_page < 6: List {
             list: active_list;
             start_all => {
-                root.start_all(active_list_type);
+                root.start_all(active_list);
             }
             pause_all => {
-                root.pause_all(active_list_type);
+                root.pause_all(active_list);
             }
             remove_all => {
-                root.remove_all(active_list_type);
+                root.remove_all(active_list);
             }
-            start(gid) => {
-                start_entry(gid)
+            start(entry) => {
+                start_entry(entry)
             }
-            pause(gid) => {
-                pause_entry(gid)
+            pause(entry) => {
+                pause_entry(entry)
             }
-            detail(gid) => {
-                detail_entry(gid)
+            detail(entry) => {
+                detail_entry(entry)
             }
-            open(gid) => {
-                open_entry(gid)
+            open(entry) => {
+                open_entry(entry)
             }
-            open_folder(gid) => {
-                open_folder_entry(gid)
+            open_folder(entry) => {
+                open_folder_entry(entry)
             }
-            remove(gid) => {
-                remove_entry(gid)
+            remove(entry) => {
+                remove_entry(entry)
             }
         }
         if aside.current_page == 6: Settings {

@@ -25,11 +25,11 @@ dashmap = { version = "6.1.0", features = ["serde"] }
 dirs = "6.0.0"
 # fast-down = { path = "../core/crates/fast-down/", features = ["serde", "utils"] }
 fast-down = { version = "3.7.7", features = ["serde", "utils"] }
-fs4 = "0.13.1"
 interprocess = { version = "2.3.1", features = ["tokio"] }
 itertools = "0.14.0"
 lazy_static = "1.5.0"
 mimalloc = "0.1.48"
+open = "5.3.3"
 parking_lot = { version = "0.12.5", features = ["serde"] }
 reqwest = { version = "0.13.2", default-features = false, features = [
   "default-tls",
@@ -44,6 +44,7 @@ reqwest = { version = "0.13.2", default-features = false, features = [
 rfd = "0.17.2"
 sanitize-filename = "0.6.0"
 serde = { version = "1.0.228", features = ["rc"] }
+showfile = "0.1.1"
 slint = { version = "1.15.1", features = ["raw-window-handle-06"] }
 soft-canonicalize = "0.5.4"
 tokio = { version = "1.49.0", features = ["full"] }

@@ -90,8 +90,8 @@ impl Config {
     }
 }
 
-impl From<crate::ui::Config> for Config {
-    fn from(value: crate::ui::Config) -> Self {
+impl From<&crate::ui::Config> for Config {
+    fn from(value: &crate::ui::Config) -> Self {
         Self {
             save_dir: value.save_dir.as_str().into(),
             threads: value.threads as usize,

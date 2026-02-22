@@ -1,11 +1,9 @@
-use crate::ui::MainWindow;
+use crate::{ui::MainWindow, utils::LogErr};
 use slint::ComponentHandle;
 
 pub fn wakeup_window(ui: &MainWindow) {
     let window = ui.window();
-    if let Err(e) = window.show() {
-        tracing::error!(err = %e, "显示窗口出错");
-    }
+    let _ = window.show().log_err("显示窗口出错");
     window.set_minimized(false);
     #[cfg(target_os = "windows")]
     {

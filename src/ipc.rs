@@ -1,4 +1,7 @@
-use crate::{ui::MainWindow, utils::wakeup_window};
+use crate::{
+    ui::MainWindow,
+    utils::{LogErr, wakeup_window},
+};
 use interprocess::local_socket::{
     GenericNamespaced, ListenerOptions,
     tokio::{Stream, prelude::*},
@@ -35,7 +38,7 @@ pub async fn init_ipc(ui_weak: Weak<MainWindow>) -> color_eyre::Result<()> {
                 Ok(conn) => {
                     let ui_weak = ui_weak.clone();
                     tokio::spawn(async move {
-                        let res = async {
+                        async {
                             let mut reader = BufReader::new(conn);
                             let mut buffer = String::new();
                             reader.read_line(&mut buffer).await?;
@@ -46,13 +49,12 @@ pub async fn init_ipc(ui_weak: Weak<MainWindow>) -> color_eyre::Result<()> {
                                 });
                             }
                             Ok::<_, color_eyre::Report>(())
-                        };
-                        if let Err(e) = res.await {
-                            tracing::error!(err = %e, "处理连接出错");
                         }
+                        .await
+                        .log_err("处理连接出错")
                     });
                 }
-                Err(e) => tracing::error!(err = %e, "监听连接出错"),
+                Err(e) => tracing::error!(err = ?e, "监听连接出错"),
             }
         }
     });

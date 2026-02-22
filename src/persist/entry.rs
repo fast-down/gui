@@ -36,7 +36,7 @@ impl DatabaseEntry {
             filename: self.file_name.as_str().into(),
             gid,
             path: self.file_path.to_string_lossy().as_ref().into(),
-            percentage: format!("{}%", downloaded as f64 / file_size as f64 * 100.).into(),
+            percentage: format!("{:.2}%", downloaded as f64 / file_size as f64 * 100.).into(),
             progress: if file_size > 0 {
                 Rc::new(VecModel::from_iter(self.progress.iter().map(|r| {
                     crate::ui::Progress {

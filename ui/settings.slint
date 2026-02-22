@@ -52,8 +52,6 @@ export component Settings inherits VerticalLayout {
     HDivider { }
 
     ScrollView {
-        mouse-drag-pan-enabled: true;
-
         VerticalBox {
             padding: 16px;
             alignment: LayoutAlignment.start;
@@ -125,7 +123,6 @@ export component Settings inherits VerticalLayout {
             TextEdit {
                 text <=> config.headers;
                 min-height: 150px;
-                wrap: word-wrap;
                 placeholder-text: "Cookie: value\nUser-Agent: Mozilla/5.0";
             }
 
@@ -241,7 +238,6 @@ export component Settings inherits VerticalLayout {
             TextEdit {
                 text <=> config.ips;
                 min-height: 150px;
-                wrap: word-wrap;
                 placeholder-text: "192.168.1.8\n192.168.1.9\n留空则使用默认网卡发送请求";
             }
         }

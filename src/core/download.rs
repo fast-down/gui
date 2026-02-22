@@ -17,7 +17,7 @@ use fast_down::{
 };
 use parking_lot::Mutex;
 use slint::SharedString;
-use std::{net::IpAddr, ops::Range, path::Path, sync::Arc, time::Duration};
+use std::{net::IpAddr, ops::Range, path::PathBuf, sync::Arc, time::Duration};
 use tokio::{
     fs::{self, OpenOptions},
     time::Instant,
@@ -46,32 +46,32 @@ pub struct ProgressInfo {
 
 pub async fn download(
     url: Url,
-    config: Config,
+    config: &Config,
     cancel_token: CancellationToken,
     entry: Option<DatabaseEntry>,
     mut on_event: impl FnMut(DownloadEvent) + Send + Sync,
 ) -> color_eyre::Result<()> {
-    let headers = Arc::new(parse_header_headermap(&config.headers));
-    let proxy = match config.proxy.trim() {
-        "" => None,
-        "null" => Some(""),
-        proxy => Some(proxy),
-    };
-    let local_addr: Arc<[IpAddr]> = config
-        .ips
-        .lines()
-        .filter_map(|ip| ip.trim().parse().ok())
-        .collect();
-    let accept_invalid_certs = config.accept_invalid_certs;
-    let accept_invalid_hostnames = config.accept_invalid_hostnames;
-    let client = build_client(
-        &headers,
-        proxy,
-        accept_invalid_certs,
-        accept_invalid_hostnames,
-        local_addr.first().cloned(),
-    )?;
     let result = async {
+        let headers = Arc::new(parse_header_headermap(&config.headers));
+        let proxy = match config.proxy.trim() {
+            "" => None,
+            "null" => Some(""),
+            proxy => Some(proxy),
+        };
+        let local_addr: Arc<[IpAddr]> = config
+            .ips
+            .lines()
+            .filter_map(|ip| ip.trim().parse().ok())
+            .collect();
+        let accept_invalid_certs = config.accept_invalid_certs;
+        let accept_invalid_hostnames = config.accept_invalid_hostnames;
+        let client = build_client(
+            &headers,
+            proxy,
+            accept_invalid_certs,
+            accept_invalid_hostnames,
+            local_addr.first().cloned(),
+        )?;
         let mut count = 0;
         let (info, resp) = loop {
             match client.prefetch(url.clone()).await {
@@ -87,28 +87,37 @@ pub async fn download(
             }
         };
         let total_size = info.size;
-        let (file_name, save_path) = if let Some(entry) = &entry {
-            (entry.file_name.clone(), entry.file_path.clone())
+        let (save_path, entry) = if let Some(entry) = entry
+            && fs::try_exists(&entry.file_path).await.unwrap_or(false)
+        {
+            (entry.file_path.clone(), entry)
         } else {
             let file_name = sanitize(info.raw_name, 248);
-            let save_dir = soft_canonicalize::soft_canonicalize(Path::new(&config.save_dir))?;
+            let save_dir = soft_canonicalize::soft_canonicalize(if config.save_dir.is_empty() {
+                dirs::download_dir().unwrap_or_default()
+            } else {
+                PathBuf::from(&config.save_dir)
+            })?;
             let _ = fs::create_dir_all(&save_dir).await;
             let save_path = gen_unique_path(&save_dir.join(&file_name)).await?;
             let file_name = save_path.file_name().unwrap().to_string_lossy().to_string();
-            (file_name, save_path)
+            (
+                save_path.clone(),
+                DatabaseEntry {
+                    file_name,
+                    file_path: save_path,
+                    file_size: total_size,
+                    file_id: info.file_id.clone(),
+                    progress: Vec::new(),
+                    elapsed: Duration::ZERO,
+                    url,
+                    config: config.into(),
+                    status: Status::Paused,
+                },
+            )
         };
-        let entry = entry.unwrap_or_else(|| DatabaseEntry {
-            file_name,
-            file_path: save_path.clone(),
-            file_size: total_size,
-            file_id: info.file_id.clone(),
-            progress: Vec::new(),
-            elapsed: Duration::ZERO,
-            url,
-            config: config.clone().into(),
-            status: Status::Paused,
-        });
         let progress = entry.progress.clone();
+        let elapsed = entry.elapsed;
         on_event(DownloadEvent::Info(Box::new(entry)));
         let puller = FastDownPuller::new(FastDownPullerOptions {
             url: info.final_url,
@@ -171,13 +180,16 @@ pub async fn download(
                 },
             )
         };
-        Ok::<_, color_eyre::Report>((result, total_size, progress))
+        Ok::<_, color_eyre::Report>((result, total_size, progress, elapsed))
     };
-    let (result, total_size, mut progress) = tokio::select! {
-        _ = cancel_token.cancelled() => return Ok(()),
+    let (result, total_size, mut progress, elapsed) = tokio::select! {
+        _ = cancel_token.cancelled() => {
+            on_event(DownloadEvent::End { is_cancelled: true });
+            return Ok(());
+        },
         res = result => res?,
     };
-    tokio::spawn({
+    let cancel_handle = tokio::spawn({
         let result = result.clone();
         let cancel_token = cancel_token.clone();
         async move {
@@ -188,9 +200,9 @@ pub async fn download(
 
     let mut smoothed_speed = 0.;
     let alpha = 0.3;
-    let mut last_bytes = 0;
+    let mut last_bytes = progress.total();
     let mut last_update = Instant::now();
-    let mut start = last_update;
+    let mut start = last_update - elapsed;
 
     macro_rules! update_progress {
         ($now:expr, $elapsed:expr, $total_elapsed:expr) => {{
@@ -240,7 +252,7 @@ pub async fn download(
                 let now = Instant::now();
                 let elapsed = (now - last_update).as_secs_f64();
                 let total_elapsed = now - start;
-                if elapsed > 0.2 {
+                if elapsed > 1. {
                     last_bytes = update_progress!(now, elapsed, total_elapsed);
                     last_update = now;
                 }
@@ -249,6 +261,7 @@ pub async fn download(
         }
     }
     result.join().await?;
+    cancel_handle.abort();
     let now = Instant::now();
     let elapsed = (now - last_update).as_secs_f64();
     let total_elapsed = now - start;

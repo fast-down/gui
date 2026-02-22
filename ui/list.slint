@@ -14,8 +14,8 @@ export component List inherits Rectangle {
     callback start(int);
     callback pause(int);
     callback detail(int);
-    callback open(int);
-    callback open_folder(int);
+    callback open(string);
+    callback open_folder(string);
     callback remove(int);
 
     callback start_all();
@@ -68,10 +68,10 @@ export component List inherits Rectangle {
                         detail(entry.gid)
                     }
                     open => {
-                        open(entry.gid)
+                        open(entry.path)
                     }
                     open_folder => {
-                        open_folder(entry.gid)
+                        open_folder(entry.path)
                     }
                     remove => {
                         remove(entry.gid)

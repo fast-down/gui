@@ -3,20 +3,30 @@ use std::{
     collections::{HashMap, VecDeque},
     future::Future,
     hash::Hash,
-    pin::Pin,
     sync::Arc,
 };
 use tokio::sync::Notify;
 use tokio_util::sync::CancellationToken;
 
-type BoxedFuture = Pin<Box<dyn Future<Output = ()> + Send>>;
+struct QueuedTask<K> {
+    id: K,
+    task: Box<dyn FnOnce() + Send>,
+}
 
 struct State<K> {
     max_concurrency: usize,
     current_running: usize,
-    pending_queue: VecDeque<(CancellationToken, BoxedFuture)>,
+    pending_queue: VecDeque<QueuedTask<K>>,
     tasks: HashMap<K, (u64, CancellationToken)>,
     next_tag: u64,
+}
+
+impl<K> Drop for State<K> {
+    fn drop(&mut self) {
+        for queued in self.pending_queue.drain(..) {
+            (queued.task)();
+        }
+    }
 }
 
 #[derive(Clone)]
@@ -61,30 +71,48 @@ impl<K: Clone + Eq + Hash + Send + 'static> TaskSet<K> {
             state.next_tag += 1;
             state.next_tag - 1
         };
+
         if let Some((_, old_token)) = state.tasks.insert(id.clone(), (tag, cancel_token.clone())) {
             old_token.cancel();
-        };
-        let wrapped_fut = {
-            let weak_state = Arc::downgrade(&self.state);
-            let weak_notify = Arc::downgrade(&self.idle_notify);
-            async move {
-                let (Some(state), Some(idle_notify)) =
-                    (weak_state.upgrade(), weak_notify.upgrade())
-                else {
-                    return;
-                };
-                let this = TaskSet { state, idle_notify };
-                let _guard = TaskGuard { this, id, tag };
-                fut.await;
+            let mut i = 0;
+            while i < state.pending_queue.len() {
+                if state.pending_queue[i].id == id {
+                    let queued = state.pending_queue.remove(i).unwrap();
+                    state.current_running += 1;
+                    (queued.task)();
+                    break;
+                } else {
+                    i += 1;
+                }
             }
         };
+
+        let wrapped_fn = {
+            let weak_state = Arc::downgrade(&self.state);
+            let weak_notify = Arc::downgrade(&self.idle_notify);
+            let id = id.clone();
+            move || match (weak_state.upgrade(), weak_notify.upgrade()) {
+                (Some(state), Some(idle_notify)) => {
+                    let this = TaskSet { state, idle_notify };
+                    tokio::spawn(async move {
+                        let _guard = TaskGuard { this, id, tag };
+                        fut.await;
+                    });
+                }
+                _ => {
+                    tokio::spawn(fut);
+                }
+            }
+        };
+
         if state.current_running < state.max_concurrency {
             state.current_running += 1;
-            tokio::spawn(wrapped_fut);
+            wrapped_fn();
         } else {
-            state
-                .pending_queue
-                .push_back((cancel_token, Box::pin(wrapped_fut)));
+            state.pending_queue.push_back(QueuedTask {
+                id,
+                task: Box::new(wrapped_fn),
+            });
         }
     }
 
@@ -94,6 +122,19 @@ impl<K: Clone + Eq + Hash + Send + 'static> TaskSet<K> {
         if let Some(entry) = state.tasks.remove(id) {
             entry.1.cancel();
         }
+
+        let mut i = 0;
+        while i < state.pending_queue.len() {
+            if state.pending_queue[i].id == *id {
+                let queued = state.pending_queue.remove(i).unwrap();
+                state.current_running += 1;
+                (queued.task)();
+                break;
+            } else {
+                i += 1;
+            }
+        }
+
         self.try_spawn_next(&mut state);
     }
 
@@ -103,7 +144,12 @@ impl<K: Clone + Eq + Hash + Send + 'static> TaskSet<K> {
         for (_, (_, token)) in state.tasks.drain() {
             token.cancel();
         }
-        state.pending_queue.clear();
+
+        while let Some(queued) = state.pending_queue.pop_front() {
+            state.current_running += 1;
+            (queued.task)();
+        }
+
         self.try_spawn_next(&mut state);
     }
 
@@ -115,7 +161,7 @@ impl<K: Clone + Eq + Hash + Send + 'static> TaskSet<K> {
             loop {
                 {
                     let state = state.lock();
-                    if state.current_running == 0 && state.tasks.is_empty() {
+                    if state.current_running == 0 && state.pending_queue.is_empty() {
                         return;
                     }
                     notify.notified()
@@ -145,23 +191,18 @@ impl<K: Clone + Eq + Hash + Send + 'static> TaskSet<K> {
         {
             state.tasks.remove(id);
         }
-        if state.current_running > 0 {
-            state.current_running -= 1;
-        }
+        state.current_running = state.current_running.saturating_sub(1);
         self.try_spawn_next(&mut state);
     }
 
     fn try_spawn_next(&self, state: &mut State<K>) {
         while state.current_running < state.max_concurrency
-            && let Some((token, fut)) = state.pending_queue.pop_front()
+            && let Some(queued) = state.pending_queue.pop_front()
         {
-            if token.is_cancelled() {
-                continue;
-            }
             state.current_running += 1;
-            tokio::spawn(fut);
+            (queued.task)();
         }
-        if state.current_running == 0 && state.tasks.is_empty() {
+        if state.current_running == 0 && state.pending_queue.is_empty() {
             self.idle_notify.notify_waiters();
         }
     }
