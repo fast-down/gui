@@ -187,12 +187,11 @@ async fn main() -> color_eyre::Result<()> {
         let app = app.clone();
         let list_model = list_model.clone();
         move |list| {
-            let config = app.db.get_ui_config();
             for (i, mut entry) in list.iter().enumerate() {
                 if entry.status == Status::Completed {
                     continue;
                 }
-                let is_started = start_entry(&app, &entry, config.clone(), &list_model);
+                let is_started = start_entry(&app, &entry, &list_model);
                 if is_started {
                     entry.status = Status::Waiting;
                     list.set_row_data(i, entry);
@@ -204,13 +203,12 @@ async fn main() -> color_eyre::Result<()> {
         let app = app.clone();
         let list_model = list_model.clone();
         move |gid| {
-            let config = app.db.get_ui_config();
             for i in (0..list_model.row_count()).rev() {
                 let Some(mut entry) = list_model.row_data(i) else {
                     break;
                 };
                 if entry.gid == gid {
-                    let is_started = start_entry(&app, &entry, config.clone(), &list_model);
+                    let is_started = start_entry(&app, &entry, &list_model);
                     if is_started {
                         entry.status = Status::Waiting;
                         list_model.set_row_data(i, entry);
@@ -410,7 +408,7 @@ fn show_task_dialog(
 }
 
 /// 返回 false 意味任务没有成功添加到 task_set 中
-fn start_entry(app: &App, entry: &EntryData, config: Config, list: &VecModel<EntryData>) -> bool {
+fn start_entry(app: &App, entry: &EntryData, list: &VecModel<EntryData>) -> bool {
     if matches!(entry.status, Status::Running | Status::Waiting) {
         return false;
     }
@@ -419,6 +417,7 @@ fn start_entry(app: &App, entry: &EntryData, config: Config, list: &VecModel<Ent
         return false;
     };
     let url = db_entry.url.clone();
+    let config = db_entry.config.to_ui_config();
     if db_entry.status == persist::Status::Completed {
         start_new_entry(app, url, &config, list);
         return false;
