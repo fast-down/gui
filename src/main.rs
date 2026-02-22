@@ -57,36 +57,38 @@ async fn main() -> color_eyre::Result<()> {
     let entries = db.inner.data.iter().map(|e| e.to_entry_data(*e.key()));
     let list_model = Rc::new(VecModel::from_iter(entries));
     main_window.set_raw_list(ModelRc::new(list_model.clone()));
-    main_window.set_all_list(ModelRc::new(list_model.clone().reverse()));
+    main_window.set_all_list(ModelRc::new(
+        list_model.clone().sort_by(|a, b| b.gid.cmp(&a.gid)),
+    ));
     main_window.set_running_list(ModelRc::new(
         list_model
             .clone()
             .filter(|e| e.status == Status::Running)
-            .reverse(),
+            .sort_by(|a, b| b.gid.cmp(&a.gid)),
     ));
     main_window.set_waiting_list(ModelRc::new(
         list_model
             .clone()
             .filter(|e| e.status == Status::Waiting)
-            .reverse(),
+            .sort_by(|a, b| b.gid.cmp(&a.gid)),
     ));
     main_window.set_paused_list(ModelRc::new(
         list_model
             .clone()
             .filter(|e| e.status == Status::Paused)
-            .reverse(),
+            .sort_by(|a, b| b.gid.cmp(&a.gid)),
     ));
     main_window.set_completed_list(ModelRc::new(
         list_model
             .clone()
             .filter(|e| e.status == Status::Completed)
-            .reverse(),
+            .sort_by(|a, b| b.gid.cmp(&a.gid)),
     ));
     main_window.set_error_list(ModelRc::new(
         list_model
             .clone()
             .filter(|e| e.status == Status::Error)
-            .reverse(),
+            .sort_by(|a, b| b.gid.cmp(&a.gid)),
     ));
 
     main_window.on_exit({
