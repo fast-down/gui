@@ -1,14 +1,23 @@
-[target.i686-unknown-linux-musl]
+[target.x86_64-unknown-linux-gnu]
+image = "ghcr.io/cross-rs/x86_64-unknown-linux-gnu:edge"
 pre-build = [
-  "dpkg --add-architecture i386 && apt-get update && apt-get install --assume-yes libfontconfig1-dev:i386"
+  "apt-get update",
+  "apt-get install -y clang pkg-config libfontconfig1-dev libfreetype6-dev"
 ]
 
-[target.aarch64-unknown-linux-musl]
+[target.i686-unknown-linux-gnu]
+image = "ghcr.io/cross-rs/i686-unknown-linux-gnu:edge"
 pre-build = [
-  "dpkg --add-architecture arm64 && apt-get update && apt-get install --assume-yes libfontconfig1-dev:arm64"
+  "dpkg --add-architecture i386 && apt-get update",
+  "apt-get install -y clang pkg-config:i386 libfontconfig1-dev:i386 libfreetype6-dev:i386"
 ]
 
-[target.x86_64-unknown-linux-musl]
+[target.aarch64-unknown-linux-gnu]
+image = "ghcr.io/cross-rs/aarch64-unknown-linux-gnu:edge"
 pre-build = [
-  "apt-get update && apt-get install --assume-yes libfontconfig1-dev"
+  "dpkg --add-architecture arm64 && apt-get update",
+  "apt-get install -y clang pkg-config:arm64 libfontconfig1-dev:arm64 libfreetype6-dev:arm64"
 ]
+
+[build.env]
+passthrough = ["CC=clang", "CXX=clang++"]
