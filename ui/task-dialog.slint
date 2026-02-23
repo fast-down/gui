@@ -25,7 +25,7 @@ export enum DialogType {
 export component TaskDialog inherits Window {
     title: type == DialogType.AddTask ? "添加任务" : "编辑任务";
     icon: Theme.app-icon;
-    width: 500px;
+    min-width: 500px;
     min-height: 500px;
     default-font-family: Theme.default-font;
 
