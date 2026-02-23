@@ -33,7 +33,7 @@ export component TaskDialog inherits Window {
     in-out property <string> urls;
     in-out property <Config> config;
 
-    callback comfirm(string, Config);
+    callback confirm(string, Config);
     callback browse_folder();
     callback canceled();
 
@@ -230,7 +230,7 @@ export component TaskDialog inherits Window {
                 text: type == DialogType.AddTask ? "立刻下载" : "保存";
                 primary: true;
                 clicked => {
-                    comfirm(urls, config);
+                    confirm(urls, config);
                 }
             }
 

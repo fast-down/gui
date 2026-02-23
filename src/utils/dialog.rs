@@ -9,7 +9,7 @@ pub fn show_task_dialog(
     urls: SharedString,
     dialog_type: DialogType,
     config: Config,
-    on_comfirm: impl FnOnce(SharedString, Config) + 'static,
+    on_confirm: impl FnOnce(SharedString, Config) + 'static,
 ) -> color_eyre::Result<()> {
     let dialog = TaskDialog::new()?;
     dialog.set_urls(urls);
@@ -55,8 +55,8 @@ pub fn show_task_dialog(
         }
     });
 
-    let mut handle = Some(on_comfirm);
-    dialog.on_comfirm(move |urls, config| {
+    let mut handle = Some(on_confirm);
+    dialog.on_confirm(move |urls, config| {
         hide_dialog();
         if let Some(h) = handle.take() {
             h(urls, config);
