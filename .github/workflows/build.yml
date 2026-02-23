@@ -77,6 +77,12 @@ jobs:
         if: startsWith(matrix.build, 'windows-')
         uses: ilammy/setup-nasm@v1
 
+      - name: Set up QEMU
+        if: matrix.build == 'linux-arm64'
+        uses: docker/setup-qemu-action@v3
+        with:
+          platforms: arm64
+
       - name: Install Cross
         if: matrix.use-cross
         uses: taiki-e/install-action@cross
