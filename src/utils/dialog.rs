@@ -1,6 +1,6 @@
 use crate::{
     ui::{Config, DialogType, TaskDialog},
-    utils::LogErr,
+    utils::{LogErr, get_font_family},
 };
 use rfd::FileDialog;
 use slint::{ComponentHandle, SharedString, ToSharedString};
@@ -48,6 +48,7 @@ pub fn show_task_dialog(
         }
     });
 
+    dialog.set_font_family(get_font_family().into());
     dialog.show()?;
     Ok(())
 }
