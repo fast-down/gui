@@ -122,10 +122,11 @@ async fn main() -> color_eyre::Result<()> {
     init_tracing();
 
     let _ = check_ipc().await.log_err("检查 ipc 通道错误");
-    let main_window = MainWindow::new()?;
-    let _ = init_ipc(main_window.as_weak())
-        .await
-        .log_err("初始化 ipc 通道错误");
+    slint::BackendSelector::new()
+        .backend_name("winit".into())
+        .select()?;
+    let ui = MainWindow::new()?;
+    let _ = init_ipc(ui.as_weak()).await.log_err("初始化 ipc 通道错误");
 
     let db = Database::new().await;
     let task_set = TaskSet::new(db.inner.config.lock().max_concurrency);
@@ -136,14 +137,14 @@ async fn main() -> color_eyre::Result<()> {
     let app = App {
         db: db.clone(),
         task_set: task_set.clone(),
-        ui: main_window.as_weak(),
+        ui: ui.as_weak(),
     };
 
-    setup_ui_lists(&main_window, list_model.clone());
-    main_window.set_config(db.get_ui_config());
-    main_window.set_version(VERSION.into());
+    setup_ui_lists(&ui, list_model.clone());
+    ui.set_config(db.get_ui_config());
+    ui.set_version(VERSION.into());
 
-    main_window.on_exit({
+    ui.on_exit({
         let db = db.clone();
         let task_set = task_set.clone();
         move || {
@@ -159,8 +160,8 @@ async fn main() -> color_eyre::Result<()> {
         }
     });
 
-    main_window.on_browse_folder({
-        let ui = main_window.as_weak();
+    ui.on_browse_folder({
+        let ui = ui.as_weak();
         move || {
             let ui = ui.clone();
             std::thread::spawn(move || {
@@ -173,7 +174,7 @@ async fn main() -> color_eyre::Result<()> {
         }
     });
 
-    main_window.on_config_change({
+    ui.on_config_change({
         let db = db.clone();
         let task_set = task_set.clone();
         move |c| {
@@ -183,7 +184,7 @@ async fn main() -> color_eyre::Result<()> {
         }
     });
 
-    main_window.on_start_all({
+    ui.on_start_all({
         let app = app.clone();
         let list_model = list_model.clone();
         move |list| {
@@ -199,7 +200,7 @@ async fn main() -> color_eyre::Result<()> {
             }
         }
     });
-    main_window.on_start_entry({
+    ui.on_start_entry({
         let app = app.clone();
         let list_model = list_model.clone();
         move |gid| {
@@ -219,7 +220,7 @@ async fn main() -> color_eyre::Result<()> {
         }
     });
 
-    main_window.on_pause_all({
+    ui.on_pause_all({
         let task_set = task_set.clone();
         move |list| {
             for entry in list.iter() {
@@ -227,14 +228,14 @@ async fn main() -> color_eyre::Result<()> {
             }
         }
     });
-    main_window.on_pause_entry({
+    ui.on_pause_entry({
         let task_set = task_set.clone();
         move |gid| {
             task_set.cancel_task(&gid);
         }
     });
 
-    main_window.on_remove_all({
+    ui.on_remove_all({
         let task_set = task_set.clone();
         let list_model = list_model.clone();
         let db = db.clone();
@@ -253,7 +254,7 @@ async fn main() -> color_eyre::Result<()> {
             }
         }
     });
-    main_window.on_remove_entry({
+    ui.on_remove_entry({
         let task_set = task_set.clone();
         let list_model = list_model.clone();
         move |gid| {
@@ -271,7 +272,7 @@ async fn main() -> color_eyre::Result<()> {
         }
     });
 
-    main_window.on_add_task({
+    ui.on_add_task({
         let app = app.clone();
         let list_model = list_model.clone();
         let db = app.db.clone();
@@ -302,12 +303,12 @@ async fn main() -> color_eyre::Result<()> {
         }
     });
 
-    main_window.on_open_entry(|path| {
+    ui.on_open_entry(|path| {
         let _ = open::that(path).log_err("打开文件失败");
     });
-    main_window.on_open_folder_entry(showfile::show_path_in_file_manager);
+    ui.on_open_folder_entry(showfile::show_path_in_file_manager);
 
-    main_window.on_detail_entry({
+    ui.on_detail_entry({
         let db = app.db.clone();
         move |gid| {
             let Some(mut entry) = db.inner.data.get(&gid).map(|e| e.clone()) else {
@@ -335,7 +336,7 @@ async fn main() -> color_eyre::Result<()> {
         }
     });
 
-    main_window.show()?;
+    ui.show()?;
     slint::run_event_loop_until_quit()?;
     Ok(())
 }

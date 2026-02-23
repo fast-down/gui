@@ -25,6 +25,7 @@ dashmap = { version = "6.1.0", features = ["serde"] }
 dirs = "6.0.0"
 # fast-down = { path = "../core/crates/fast-down/", features = ["serde", "utils"] }
 fast-down = { version = "3.7.7", features = ["serde", "utils"] }
+i-slint-backend-winit = "1.15.1"
 interprocess = { version = "2.3.1", features = ["tokio"] }
 itertools = "0.14.0"
 lazy_static = "1.5.0"
@@ -45,7 +46,7 @@ rfd = "0.17.2"
 sanitize-filename = "0.6.0"
 serde = { version = "1.0.228", features = ["rc"] }
 showfile = "0.1.1"
-slint = { version = "1.15.1", features = ["raw-window-handle-06"] }
+slint = { version = "1.15.1", features = ["backend-winit"] }
 soft-canonicalize = "0.5.4"
 tokio = { version = "1.49.0", features = ["full"] }
 tokio-util = "0.7.18"
@@ -59,12 +60,9 @@ slint-build = "1.15.1"
 winresource = "0.1.30"
 
 [target.'cfg(windows)'.dependencies]
-raw-window-handle = "0.6.2"
 windows = { version = "0.62", features = [
   "Win32_Foundation",
   "Win32_System_Console",
-  "Win32_System_Threading",
-  "Win32_UI_WindowsAndMessaging",
 ] }
 
 [profile.release]
