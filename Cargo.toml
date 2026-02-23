@@ -1,6 +1,6 @@
 [package]
 name = "fast-down-gui"
-version = "0.1.0"
+version = "0.1.31"
 edition = "2024"
 license = "MIT"
 authors = ["share121 <2854631158@qq.com>"]
@@ -26,7 +26,7 @@ dirs = "6.0.0"
 # fast-down = { path = "../core/crates/fast-down/", features = ["serde", "utils"] }
 fast-down = { version = "3.7.7", features = ["serde", "utils"] }
 i-slint-backend-winit = "1.15.1"
-interprocess = { version = "2.3.1", features = ["tokio"] }
+interprocess = { version = "2.4.0", features = ["tokio"] }
 itertools = "0.14.0"
 lazy_static = "1.5.0"
 mimalloc = "0.1.48"
