@@ -30,6 +30,7 @@ export component MainWindow inherits Window {
     callback exit();
     callback browse_folder();
     callback config_change(Config);
+    callback view_log();
 
     callback start_all([EntryData]);
     callback pause_all([EntryData]);
@@ -104,7 +105,10 @@ export component MainWindow inherits Window {
                 browse_folder()
             }
             config_change(config) => {
-                config_change(config);
+                config_change(config)
+            }
+            view_log => {
+                view_log()
             }
         }
     }

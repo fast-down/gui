@@ -6,7 +6,7 @@ use fast_down_gui::{
     core::{DownloadEvent, TaskSet, download},
     fmt::format_size,
     ipc::{check_ipc, init_ipc},
-    persist::{self, Database, DatabaseEntry},
+    persist::{self, DB_DIR, Database, DatabaseEntry},
     ui::*,
     utils::{ForceSendExt, LogErr, attach_console, show_task_dialog},
 };
@@ -15,8 +15,11 @@ use slint::{Model, ModelRc, ToSharedString, VecModel, Weak};
 use std::{collections::HashSet, path::PathBuf, process::exit, rc::Rc, time::Duration};
 use tokio_util::sync::CancellationToken;
 use tracing::{error, info, level_filters::LevelFilter};
-use tracing_error::ErrorLayer;
-use tracing_subscriber::{EnvFilter, Registry, layer::SubscriberExt, util::SubscriberInitExt};
+use tracing_appender::{
+    non_blocking::WorkerGuard,
+    rolling::{RollingFileAppender, Rotation},
+};
+use tracing_subscriber::{EnvFilter, Registry, fmt, layer::SubscriberExt, util::SubscriberInitExt};
 use url::Url;
 
 #[global_allocator]
@@ -104,22 +107,33 @@ impl App {
     }
 }
 
-fn init_tracing() {
+fn init_tracing() -> WorkerGuard {
+    let file_appender = RollingFileAppender::builder()
+        .rotation(Rotation::DAILY)
+        .filename_prefix("fd")
+        .filename_suffix("log")
+        .max_log_files(3)
+        .build(&*DB_DIR)
+        .expect("无法初始化日志写入");
+    let (non_blocking, _guard) = tracing_appender::non_blocking(file_appender);
+    let file_layer = fmt::layer().with_writer(non_blocking).with_ansi(false);
+    let std_layer = fmt::layer().pretty();
     Registry::default()
         .with(
             EnvFilter::builder()
                 .with_default_directive(LevelFilter::INFO.into())
                 .from_env_lossy(),
         )
-        .with(tracing_subscriber::fmt::layer().pretty())
-        .with(ErrorLayer::default())
+        .with(std_layer)
+        .with(file_layer)
         .init();
+    _guard
 }
 
 #[tokio::main]
 async fn main() -> color_eyre::Result<()> {
     attach_console();
-    init_tracing();
+    let _guard = init_tracing();
 
     let _ = check_ipc().await.log_err("检查 ipc 通道错误");
     slint::BackendSelector::new()
@@ -336,6 +350,10 @@ async fn main() -> color_eyre::Result<()> {
             )
             .log_err("添加任务对话框启动失败");
         }
+    });
+
+    ui.on_view_log(|| {
+        let _ = open::that(DB_DIR.as_os_str()).log_err("打开日志文件夹失败");
     });
 
     ui.show()?;

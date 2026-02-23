@@ -86,6 +86,7 @@ pub async fn download(
                 }
             }
         };
+        info!(info = ?info, "获取元数据成功");
         let total_size = info.size;
         let (save_path, entry) = if let Some(entry) = entry
             && fs::try_exists(&entry.file_path).await.unwrap_or(false)

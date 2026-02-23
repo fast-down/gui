@@ -4,6 +4,7 @@ mod entry;
 pub use config::*;
 pub use entry::*;
 
+use crate::utils::LogErr;
 use color_eyre::Result;
 use dashmap::DashMap;
 use parking_lot::Mutex;
@@ -20,8 +21,6 @@ use std::{
 };
 use tokio::{fs, task::JoinHandle};
 use tracing::{error, info};
-
-use crate::utils::LogErr;
 
 lazy_static::lazy_static! {
     pub static ref DB_NAME: String = format!("fd-state-v{}-gui.fdb", DB_VERSION);

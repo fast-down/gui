@@ -38,6 +38,7 @@ export component Settings inherits VerticalLayout {
 
     callback browse_folder();
     callback config_change(Config);
+    callback view_log();
 
     changed config => {
         config_change(config);
@@ -239,6 +240,13 @@ export component Settings inherits VerticalLayout {
                 text <=> config.ips;
                 min-height: 150px;
                 placeholder-text: "192.168.1.8\n192.168.1.9\n留空则使用默认网卡发送请求";
+            }
+
+            Button {
+                text: "查看日志";
+                clicked => {
+                    view_log()
+                }
             }
         }
     }
