@@ -177,10 +177,12 @@ async fn main() -> color_eyre::Result<()> {
     ui.on_config_change({
         let db = db.clone();
         let task_set = task_set.clone();
+        let ui = ui.as_weak();
         move |c| {
             info!(config = ?c, "配置已更新");
             task_set.set_concurrency(c.max_concurrency as usize);
             db.set_config(&c);
+            let _ = ui.upgrade_in_event_loop(move |ui| ui.set_config(c));
         }
     });
 
