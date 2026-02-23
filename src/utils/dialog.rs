@@ -1,5 +1,5 @@
 use crate::ui::{Config, DialogType, TaskDialog};
-use crate::utils::LogErr;
+use crate::utils::{LogErr, get_font_family};
 use i_slint_backend_winit::WinitWindowAccessor;
 use rfd::FileDialog;
 use slint::{CloseRequestResponse, ComponentHandle, SharedString, ToSharedString};
@@ -63,6 +63,7 @@ pub fn show_task_dialog(
         }
     });
 
+    dialog.set_font_family(get_font_family().into());
     dialog.show()?;
     Ok(())
 }

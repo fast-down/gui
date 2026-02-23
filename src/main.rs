@@ -8,7 +8,7 @@ use fast_down_gui::{
     ipc::{check_ipc, init_ipc},
     persist::{self, DB_DIR, Database, DatabaseEntry},
     ui::*,
-    utils::{ForceSendExt, LogErr, attach_console, show_task_dialog},
+    utils::{ForceSendExt, LogErr, attach_console, get_font_family, show_task_dialog},
 };
 use rfd::FileDialog;
 use slint::{Model, ModelRc, ToSharedString, VecModel, Weak};
@@ -356,6 +356,7 @@ async fn main() -> color_eyre::Result<()> {
         let _ = open::that(DB_DIR.as_os_str()).log_err("打开日志文件夹失败");
     });
 
+    ui.set_font_family(get_font_family().into());
     ui.show()?;
     slint::run_event_loop_until_quit()?;
     Ok(())

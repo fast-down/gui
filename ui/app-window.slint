@@ -17,7 +17,8 @@ export component MainWindow inherits Window {
 
     min-width: 800px;
     min-height: 600px;
-    default-font-family: Theme.default-font;
+    default-font-family: font-family;
+    in property <string> font-family;
 
     callback start_entry(int);
     callback pause_entry(int);
