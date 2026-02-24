@@ -6,9 +6,10 @@ use fast_down_gui::{
     core::{DownloadEvent, TaskSet, download},
     fmt::format_size,
     ipc::{check_ipc, init_ipc},
+    os::{attach_console, get_font_family},
     persist::{self, DB_DIR, Database, DatabaseEntry},
     ui::*,
-    utils::{ForceSendExt, LogErr, attach_console, get_font_family, show_task_dialog},
+    utils::{ForceSendExt, LogErr, show_task_dialog},
 };
 use rfd::FileDialog;
 use slint::{Model, ModelRc, ToSharedString, VecModel, Weak};
