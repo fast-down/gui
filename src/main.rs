@@ -1,21 +1,19 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use arboard::Clipboard;
-use fast_down::{FileId, Total};
 use fast_down_gui::{
-    core::{DownloadEvent, TaskSet, download},
-    fmt::format_size,
+    core::{App, TaskSet, start_entry, start_new_entry},
     ipc::{check_ipc, init_ipc},
     os::{attach_console, get_font_family},
-    persist::{self, DB_DIR, Database, DatabaseEntry},
+    persist::{DB_DIR, Database},
+    server::start_server,
     ui::*,
-    utils::{ForceSendExt, LogErr, show_task_dialog},
+    utils::{LogErr, show_task_dialog},
 };
 use rfd::FileDialog;
-use slint::{Model, ModelRc, ToSharedString, VecModel, Weak};
-use std::{collections::HashSet, path::PathBuf, process::exit, rc::Rc, time::Duration};
-use tokio_util::sync::CancellationToken;
-use tracing::{error, info, level_filters::LevelFilter};
+use slint::{Model, ModelRc, ToSharedString, VecModel};
+use std::{collections::HashSet, process::exit, rc::Rc};
+use tracing::{info, level_filters::LevelFilter};
 use tracing_appender::{
     non_blocking::WorkerGuard,
     rolling::{RollingFileAppender, Rotation},
@@ -27,86 +25,6 @@ use url::Url;
 static GLOBAL_ALLOCATOR: mimalloc::MiMalloc = mimalloc::MiMalloc;
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
-
-#[derive(Clone)]
-struct App {
-    db: Database,
-    task_set: TaskSet<i32>,
-    ui: Weak<MainWindow>,
-}
-
-impl App {
-    fn update_ui_row<F>(&self, gid: i32, mutator: F)
-    where
-        F: FnOnce(usize, &mut EntryData) + Send + 'static,
-    {
-        let _ = self.ui.upgrade_in_event_loop(move |ui| {
-            let list_model = ui.get_all_list();
-            for (row, mut data) in list_model.iter().enumerate() {
-                if data.gid == gid {
-                    mutator(row, &mut data);
-                    list_model.set_row_data(row, data);
-                    break;
-                }
-            }
-        });
-    }
-
-    /// 创建下载过程中的事件处理器
-    fn create_download_handler(&self, gid: i32) -> impl FnMut(DownloadEvent) + Send + 'static {
-        let app = self.clone();
-        let mut file_size = 0;
-        move |event| match event {
-            DownloadEvent::Info(info) => {
-                file_size = info.file_size;
-                let _ = app
-                    .db
-                    .init_entry(gid, *info.clone())
-                    .log_err("数据库插入条目失败");
-                app.update_ui_row(gid, move |_, data| {
-                    data.status = Status::Running;
-                    data.filename = info.file_name.into();
-                    data.path = info.file_path.to_string_lossy().as_ref().into();
-                    data.total = format_size(info.file_size as f64).into();
-                });
-            }
-            DownloadEvent::Progress(p) => {
-                app.db.update_entry(gid, p.progress.clone(), p.elapsed);
-                app.update_ui_row(gid, move |_, data| {
-                    data.downloaded = p.downloaded;
-                    data.speed = p.speed;
-                    data.avg_speed = p.avg_speed;
-                    data.percentage = p.percentage;
-                    data.remaining_time = p.remaining_time;
-                    data.remaining_size = p.remaining_size;
-                    data.time = p.time;
-                    if file_size > 0 {
-                        data.progress =
-                            Rc::new(VecModel::from_iter(p.progress.iter().map(|r| Progress {
-                                start: r.start as f32 / file_size as f32,
-                                width: r.total() as f32 / file_size as f32,
-                            })))
-                            .into();
-                    }
-                });
-            }
-            DownloadEvent::End { is_cancelled } => {
-                let db_status = if is_cancelled {
-                    persist::Status::Paused
-                } else {
-                    persist::Status::Completed
-                };
-                let ui_status = if is_cancelled {
-                    Status::Paused
-                } else {
-                    Status::Completed
-                };
-                app.db.update_status(gid, db_status);
-                app.update_ui_row(gid, move |_, data| data.status = ui_status);
-            }
-        }
-    }
-}
 
 fn init_tracing() -> WorkerGuard {
     let file_appender = RollingFileAppender::builder()
@@ -155,6 +73,7 @@ async fn main() -> color_eyre::Result<()> {
         ui: ui.as_weak(),
     };
 
+    start_server(app.clone(), list_model.clone(), ui.as_weak()).await?;
     setup_ui_lists(&ui, list_model.clone());
     ui.set_config(db.get_ui_config());
     ui.set_version(VERSION.into());
@@ -381,76 +300,4 @@ fn setup_ui_lists(ui: &MainWindow, list_model: Rc<VecModel<EntryData>>) {
     ui.set_paused_list(filter_view(Status::Paused));
     ui.set_completed_list(filter_view(Status::Completed));
     ui.set_error_list(filter_view(Status::Error));
-}
-
-/// 返回 false 意味任务没有成功添加到 task_set 中
-fn start_entry(app: &App, entry: &EntryData, list: &VecModel<EntryData>) -> bool {
-    if matches!(entry.status, Status::Running | Status::Waiting) {
-        return false;
-    }
-    let gid = entry.gid;
-    let Some(db_entry) = app.db.inner.data.get(&gid).map(|e| e.clone()) else {
-        return false;
-    };
-    let url = db_entry.url.clone();
-    let config = db_entry.config.to_ui_config();
-    if db_entry.status == persist::Status::Completed {
-        start_new_entry(app, url, &config, list);
-        return false;
-    }
-    let app_c = app.clone();
-    let cancel_token = CancellationToken::new();
-    let token = cancel_token.clone();
-    let fut = async move {
-        let handler = app_c.create_download_handler(gid);
-        match download(url, &config, token, Some(db_entry), handler).await {
-            Ok(()) => info!(gid = gid, "任务下载完成"),
-            Err(e) => {
-                error!(gid = gid, err = ?e, "下载任务出错");
-                app_c.db.update_status(gid, persist::Status::Error);
-                app_c.update_ui_row(gid, |_, data| data.status = Status::Error);
-            }
-        }
-    }
-    .force_send();
-    app.task_set.add_task(gid, cancel_token, fut);
-    true
-}
-
-fn start_new_entry(app: &App, url: Url, config: &Config, list_model: &VecModel<EntryData>) {
-    let gid = app.db.next_gid();
-    let entry = DatabaseEntry {
-        file_name: url.to_string(),
-        file_path: PathBuf::new(),
-        file_size: 0,
-        file_id: FileId::default(),
-        progress: Vec::new(),
-        elapsed: Duration::ZERO,
-        url: url.clone(),
-        config: config.into(),
-        status: persist::Status::Paused,
-    };
-    let mut ui_entry = entry.to_entry_data(gid);
-    ui_entry.status = Status::Waiting;
-    list_model.push(ui_entry);
-    let _ = app.db.init_entry(gid, entry).log_err("数据库插入条目失败");
-
-    let app_c = app.clone();
-    let cancel_token = CancellationToken::new();
-    let token = cancel_token.clone();
-    let config = config.clone();
-
-    let fut = async move {
-        let handler = app_c.create_download_handler(gid);
-        match download(url, &config, token, None, handler).await {
-            Ok(()) => info!(gid = gid, "任务下载完成"),
-            Err(e) => {
-                error!(gid = gid, err = ?e, "下载任务出错");
-                app_c.db.update_status(gid, persist::Status::Error);
-                app_c.update_ui_row(gid, |_, data| data.status = Status::Error);
-            }
-        }
-    }
-    .force_send();
-    app.task_set.add_task(gid, cancel_token, fut);
 }
