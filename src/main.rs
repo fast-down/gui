@@ -4,7 +4,7 @@ use arboard::Clipboard;
 use fast_down_gui::{
     core::{App, TaskSet, start_entry, start_new_entry},
     ipc::{check_ipc, init_ipc},
-    os::{attach_console, get_font_family},
+    os::attach_console,
     persist::{DB_DIR, Database},
     server::start_server,
     ui::*,
@@ -276,7 +276,6 @@ async fn main() -> color_eyre::Result<()> {
         let _ = open::that(DB_DIR.as_os_str()).log_err("打开日志文件夹失败");
     });
 
-    ui.set_font_family(get_font_family().into());
     ui.show()?;
     slint::run_event_loop_until_quit()?;
     Ok(())
