@@ -1,9 +1,12 @@
 use crate::os::get_font_family;
 use crate::ui::{Config, DialogType, TaskDialog};
 use crate::utils::LogErr;
+#[cfg(target_os = "macos")]
 use i_slint_backend_winit::WinitWindowAccessor;
 use rfd::FileDialog;
-use slint::{CloseRequestResponse, ComponentHandle, SharedString, ToSharedString};
+#[cfg(target_os = "macos")]
+use slint::CloseRequestResponse;
+use slint::{ComponentHandle, SharedString, ToSharedString};
 
 /// 显示添加任务对话框
 pub fn show_task_dialog(
@@ -18,6 +21,15 @@ pub fn show_task_dialog(
     dialog.set_config(config);
 
     let dialog_weak = dialog.as_weak();
+
+    #[cfg(not(target_os = "macos"))]
+    let hide_dialog = move || {
+        let _ = dialog_weak.upgrade_in_event_loop(|d| {
+            let _ = d.hide().log_err("隐藏窗口失败");
+        });
+    };
+    #[cfg(target_os = "macos")]
+    // TaskDialog.hide 方法在有 TouchBar 的 MacBook Pro 机型上调用会 remove 不存在的 Observer 导致程序崩溃
     let hide_dialog = move || {
         let _ = dialog_weak.upgrade_in_event_loop(move |d| {
             let _ = slint::spawn_local(async move {
@@ -34,11 +46,15 @@ pub fn show_task_dialog(
         });
     };
 
-    let hide_dialog_clone = hide_dialog.clone();
-    dialog.window().on_close_requested(move || {
-        hide_dialog_clone();
-        CloseRequestResponse::KeepWindowShown // 返回保持展示仅是为了绕过 slint 内置的隐藏策略 窗体由 hide_dialog_clone 隐藏
-    });
+    #[cfg(target_os = "macos")]
+    {
+        let hide_dialog_clone = hide_dialog.clone();
+        dialog.window().on_close_requested(move || {
+            hide_dialog_clone();
+            // 返回保持展示仅是为了绕过 slint 内置的隐藏策略 窗体由 hide_dialog_clone 隐藏
+            CloseRequestResponse::KeepWindowShown
+        });
+    }
 
     dialog.on_canceled(hide_dialog.clone());
 
