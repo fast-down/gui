@@ -1,4 +1,3 @@
-use crate::os::get_font_family;
 use crate::ui::{Config, DialogType, TaskDialog};
 use crate::utils::LogErr;
 #[cfg(target_os = "macos")]
@@ -80,7 +79,6 @@ pub fn show_task_dialog(
         }
     });
 
-    dialog.set_font_family(get_font_family().into());
     dialog.show()?;
     Ok(())
 }

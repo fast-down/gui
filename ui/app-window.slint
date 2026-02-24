@@ -14,11 +14,9 @@ export {
 export component MainWindow inherits Window {
     title: "fast-down v" + version;
     icon: Theme.app-icon;
-
     min-width: 800px;
     min-height: 600px;
-    default-font-family: font-family;
-    in property <string> font-family;
+    default-font-family: Theme.font-family;
 
     callback start_entry(int);
     callback pause_entry(int);

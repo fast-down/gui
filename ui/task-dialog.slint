@@ -27,9 +27,7 @@ export component TaskDialog inherits Window {
     icon: Theme.app-icon;
     min-width: 500px;
     min-height: 500px;
-
-    default-font-family: font-family;
-    in property <string> font-family;
+    default-font-family: Theme.font-family;
 
     in property <DialogType> type;
     in-out property <string> urls;
