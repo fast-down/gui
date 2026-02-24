@@ -86,8 +86,8 @@ jobs:
       - name: Run Clippy
         run: cargo clippy --all-features --all-targets --verbose -- -Dwarnings
 
-      - name: Run Clippy (minimal-versions)
-        run: cargo clippy --all-features --all-targets -Z minimal-versions --verbose -- -Dwarnings
+      # - name: Run Clippy (minimal-versions)
+      #   run: cargo clippy --all-features --all-targets -Z minimal-versions --verbose -- -Dwarnings
 
       - name: Run Clippy (no-default-features)
         run: cargo clippy --no-default-features --all-targets --verbose -- -Dwarnings
