@@ -1,7 +1,4 @@
-use crate::{
-    ui::MainWindow,
-    utils::{LogErr, wakeup_window},
-};
+use crate::{os::wakeup_window, ui::MainWindow, utils::LogErr};
 use interprocess::local_socket::{
     GenericNamespaced, ListenerOptions,
     tokio::{Stream, prelude::*},

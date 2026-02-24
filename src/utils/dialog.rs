@@ -1,5 +1,6 @@
+use crate::os::get_font_family;
 use crate::ui::{Config, DialogType, TaskDialog};
-use crate::utils::{LogErr, get_font_family};
+use crate::utils::LogErr;
 use i_slint_backend_winit::WinitWindowAccessor;
 use rfd::FileDialog;
 use slint::{CloseRequestResponse, ComponentHandle, SharedString, ToSharedString};
