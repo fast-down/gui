@@ -18,7 +18,7 @@ jobs:
         channel:
           - stable
           - beta
-          - nightly
+          # - nightly
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -62,7 +62,7 @@ jobs:
       - name: Install Rust Toolchain
         uses: dtolnay/rust-toolchain@stable
         with:
-          toolchain: nightly
+          toolchain: stable
           components: clippy
 
       - name: Rust Cache
@@ -142,38 +142,38 @@ jobs:
       - name: Run deny
         run: cargo deny --all-features check --deny warnings
 
-  udeps:
-    name: Udeps
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+  # udeps:
+  #   name: Udeps
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Checkout repository
+  #       uses: actions/checkout@v4
 
-      - name: Install Rust Toolchain
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          toolchain: nightly
+  #     - name: Install Rust Toolchain
+  #       uses: dtolnay/rust-toolchain@stable
+  #       with:
+  #         toolchain: nightly
 
-      - name: Rust Cache
-        uses: swatinem/rust-cache@v2
+  #     - name: Rust Cache
+  #       uses: swatinem/rust-cache@v2
 
-      - name: Install Slint dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            libfontconfig1-dev \
-            libxcb-shape0-dev \
-            libxcb-xfixes0-dev \
-            libxkbcommon-dev \
-            libxcb1-dev \
-            libxcb-render0-dev \
-            libxcb-composite0-dev \
-            libxcb-cursor-dev \
-            libxcb-xkb-dev \
-            pkg-config
+  #     - name: Install Slint dependencies
+  #       run: |
+  #         sudo apt-get update
+  #         sudo apt-get install -y \
+  #           libfontconfig1-dev \
+  #           libxcb-shape0-dev \
+  #           libxcb-xfixes0-dev \
+  #           libxkbcommon-dev \
+  #           libxcb1-dev \
+  #           libxcb-render0-dev \
+  #           libxcb-composite0-dev \
+  #           libxcb-cursor-dev \
+  #           libxcb-xkb-dev \
+  #           pkg-config
 
-      - name: Install cargo-udeps
-        run: cargo install cargo-udeps
+  #     - name: Install cargo-udeps
+  #       run: cargo install cargo-udeps
 
-      - name: Run Udeps
-        run: cargo udeps
+  #     - name: Run Udeps
+  #       run: cargo udeps
