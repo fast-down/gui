@@ -73,3 +73,14 @@ strip = true
 lto = true
 panic = "abort"
 codegen-units = 1
+
+[package.metadata.bundle]
+name = "FastDown"
+identifier = "top.s121.fd"
+icon = ["assets/icon.png"]
+copyright = "Copyright (c) 2026 fast-down"
+category = "Utilities"
+short_description = "超级快的下载器"
+long_description = """
+超级快的下载器图形化界面
+"""
