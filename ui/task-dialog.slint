@@ -192,6 +192,31 @@ export component TaskDialog inherits Window {
 
                 HorizontalBox {
                     padding: 0px;
+                    VerticalBox {
+                        padding: 0px;
+                        Text {
+                            text: "重试次数";
+                        }
+
+                        NoScrollSpinBox {
+                            value <=> config.retry-times;
+                        }
+                    }
+
+                    VerticalBox {
+                        padding: 0px;
+                        Text {
+                            text: "块平滑窗口";
+                        }
+
+                        NoScrollSpinBox {
+                            value <=> config.chunk-window;
+                        }
+                    }
+                }
+
+                HorizontalBox {
+                    padding: 0px;
                     CheckBox {
                         text: "接受无效证书";
                         horizontal-stretch: 1;

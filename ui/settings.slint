@@ -29,6 +29,8 @@ export struct Config {
     max_speculative: int,
     write_method: int,
     max_concurrency: int,
+    retry_times: int,
+    chunk_window: int,
 }
 
 export component Settings inherits VerticalLayout {
@@ -206,6 +208,31 @@ export component Settings inherits VerticalLayout {
 
                     NoScrollSpinBox {
                         value <=> config.pull-timeout-ms;
+                    }
+                }
+            }
+
+            HorizontalBox {
+                padding: 0px;
+                VerticalBox {
+                    padding: 0px;
+                    Text {
+                        text: "重试次数";
+                    }
+
+                    NoScrollSpinBox {
+                        value <=> config.retry-times;
+                    }
+                }
+
+                VerticalBox {
+                    padding: 0px;
+                    Text {
+                        text: "块平滑窗口";
+                    }
+
+                    NoScrollSpinBox {
+                        value <=> config.chunk-window;
                     }
                 }
             }
