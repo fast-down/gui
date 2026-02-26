@@ -1,4 +1,3 @@
-use reqwest::header::HeaderMap;
 use std::collections::HashMap;
 
 pub fn parse_header(input: &str) -> impl Iterator<Item = (&str, &str)> {
@@ -12,16 +11,6 @@ pub fn parse_header(input: &str) -> impl Iterator<Item = (&str, &str)> {
             (Some(key), None) => Some((key, "")),
             (Some(key), Some(value)) => Some((key, value)),
         })
-}
-
-pub fn parse_header_headermap(input: &str) -> HeaderMap {
-    parse_header(input)
-        .map(|(k, v)| (k.parse(), v.parse()))
-        .filter_map(|header| match header {
-            (Ok(k), Ok(v)) => Some((k, v)),
-            _ => None,
-        })
-        .collect()
 }
 
 pub fn parse_header_hashmap(input: &str) -> HashMap<String, String> {

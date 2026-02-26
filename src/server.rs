@@ -4,9 +4,8 @@ use crate::{
     ui::{EntryData, MainWindow},
     utils::LogErr,
 };
-use axum::{Json, Router, extract::State, routing::post};
+use axum::{Json, Router, extract::State, http::StatusCode, routing::post};
 use crossfire::{MTx, mpsc};
-use reqwest::StatusCode;
 use serde::{Deserialize, Serialize};
 use slint::{VecModel, Weak};
 use std::{rc::Rc, time::Duration};

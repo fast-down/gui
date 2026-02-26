@@ -1,13 +1,11 @@
 use crate::{
-    core::{DownloadEvent, TaskSet},
+    core::{DownloadEvent, TaskSet, apply_progress_diff},
     fmt::format_size,
     persist::{self, Database},
-    ui::{self, EntryData, MainWindow, Progress},
+    ui::{self, EntryData, MainWindow},
     utils::LogErr,
 };
-use fast_down::Total;
-use slint::{Model, VecModel, Weak};
-use std::rc::Rc;
+use slint::{Model, Weak};
 
 #[derive(Clone)]
 pub struct App {
@@ -34,7 +32,10 @@ impl App {
     }
 
     /// 创建下载过程中的事件处理器
-    pub fn create_download_handler(&self, gid: i32) -> impl FnMut(DownloadEvent) + Send + 'static {
+    pub fn create_download_handler(
+        &self,
+        gid: i32,
+    ) -> impl FnMut(DownloadEvent) + Send + Sync + 'static {
         let app = self.clone();
         let mut file_size = 0;
         move |event| match event {
@@ -62,12 +63,7 @@ impl App {
                     data.remaining_size = p.remaining_size;
                     data.time = p.time;
                     if file_size > 0 {
-                        data.progress =
-                            Rc::new(VecModel::from_iter(p.progress.iter().map(|r| Progress {
-                                start: r.start as f32 / file_size as f32,
-                                width: r.total() as f32 / file_size as f32,
-                            })))
-                            .into();
+                        data.progress = apply_progress_diff(&data.progress, &p.progress, file_size);
                     }
                 });
             }
