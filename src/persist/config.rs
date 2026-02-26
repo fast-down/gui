@@ -1,4 +1,5 @@
 use crate::utils::parse_header_hashmap;
+use fast_down_ffi_core::{WriteMethod, fast_down::utils::Proxy};
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, net::IpAddr, path::PathBuf, time::Duration};
@@ -7,7 +8,7 @@ use std::{collections::HashMap, net::IpAddr, path::PathBuf, time::Duration};
 pub struct Config {
     pub save_dir: PathBuf,
     pub threads: usize,
-    pub proxy: Option<String>,
+    pub proxy: Proxy<String>,
     pub headers: HashMap<String, String>,
     pub min_chunk_size: u64,
     pub write_buffer_size: usize,
@@ -20,6 +21,8 @@ pub struct Config {
     pub max_speculative: usize,
     pub write_method: WriteMethod,
     pub max_concurrency: usize,
+    pub retry_times: usize,
+    pub chunk_window: u64,
 }
 
 impl Default for Config {
@@ -27,7 +30,7 @@ impl Default for Config {
         Self {
             save_dir: dirs::download_dir().unwrap_or_default(),
             threads: 32,
-            proxy: None,
+            proxy: Proxy::System,
             headers: HashMap::new(),
             min_chunk_size: 8 * 1024 * 1024,
             write_buffer_size: 16 * 1024 * 1024,
@@ -40,14 +43,10 @@ impl Default for Config {
             max_speculative: 3,
             write_method: WriteMethod::Mmap,
             max_concurrency: 2,
+            retry_times: 10,
+            chunk_window: 8 * 1024,
         }
     }
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-pub enum WriteMethod {
-    Mmap,
-    Std,
 }
 
 impl Config {
@@ -70,9 +69,9 @@ impl Config {
             max_speculative: self.max_speculative as i32,
             min_chunk_size: self.min_chunk_size as i32,
             proxy: match self.proxy.as_deref() {
-                Some("") => "null",
-                None => "",
-                Some(proxy) => proxy,
+                Proxy::No => "null",
+                Proxy::System => "",
+                Proxy::Custom(proxy) => proxy,
             }
             .into(),
             pull_timeout_ms: self.pull_timeout.as_millis() as i32,
@@ -86,6 +85,8 @@ impl Config {
             },
             write_queue_cap: self.write_queue_cap as i32,
             max_concurrency: self.max_concurrency as i32,
+            retry_times: self.retry_times as i32,
+            chunk_window: self.chunk_window as i32,
         }
     }
 }
@@ -96,9 +97,9 @@ impl From<&crate::ui::Config> for Config {
             save_dir: value.save_dir.as_str().into(),
             threads: value.threads as usize,
             proxy: match value.proxy.as_str() {
-                "" => None,
-                "null" => Some(String::new()),
-                proxy => Some(proxy.to_string()),
+                "" => Proxy::System,
+                "null" => Proxy::No,
+                proxy => Proxy::Custom(proxy.to_string()),
             },
             headers: parse_header_hashmap(&value.headers),
             min_chunk_size: value.min_chunk_size as u64,
@@ -120,6 +121,8 @@ impl From<&crate::ui::Config> for Config {
                 _ => WriteMethod::Mmap,
             },
             max_concurrency: value.max_concurrency as usize,
+            retry_times: value.retry_times as usize,
+            chunk_window: value.chunk_window as u64,
         }
     }
 }

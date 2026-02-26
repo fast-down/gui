@@ -1,10 +1,11 @@
 mod config;
 mod entry;
+mod loader;
 
 pub use config::*;
 pub use entry::*;
 
-use crate::utils::LogErr;
+use crate::persist::loader::{BoxLoader, Loader};
 use color_eyre::Result;
 use dashmap::DashMap;
 use parking_lot::Mutex;
@@ -22,8 +23,8 @@ use std::{
 use tokio::{fs, task::JoinHandle};
 use tracing::{error, info};
 
+pub const DB_NAME: &str = "fd-state-gui.fdb";
 lazy_static::lazy_static! {
-    pub static ref DB_NAME: String = format!("fd-state-v{}-gui.fdb", DB_VERSION);
     pub static ref DB_DIR: PathBuf = {
         let db_dir = dirs::data_dir()
             .and_then(|p| soft_canonicalize::soft_canonicalize(p).ok())
@@ -32,10 +33,8 @@ lazy_static::lazy_static! {
         let _ = std::fs::create_dir_all(&db_dir);
         db_dir
     };
-    pub static ref DB_PATH: PathBuf = DB_DIR.join(&*DB_NAME);
+    pub static ref DB_PATH: PathBuf = DB_DIR.join(DB_NAME);
 }
-
-const DB_VERSION: u32 = 1;
 
 #[derive(Serialize, Deserialize, Debug, Default)]
 pub struct DatabaseInner {
@@ -73,14 +72,15 @@ pub struct Database {
 
 impl Database {
     pub async fn new() -> Self {
+        if !fs::try_exists(&*DB_PATH).await.unwrap_or(false) {
+            let _ = fs::rename(DB_DIR.join("fd-state-v1-gui.fdb"), &*DB_PATH).await;
+        }
         let inner = fs::read(&*DB_PATH)
             .await
             .ok()
-            .and_then(|bytes| bitcode::deserialize::<DatabaseInner>(&bytes).ok());
+            .and_then(|bytes| BoxLoader.load(&bytes));
         if inner.is_none() {
-            let _ = tokio::fs::rename(&*DB_PATH, DB_PATH.with_added_extension("bak"))
-                .await
-                .log_err("数据库重命名失败");
+            let _ = tokio::fs::rename(&*DB_PATH, DB_PATH.with_added_extension("bak")).await;
         }
         let inner: Arc<_> = inner.unwrap_or_default().into();
         let is_dirty = Arc::new(AtomicBool::new(false));

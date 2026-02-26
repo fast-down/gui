@@ -7,8 +7,10 @@ use slint::Weak;
 use std::{io::ErrorKind, process::exit};
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 
+const NS_NAME: &str = "top.s121.fd.sock";
+
 pub async fn check_ipc() -> color_eyre::Result<()> {
-    let ns_name = "top.s121.fd.sock".to_ns_name::<GenericNamespaced>()?;
+    let ns_name = NS_NAME.to_ns_name::<GenericNamespaced>()?;
     match Stream::connect(ns_name.clone()).await {
         Ok(mut stream) => {
             tracing::info!("发现已有实例，正在发送唤醒信号...");
@@ -24,7 +26,7 @@ pub async fn check_ipc() -> color_eyre::Result<()> {
 }
 
 pub async fn init_ipc(ui_weak: Weak<MainWindow>) -> color_eyre::Result<()> {
-    let ns_name = "com.fast-down.gui.sock".to_ns_name::<GenericNamespaced>()?;
+    let ns_name = NS_NAME.to_ns_name::<GenericNamespaced>()?;
     let listener = ListenerOptions::new()
         .name(ns_name)
         .try_overwrite(true)

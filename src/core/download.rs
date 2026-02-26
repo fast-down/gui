@@ -1,19 +1,16 @@
 use crate::{
     fmt::{format_size, format_time},
-    persist::{DatabaseEntry, Status},
+    persist::{self, DatabaseEntry, Status},
     ui::Config,
-    utils::{parse_header_hashmap, sanitize},
+    utils::sanitize,
 };
 use fast_down_ffi_core::{
-    Event, WriteMethod, create_channel,
-    fast_down::{
-        Merge, Total,
-        utils::{Proxy, gen_unique_path},
-    },
+    Event, create_channel,
+    fast_down::{Merge, Total, utils::gen_unique_path},
     prefetch,
 };
 use slint::SharedString;
-use std::{ops::Range, path::PathBuf, time::Duration};
+use std::{ops::Range, time::Duration};
 use tokio::{fs, time::Instant};
 use tokio_util::sync::CancellationToken;
 use tracing::{error, info, warn};
@@ -49,39 +46,28 @@ pub async fn download(
         if !file_exists {
             entry = None
         }
+        let config: persist::Config = config.into();
         let progress = entry
             .as_ref()
             .map(|e| e.progress.clone())
             .unwrap_or_default();
         let download_config = fast_down_ffi_core::Config {
-            retry_times: 10,
-            threads: config.threads as usize,
-            proxy: match config.proxy.trim() {
-                "" => Proxy::System,
-                "null" => Proxy::No,
-                proxy => Proxy::Custom(proxy.to_string()),
-            },
-            headers: parse_header_hashmap(&config.headers),
-            min_chunk_size: config.min_chunk_size as u64,
-            write_buffer_size: config.write_buffer_size as usize,
-            write_queue_cap: config.write_queue_cap as usize,
-            retry_gap: Duration::from_millis(config.retry_gap_ms as u64),
-            pull_timeout: Duration::from_millis(config.pull_timeout_ms as u64),
+            retry_times: config.retry_times,
+            threads: config.threads,
+            proxy: config.proxy.clone(),
+            headers: config.headers.clone(),
+            min_chunk_size: config.min_chunk_size,
+            write_buffer_size: config.write_buffer_size,
+            write_queue_cap: config.write_queue_cap,
+            retry_gap: config.retry_gap,
+            pull_timeout: config.pull_timeout,
             accept_invalid_certs: config.accept_invalid_certs,
             accept_invalid_hostnames: config.accept_invalid_hostnames,
-            write_method: if config.write_method == 0 {
-                WriteMethod::Mmap
-            } else {
-                WriteMethod::Std
-            },
-            local_address: config
-                .ips
-                .lines()
-                .filter_map(|ip| ip.trim().parse().ok())
-                .collect(),
-            max_speculative: config.max_speculative as usize,
+            write_method: config.write_method.clone(),
+            local_address: config.local_address.clone(),
+            max_speculative: config.max_speculative,
             downloaded_chunk: progress.clone(),
-            chunk_window: 8 * 1024 * 1024,
+            chunk_window: config.chunk_window,
         };
         let elapsed = entry.as_ref().map(|e| e.elapsed).unwrap_or_default();
         let (tx, rx) = create_channel();
@@ -94,11 +80,13 @@ pub async fn download(
             (entry.file_path.clone(), entry)
         } else {
             let file_name = sanitize(info.raw_name.clone(), 248);
-            let save_dir = soft_canonicalize::soft_canonicalize(if config.save_dir.is_empty() {
-                dirs::download_dir().unwrap_or_default()
-            } else {
-                PathBuf::from(&config.save_dir)
-            })?;
+            let save_dir = soft_canonicalize::soft_canonicalize(
+                if config.save_dir.to_string_lossy().is_empty() {
+                    dirs::download_dir().unwrap_or_default()
+                } else {
+                    config.save_dir.clone()
+                },
+            )?;
             let _ = fs::create_dir_all(&save_dir).await;
             let save_path = gen_unique_path(&save_dir.join(&file_name)).await?;
             let file_name = save_path.file_name().unwrap().to_string_lossy().to_string();
@@ -112,7 +100,7 @@ pub async fn download(
                     progress: Vec::new(),
                     elapsed: Duration::ZERO,
                     url,
-                    config: config.into(),
+                    config,
                     status: Status::Paused,
                 },
             )
