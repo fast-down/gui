@@ -4,7 +4,7 @@ use crate::{
     ui::{Config, EntryData, Status},
     utils::{ForceSendExt, LogErr},
 };
-use fast_down_ffi_core::fast_down::FileId;
+use fast_down_ffi::fast_down::FileId;
 use slint::VecModel;
 use std::{path::PathBuf, time::Duration};
 use tokio_util::sync::CancellationToken;

@@ -1,6 +1,6 @@
 use crate::persist::loader::Loader;
 use dashmap::DashMap;
-use fast_down_ffi_core::{
+use fast_down_ffi::{
     WriteMethod,
     fast_down::{FileId, ProgressEntry, utils::Proxy},
 };

@@ -1,5 +1,5 @@
 use crate::ui::Progress;
-use fast_down_ffi_core::fast_down::ProgressEntry;
+use fast_down_ffi::fast_down::ProgressEntry;
 use slint::{Model, ModelRc, VecModel};
 use std::rc::Rc;
 

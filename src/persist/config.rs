@@ -1,5 +1,5 @@
 use crate::utils::parse_header_hashmap;
-use fast_down_ffi_core::{WriteMethod, fast_down::utils::Proxy};
+use fast_down_ffi::{WriteMethod, fast_down::utils::Proxy};
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, net::IpAddr, path::PathBuf, time::Duration};

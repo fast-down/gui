@@ -1654,10 +1654,10 @@ dependencies = [
 ]
 
 [[package]]
-name = "fast-down-ffi-core"
-version = "0.1.4"
+name = "fast-down-ffi"
+version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b575633ff9ffd8a7b1d2f4fa145ee9df21efd0d8545700f608141c635a5ff53c"
+checksum = "36ad8e6b599a4e50bc8bf65da22540a9704b3963b9939619ef534744a98197fb"
 dependencies = [
  "crossfire",
  "fast-down",
@@ -1681,7 +1681,7 @@ dependencies = [
  "crossfire",
  "dashmap",
  "dirs",
- "fast-down-ffi-core",
+ "fast-down-ffi",
  "i-slint-backend-winit",
  "interprocess",
  "itertools 0.14.0",

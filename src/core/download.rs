@@ -4,7 +4,7 @@ use crate::{
     ui::Config,
     utils::sanitize,
 };
-use fast_down_ffi_core::{
+use fast_down_ffi::{
     Event, create_channel,
     fast_down::{Merge, Total, utils::gen_unique_path},
     prefetch,
@@ -51,7 +51,7 @@ pub async fn download(
             .as_ref()
             .map(|e| e.progress.clone())
             .unwrap_or_default();
-        let download_config = fast_down_ffi_core::Config {
+        let download_config = fast_down_ffi::Config {
             retry_times: config.retry_times,
             threads: config.threads,
             proxy: config.proxy.clone(),
