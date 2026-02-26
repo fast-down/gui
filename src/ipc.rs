@@ -8,7 +8,7 @@ use std::{io::ErrorKind, process::exit};
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 
 pub async fn check_ipc() -> color_eyre::Result<()> {
-    let ns_name = "com.fast-down.gui.sock".to_ns_name::<GenericNamespaced>()?;
+    let ns_name = "top.s121.fd.sock".to_ns_name::<GenericNamespaced>()?;
     match Stream::connect(ns_name.clone()).await {
         Ok(mut stream) => {
             tracing::info!("发现已有实例，正在发送唤醒信号...");

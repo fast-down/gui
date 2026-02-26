@@ -3,7 +3,7 @@ use crate::{
     persist::Config,
     ui::EntryData,
 };
-use fast_down::{FileId, Total};
+use fast_down_ffi_core::fast_down::{FileId, Total};
 use serde::{Deserialize, Serialize};
 use slint::{SharedString, VecModel};
 use std::{ops::Range, path::PathBuf, rc::Rc, time::Duration};

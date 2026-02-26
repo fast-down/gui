@@ -2,26 +2,19 @@ use crate::{
     fmt::{format_size, format_time},
     persist::{DatabaseEntry, Status},
     ui::Config,
-    utils::{parse_header_headermap, sanitize},
+    utils::{parse_header_hashmap, sanitize},
 };
-#[cfg(target_pointer_width = "64")]
-use fast_down::file::MmapFilePusher;
-use fast_down::{
-    BoxPusher, Event, Merge, Total,
-    file::FilePusher,
-    http::Prefetch,
-    invert,
-    multi::{self, download_multi},
-    single::{self, download_single},
-    utils::{FastDownPuller, FastDownPullerOptions, build_client, gen_unique_path},
+use fast_down_ffi_core::{
+    Event, WriteMethod, create_channel,
+    fast_down::{
+        Merge, Total,
+        utils::{Proxy, gen_unique_path},
+    },
+    prefetch,
 };
-use parking_lot::Mutex;
 use slint::SharedString;
-use std::{net::IpAddr, ops::Range, path::PathBuf, sync::Arc, time::Duration};
-use tokio::{
-    fs::{self, OpenOptions},
-    time::Instant,
-};
+use std::{ops::Range, path::PathBuf, time::Duration};
+use tokio::{fs, time::Instant};
 use tokio_util::sync::CancellationToken;
 use tracing::{error, info, warn};
 use url::Url;
@@ -48,44 +41,51 @@ pub async fn download(
     url: Url,
     config: &Config,
     cancel_token: CancellationToken,
-    entry: Option<DatabaseEntry>,
-    mut on_event: impl FnMut(DownloadEvent) + Send + Sync,
+    mut entry: Option<DatabaseEntry>,
+    mut on_event: impl FnMut(DownloadEvent) + Send + Sync + 'static,
 ) -> color_eyre::Result<()> {
     let result = async {
-        let headers = Arc::new(parse_header_headermap(&config.headers));
-        let proxy = match config.proxy.trim() {
-            "" => None,
-            "null" => Some(""),
-            proxy => Some(proxy),
+        let file_exists = matches!(&entry, Some(entry) if fs::try_exists(&entry.file_path).await.unwrap_or(false));
+        if !file_exists {
+            entry = None
+        }
+        let progress = entry
+            .as_ref()
+            .map(|e| e.progress.clone())
+            .unwrap_or_default();
+        let download_config = fast_down_ffi_core::Config {
+            retry_times: 10,
+            threads: config.threads as usize,
+            proxy: match config.proxy.trim() {
+                "" => Proxy::System,
+                "null" => Proxy::No,
+                proxy => Proxy::Custom(proxy.to_string()),
+            },
+            headers: parse_header_hashmap(&config.headers),
+            min_chunk_size: config.min_chunk_size as u64,
+            write_buffer_size: config.write_buffer_size as usize,
+            write_queue_cap: config.write_queue_cap as usize,
+            retry_gap: Duration::from_millis(config.retry_gap_ms as u64),
+            pull_timeout: Duration::from_millis(config.pull_timeout_ms as u64),
+            accept_invalid_certs: config.accept_invalid_certs,
+            accept_invalid_hostnames: config.accept_invalid_hostnames,
+            write_method: if config.write_method == 0 {
+                WriteMethod::Mmap
+            } else {
+                WriteMethod::Std
+            },
+            local_address: config
+                .ips
+                .lines()
+                .filter_map(|ip| ip.trim().parse().ok())
+                .collect(),
+            max_speculative: config.max_speculative as usize,
+            downloaded_chunk: progress.clone(),
+            chunk_window: 8 * 1024 * 1024,
         };
-        let local_addr: Arc<[IpAddr]> = config
-            .ips
-            .lines()
-            .filter_map(|ip| ip.trim().parse().ok())
-            .collect();
-        let accept_invalid_certs = config.accept_invalid_certs;
-        let accept_invalid_hostnames = config.accept_invalid_hostnames;
-        let client = build_client(
-            &headers,
-            proxy,
-            accept_invalid_certs,
-            accept_invalid_hostnames,
-            local_addr.first().cloned(),
-        )?;
-        let mut count = 0;
-        let (info, resp) = loop {
-            match client.prefetch(url.clone()).await {
-                Ok(t) => break t,
-                Err((e, t)) => {
-                    count += 1;
-                    if count > 10 {
-                        color_eyre::eyre::bail!("获取元数据失败: {:?}", e);
-                    }
-                    error!(err = ?e, "获取元数据失败");
-                    tokio::time::sleep(t.unwrap_or(Duration::from_millis(500))).await;
-                }
-            }
-        };
+        let elapsed = entry.as_ref().map(|e| e.elapsed).unwrap_or_default();
+        let (tx, rx) = create_channel();
+        let (info, predown) = prefetch(url.clone(), download_config, tx).await?;
         info!(info = ?info, "获取元数据成功");
         let total_size = info.size;
         let (save_path, entry) = if let Some(entry) = entry
@@ -93,7 +93,7 @@ pub async fn download(
         {
             (entry.file_path.clone(), entry)
         } else {
-            let file_name = sanitize(info.raw_name, 248);
+            let file_name = sanitize(info.raw_name.clone(), 248);
             let save_dir = soft_canonicalize::soft_canonicalize(if config.save_dir.is_empty() {
                 dirs::download_dir().unwrap_or_default()
             } else {
@@ -117,88 +117,18 @@ pub async fn download(
                 },
             )
         };
-        let progress = entry.progress.clone();
-        let elapsed = entry.elapsed;
         on_event(DownloadEvent::Info(Box::new(entry)));
-        let puller = FastDownPuller::new(FastDownPullerOptions {
-            url: info.final_url,
-            headers,
-            proxy,
-            available_ips: local_addr,
-            accept_invalid_certs,
-            accept_invalid_hostnames,
-            file_id: info.file_id,
-            resp: Some(Arc::new(Mutex::new(Some(resp)))),
-        })?;
-        let threads = if info.fast_download {
-            config.threads.max(1)
-        } else {
-            1
-        } as usize;
-        let get_std_pusher = async {
-            let file = OpenOptions::new()
-                .create(true)
-                .write(true)
-                .read(true)
-                .truncate(false)
-                .open(&save_path)
-                .await?;
-            let file_pusher =
-                FilePusher::new(file, total_size, config.write_buffer_size as usize).await?;
-            Ok::<_, color_eyre::Report>(BoxPusher::new(file_pusher))
-        };
-        let retry_gap = Duration::from_millis(config.retry_gap_ms as u64);
-        let result = if info.fast_download {
-            #[cfg(target_pointer_width = "64")]
-            let pusher = if config.write_method == 0 {
-                BoxPusher::new(MmapFilePusher::new(&save_path, total_size).await?)
-            } else {
-                get_std_pusher.await?
-            };
-            #[cfg(not(target_pointer_width = "64"))]
-            let pusher = get_std_pusher.await?;
-            download_multi(
-                puller,
-                pusher,
-                multi::DownloadOptions {
-                    download_chunks: invert(progress.iter().cloned(), total_size, 8 * 1024),
-                    retry_gap,
-                    concurrent: threads,
-                    pull_timeout: Duration::from_millis(config.pull_timeout_ms as u64),
-                    push_queue_cap: config.write_queue_cap as usize,
-                    min_chunk_size: config.min_chunk_size as u64,
-                    max_speculative: config.max_speculative as usize,
-                },
-            )
-        } else {
-            let pusher = get_std_pusher.await?;
-            download_single(
-                puller,
-                pusher,
-                single::DownloadOptions {
-                    retry_gap,
-                    push_queue_cap: config.write_queue_cap as usize,
-                },
-            )
-        };
-        Ok::<_, color_eyre::Report>((result, total_size, progress, elapsed))
+        let fut = predown.start(info, save_path, cancel_token.clone());
+        Ok::<_, color_eyre::Report>((fut, progress, elapsed, total_size, rx))
     };
-    let (result, total_size, mut progress, elapsed) = tokio::select! {
+    let (fut, mut progress, elapsed, total_size, rx) = tokio::select! {
         _ = cancel_token.cancelled() => {
             on_event(DownloadEvent::End { is_cancelled: true });
             return Ok(());
         },
         res = result => res?,
     };
-    let cancel_handle = tokio::spawn({
-        let result = result.clone();
-        let cancel_token = cancel_token.clone();
-        async move {
-            cancel_token.cancelled().await;
-            result.abort();
-        }
-    });
-
+    tokio::pin!(fut);
     let mut smoothed_speed = 0.;
     let alpha = 0.3;
     let mut last_bytes = progress.total();
@@ -233,36 +163,49 @@ pub async fn download(
             downloaded
         }};
     }
-    while let Ok(e) = result.event_chain.recv().await {
-        match e {
-            Event::FlushError(e) => error!(err = ?e, "磁盘刷写失败"),
-            Event::PullError(id, e) => warn!(err = ?e, id = id, "下载数据出错"),
-            Event::PushError(id, e) => error!(err = ?e, id = id, "写入数据出错"),
-            Event::Pulling(id) => info!(id = id, "开始下载"),
-            Event::PullProgress(_, _) => {}
-            Event::Finished(id) => info!(id = id, "下载完成"),
-            Event::PushProgress(_, p) => {
-                if p.start == 0 {
-                    progress.clear();
-                    smoothed_speed = 0.;
-                    last_update = Instant::now();
-                    start = last_update;
-                    last_bytes = 0;
-                }
-                progress.merge_progress(p);
-                let now = Instant::now();
-                let elapsed = (now - last_update).as_secs_f64();
-                let total_elapsed = now - start;
-                if elapsed > 1. {
-                    last_bytes = update_progress!(now, elapsed, total_elapsed);
-                    last_update = now;
+
+    loop {
+        tokio::select! {
+            res = &mut fut => {
+                res?;
+                break;
+            }
+            event = rx.recv() => {
+                let e = match event {
+                    Ok(e) => e,
+                    Err(_) => break,
+                };
+                match e {
+                    Event::PrefetchError(e) => error!(err = e, "获取元数据失败"),
+                    Event::Pulling(id) => info!(id = id, "开始下载"),
+                    Event::PullProgress(_, _) => {}
+                    Event::PullError(id, e) => warn!(err = e, id = id, "下载数据出错"),
+                    Event::PullTimeout(id) => warn!("拉取数据超时 {id}"),
+                    Event::PushError(id, e) => error!(err = e, id = id, "写入数据出错"),
+                    Event::FlushError(e) => error!(err = e, "磁盘刷写失败"),
+                    Event::Finished(id) => info!(id = id, "下载完成"),
+                    Event::PushProgress(_, p) => {
+                        if p.start == 0 {
+                            progress.clear();
+                            smoothed_speed = 0.;
+                            last_update = Instant::now();
+                            start = last_update;
+                            last_bytes = 0;
+                        }
+                        progress.merge_progress(p);
+                        let now = Instant::now();
+                        let elapsed = (now - last_update).as_secs_f64();
+                        let total_elapsed = now - start;
+                        if elapsed > 1. {
+                            last_bytes = update_progress!(now, elapsed, total_elapsed);
+                            last_update = now;
+                        }
+                    }
                 }
             }
-            Event::PullTimeout(id) => warn!("拉取数据超时 {id}"),
         }
     }
-    result.join().await?;
-    cancel_handle.abort();
+
     let now = Instant::now();
     let elapsed = (now - last_update).as_secs_f64();
     let total_elapsed = now - start;
