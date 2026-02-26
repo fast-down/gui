@@ -30,45 +30,60 @@ jobs:
             os: ubuntu-latest
             target: aarch64-unknown-linux-gnu
             use-cross: true
+            archive-name: fast-down-linux-arm64
+
           - build: linux-64bit
             os: ubuntu-latest
             target: x86_64-unknown-linux-gnu
             use-cross: true
+            archive-name: fast-down-linux-64bit
+
           - build: linux-32bit
             os: ubuntu-latest
             target: i686-unknown-linux-gnu
             use-cross: true
+            archive-name: fast-down-linux-32bit
+
           - build: macos-arm64
-            os: macos-14
+            os: macos-latest
             target: aarch64-apple-darwin
             use-cross: false
+            archive-name: fast-down-macos-aarch64.dmg
+
           - build: macos-64bit
-            os: macos-14
+            os: macos-latest
             target: x86_64-apple-darwin
             use-cross: false
+            archive-name: fast-down-macos-64bit.dmg
+
           - build: windows-64bit
             os: windows-2022
             target: x86_64-pc-windows-msvc
             use-cross: false
+            archive-name: fast-down-windows-64bit.exe
+
           - build: windows-32bit
             os: windows-2022
             target: i686-pc-windows-msvc
             use-cross: false
+            archive-name: fast-down-windows-32bit.exe
+
           - build: windows-arm64
             os: windows-2022
             target: aarch64-pc-windows-msvc
             use-cross: false
+            archive-name: fast-down-windows-aarch64.exe
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Install Rust stable
         uses: dtolnay/rust-toolchain@stable
         with:
           targets: ${{ matrix.target }}
 
-      - name: Rust Cache
+      - name: Rust cache
         uses: swatinem/rust-cache@v2
         with:
           key: ${{ matrix.target }}
@@ -87,6 +102,23 @@ jobs:
         if: matrix.use-cross
         uses: taiki-e/install-action@cross
 
+      - name: Set up Node.js
+        if: contains(matrix.build, 'macos')
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+
+      # https://github.com/sindresorhus/create-dmg
+      - name: Set up create-dmg
+        if: contains(matrix.build, 'macos')
+        run: |
+          npm install -g node-gyp
+          npm install -g create-dmg 
+
+      - name: Install cargo-bundle
+        if: contains(matrix.build, 'macos')
+        run: cargo install cargo-bundle
+
       - name: Build binary
         shell: bash
         run: |
@@ -98,21 +130,35 @@ jobs:
         env:
           RUST_BACKTRACE: 1
 
-      - name: Prepare Binary
+      - name: Bundle
+        if: contains(matrix.build, 'macos')
         shell: bash
         run: |
-          BIN_NAME="fast-down"
-          if [[ "${{ matrix.build }}" == windows-* ]]; then
-            EXE_NAME="${BIN_NAME}.exe"
-            NEW_NAME="${BIN_NAME}-${{ matrix.build }}.exe"
-          else
-            EXE_NAME="${BIN_NAME}"
-            NEW_NAME="${BIN_NAME}-${{ matrix.build }}"
+          cargo bundle --release --target ${{ matrix.target }}
+          
+          if [[ "${{ contains(matrix.build, 'macos') }}" == "true" ]]; then 
+            cd target/${{ matrix.target }}/release/bundle/osx
+            create-dmg ./FastDown.app --no-code-sign --overwrite --no-version-in-filename --dmg-title=FastDown
+            mv ./FastDown.dmg ./fast-down.dmg
           fi
+        env:
+          RUST_BACKTRACE: 1
 
+      - name: Prepare release file
+        shell: bash
+        run: |
           mkdir -p ./artifacts/
-          cp "target/${{ matrix.target }}/release/${EXE_NAME}" "./artifacts/${NEW_NAME}"
-          echo "ASSET_PATH=./artifacts/${NEW_NAME}" >> $GITHUB_ENV
+          
+          OUTPUT="fast-down"
+          if [[ "${{ matrix.build }}" == windows-* ]]; then
+            OUTPUT="${OUTPUT}.exe"
+          fi
+          if [[ "${{ matrix.build }}" == macos-* ]]; then
+            OUTPUT="bundle/osx/${OUTPUT}.dmg"
+          fi
+          
+          cp "target/${{ matrix.target }}/release/${OUTPUT}" "./artifacts/${{ matrix.archive-name }}"
+          echo "ASSET_PATH=./artifacts/${{ matrix.archive-name }}" >> $GITHUB_ENV
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -128,7 +174,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Download all artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           path: ./all-artifacts
           merge-multiple: true
