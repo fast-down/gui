@@ -71,15 +71,15 @@ pub async fn download(
         };
         let elapsed = entry.as_ref().map(|e| e.elapsed).unwrap_or_default();
         let (tx, rx) = create_channel();
-        let (info, predown) = prefetch(url.clone(), download_config, tx).await?;
-        info!(info = ?info, "获取元数据成功");
-        let total_size = info.size;
+        let task = prefetch(url.clone(), download_config, tx).await?;
+        info!(info = ?task.info, "获取元数据成功");
+        let total_size = task.info.size;
         let (save_path, entry) = if let Some(entry) = entry
             && fs::try_exists(&entry.file_path).await.unwrap_or(false)
         {
             (entry.file_path.clone(), entry)
         } else {
-            let file_name = sanitize(info.raw_name.clone(), 248);
+            let file_name = sanitize(task.info.raw_name.clone(), 248);
             let save_dir = soft_canonicalize::soft_canonicalize(
                 if config.save_dir.to_string_lossy().is_empty() {
                     dirs::download_dir().unwrap_or_default()
@@ -96,7 +96,7 @@ pub async fn download(
                     file_name,
                     file_path: save_path,
                     file_size: total_size,
-                    file_id: info.file_id.clone(),
+                    file_id: task.info.file_id.clone(),
                     progress: Vec::new(),
                     elapsed: Duration::ZERO,
                     url,
@@ -106,7 +106,7 @@ pub async fn download(
             )
         };
         on_event(DownloadEvent::Info(Box::new(entry)));
-        let fut = predown.start(info, save_path, cancel_token.clone());
+        let fut = task.start(save_path, cancel_token.clone());
         Ok::<_, color_eyre::Report>((fut, progress, elapsed, total_size, rx))
     };
     let (fut, mut progress, elapsed, total_size, rx) = tokio::select! {
