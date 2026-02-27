@@ -48,7 +48,7 @@ jobs:
             os: macos-latest
             target: aarch64-apple-darwin
             use-cross: false
-            archive-name: fast-down-macos-aarch64.dmg
+            archive-name: fast-down-macos-arm64.dmg
 
           - build: macos-64bit
             os: macos-latest
@@ -72,7 +72,7 @@ jobs:
             os: windows-2022
             target: aarch64-pc-windows-msvc
             use-cross: false
-            archive-name: fast-down-windows-aarch64.exe
+            archive-name: fast-down-windows-arm64.exe
 
     steps:
       - name: Checkout repository
@@ -113,7 +113,7 @@ jobs:
         if: contains(matrix.build, 'macos')
         run: |
           npm install -g node-gyp
-          npm install -g create-dmg 
+          npm install -g create-dmg
 
       - name: Install cargo-bundle
         if: contains(matrix.build, 'macos')
@@ -135,8 +135,8 @@ jobs:
         shell: bash
         run: |
           cargo bundle --release --target ${{ matrix.target }}
-          
-          if [[ "${{ contains(matrix.build, 'macos') }}" == "true" ]]; then 
+
+          if [[ "${{ contains(matrix.build, 'macos') }}" == "true" ]]; then
             cd target/${{ matrix.target }}/release/bundle/osx
             create-dmg ./FastDown.app --no-code-sign --overwrite --no-version-in-filename --dmg-title=FastDown
             mv ./FastDown.dmg ./fast-down.dmg
@@ -148,7 +148,7 @@ jobs:
         shell: bash
         run: |
           mkdir -p ./artifacts/
-          
+
           OUTPUT="fast-down"
           if [[ "${{ matrix.build }}" == windows-* ]]; then
             OUTPUT="${OUTPUT}.exe"
@@ -156,7 +156,7 @@ jobs:
           if [[ "${{ matrix.build }}" == macos-* ]]; then
             OUTPUT="bundle/osx/${OUTPUT}.dmg"
           fi
-          
+
           cp "target/${{ matrix.target }}/release/${OUTPUT}" "./artifacts/${{ matrix.archive-name }}"
           echo "ASSET_PATH=./artifacts/${{ matrix.archive-name }}" >> $GITHUB_ENV
 
