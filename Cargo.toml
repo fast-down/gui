@@ -1,6 +1,6 @@
 [package]
 name = "fast-down-gui"
-version = "0.1.36"
+version = "0.1.37"
 edition = "2024"
 license = "MIT"
 authors = ["share121 <2854631158@qq.com>"]
@@ -19,6 +19,7 @@ path = "src/main.rs"
 
 [dependencies]
 arboard = "3.6.1"
+auto-launch = "0.6.0"
 axum = "0.8.8"
 bitcode = { version = "0.6.9", features = ["serde"] }
 color-eyre = "0.6.5"

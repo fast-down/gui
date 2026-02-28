@@ -4,7 +4,7 @@ use arboard::Clipboard;
 use fast_down_gui::{
     core::{App, TaskSet, start_entry, start_new_entry},
     ipc::{check_ipc, init_ipc},
-    os::attach_console,
+    os::{attach_console, update_auto_start},
     persist::{DB_DIR, Database},
     server::start_server,
     ui::*,
@@ -54,6 +54,9 @@ async fn main() -> color_eyre::Result<()> {
     attach_console();
     let _guard = init_tracing();
 
+    std::thread::spawn(|| {
+        let _ = update_auto_start().log_err("设置开启自启动错误");
+    });
     let _ = check_ipc().await.log_err("检查 ipc 通道错误");
     slint::BackendSelector::new()
         .backend_name("winit".into())
