@@ -31,7 +31,7 @@ impl Default for DownloadConfig {
             threads: 32,
             proxy: Proxy::System,
             headers: HashMap::new(),
-            min_chunk_size: 8 * 1024 * 1024,
+            min_chunk_size: 500 * 1024,
             write_buffer_size: 16 * 1024 * 1024,
             write_queue_cap: 10240,
             retry_gap: Duration::from_millis(500),
@@ -41,7 +41,7 @@ impl Default for DownloadConfig {
             local_address: Vec::new(),
             max_speculative: 3,
             write_method: WriteMethod::Mmap,
-            retry_times: 10,
+            retry_times: 3,
             chunk_window: 8 * 1024,
         }
     }

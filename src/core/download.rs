@@ -41,6 +41,7 @@ pub async fn download(
     mut entry: Option<DatabaseEntry>,
     mut on_event: impl FnMut(DownloadEvent) + Send + Sync + 'static,
 ) -> color_eyre::Result<()> {
+    info!(url = url.as_str(), config = ?config, "启动下载");
     let result = async {
         let file_exists = matches!(&entry, Some(entry) if fs::try_exists(&entry.file_path).await.unwrap_or(false));
         if !file_exists {
