@@ -1,9 +1,10 @@
 mod v1;
 mod v2;
+mod v3;
 
 use crate::persist::{
     DatabaseInner,
-    loader::{v1::V1Loader, v2::V2Loader},
+    loader::{v1::V1Loader, v2::V2Loader, v3::V3Loader},
 };
 
 pub trait Loader {
@@ -15,6 +16,9 @@ pub struct BoxLoader;
 
 impl Loader for BoxLoader {
     fn load(&self, bytes: &[u8]) -> Option<DatabaseInner> {
-        V2Loader.load(bytes).or_else(|| V1Loader.load(bytes))
+        V3Loader
+            .load(bytes)
+            .or_else(|| V2Loader.load(bytes))
+            .or_else(|| V1Loader.load(bytes))
     }
 }

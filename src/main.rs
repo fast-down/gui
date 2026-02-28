@@ -4,7 +4,7 @@ use arboard::Clipboard;
 use fast_down_gui::{
     core::{App, TaskSet, start_entry, start_new_entry},
     ipc::{check_ipc, init_ipc},
-    os::attach_console,
+    os::{attach_console, get_auto_start},
     persist::{DB_DIR, Database},
     server::start_server,
     ui::*,
@@ -12,7 +12,7 @@ use fast_down_gui::{
 };
 use rfd::FileDialog;
 use slint::{Model, ModelRc, ToSharedString, VecModel};
-use std::{collections::HashSet, process::exit, rc::Rc};
+use std::{collections::HashSet, process::exit, rc::Rc, sync::Arc};
 use tracing::{info, level_filters::LevelFilter};
 use tracing_appender::{
     non_blocking::WorkerGuard,
@@ -62,7 +62,17 @@ async fn main() -> color_eyre::Result<()> {
     let _ = init_ipc(ui.as_weak()).await.log_err("初始化 ipc 通道错误");
 
     let db = Database::new().await;
-    let task_set = TaskSet::new(db.inner.config.lock().max_concurrency);
+    let task_set = TaskSet::new(db.inner.general_config.lock().max_concurrency);
+
+    let auto = get_auto_start()
+        .log_err("初始化开机自启错误")
+        .ok()
+        .map(Arc::new);
+    if db.is_auto_start()
+        && let Some(auto) = &auto
+    {
+        let _ = auto.enable().log_err("启用开机自启失败");
+    }
 
     let entries = db.inner.data.iter().map(|e| e.to_entry_data(*e.key()));
     let list_model = Rc::new(VecModel::from_iter(entries));
@@ -75,7 +85,8 @@ async fn main() -> color_eyre::Result<()> {
 
     start_server(app.clone(), list_model.clone(), ui.as_weak()).await?;
     setup_ui_lists(&ui, list_model.clone());
-    ui.set_config(db.get_ui_config());
+    ui.set_download_config(db.get_ui_download_config());
+    ui.set_general_config(db.get_ui_general_config());
     ui.set_version(VERSION.into());
 
     ui.on_exit({
@@ -112,11 +123,23 @@ async fn main() -> color_eyre::Result<()> {
         let db = db.clone();
         let task_set = task_set.clone();
         let ui = ui.as_weak();
-        move |c| {
-            info!(config = ?c, "配置已更新");
-            task_set.set_concurrency(c.max_concurrency as usize);
-            db.set_config(&c);
-            let _ = ui.upgrade_in_event_loop(move |ui| ui.set_config(c));
+        let auto = auto.clone();
+        move |download_config, general_config| {
+            info!(download_config = ?download_config, general_config = ?general_config, "配置已更新");
+            task_set.set_concurrency(general_config.max_concurrency as usize);
+            db.set_download_config(&download_config);
+            db.set_general_config(&general_config);
+            if let Some(auto) = &auto {
+                if general_config.auto_start {
+                    let _ = auto.enable().log_err("启用开机自启失败");
+                } else {
+                    let _ = auto.disable().log_err("禁用开机自启失败");
+                }
+            }
+            let _ = ui.upgrade_in_event_loop(move |ui| {
+                ui.set_download_config(download_config);
+                ui.set_general_config(general_config);
+            });
         }
     });
 
@@ -223,7 +246,7 @@ async fn main() -> color_eyre::Result<()> {
             let _ = show_task_dialog(
                 url.into(),
                 DialogType::AddTask,
-                db.get_ui_config(),
+                db.get_ui_download_config(),
                 move |urls, config| {
                     let valid_urls = urls.lines().filter_map(|s| {
                         Url::parse(s)
@@ -254,7 +277,7 @@ async fn main() -> color_eyre::Result<()> {
             let _ = show_task_dialog(
                 entry.url.to_shared_string(),
                 DialogType::EditTask,
-                entry.config.to_ui_config(),
+                entry.config.to_ui_download_config(),
                 move |urls, config| {
                     let mut valid_urls = urls.lines().filter_map(|s| {
                         Url::parse(s)

@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, net::IpAddr, path::PathBuf, time::Duration};
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-pub struct Config {
+pub struct DownloadConfig {
     pub save_dir: PathBuf,
     pub threads: usize,
     pub proxy: Proxy<String>,
@@ -20,12 +20,11 @@ pub struct Config {
     pub local_address: Vec<IpAddr>,
     pub max_speculative: usize,
     pub write_method: WriteMethod,
-    pub max_concurrency: usize,
     pub retry_times: usize,
     pub chunk_window: u64,
 }
 
-impl Default for Config {
+impl Default for DownloadConfig {
     fn default() -> Self {
         Self {
             save_dir: dirs::download_dir().unwrap_or_default(),
@@ -42,16 +41,15 @@ impl Default for Config {
             local_address: Vec::new(),
             max_speculative: 3,
             write_method: WriteMethod::Mmap,
-            max_concurrency: 2,
             retry_times: 10,
             chunk_window: 8 * 1024,
         }
     }
 }
 
-impl Config {
-    pub fn to_ui_config(&self) -> crate::ui::Config {
-        crate::ui::Config {
+impl DownloadConfig {
+    pub fn to_ui_download_config(&self) -> crate::ui::DownloadConfig {
+        crate::ui::DownloadConfig {
             accept_invalid_certs: self.accept_invalid_certs,
             accept_invalid_hostnames: self.accept_invalid_hostnames,
             headers: self
@@ -84,15 +82,14 @@ impl Config {
                 WriteMethod::Std => 1,
             },
             write_queue_cap: self.write_queue_cap as i32,
-            max_concurrency: self.max_concurrency as i32,
             retry_times: self.retry_times as i32,
             chunk_window: self.chunk_window as i32,
         }
     }
 }
 
-impl From<&crate::ui::Config> for Config {
-    fn from(value: &crate::ui::Config) -> Self {
+impl From<&crate::ui::DownloadConfig> for DownloadConfig {
+    fn from(value: &crate::ui::DownloadConfig) -> Self {
         Self {
             save_dir: value.save_dir.as_str().into(),
             threads: value.threads as usize,
@@ -120,9 +117,41 @@ impl From<&crate::ui::Config> for Config {
                 1 => WriteMethod::Std,
                 _ => WriteMethod::Mmap,
             },
-            max_concurrency: value.max_concurrency as usize,
             retry_times: value.retry_times as usize,
             chunk_window: value.chunk_window as u64,
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+pub struct GeneralConfig {
+    pub max_concurrency: usize,
+    pub auto_start: bool,
+}
+
+impl Default for GeneralConfig {
+    fn default() -> Self {
+        Self {
+            max_concurrency: 2,
+            auto_start: false,
+        }
+    }
+}
+
+impl From<&crate::ui::GeneralConfig> for GeneralConfig {
+    fn from(value: &crate::ui::GeneralConfig) -> Self {
+        Self {
+            max_concurrency: value.max_concurrency as usize,
+            auto_start: value.auto_start,
+        }
+    }
+}
+
+impl GeneralConfig {
+    pub fn to_ui_general_config(&self) -> crate::ui::GeneralConfig {
+        crate::ui::GeneralConfig {
+            max_concurrency: self.max_concurrency as i32,
+            auto_start: self.auto_start,
         }
     }
 }

@@ -13,7 +13,7 @@ import {
 } from "std-widgets.slint";
 import { HDivider } from "divider.slint";
 import { NoScrollSpinBox } from "my-spin-box.slint";
-import { Config } from "settings.slint";
+import { DownloadConfig } from "settings.slint";
 import { Theme } from "theme.slint";
 import { Header2 } from "headers.slint";
 
@@ -31,14 +31,14 @@ export component TaskDialog inherits Window {
 
     in property <DialogType> type;
     in-out property <string> urls;
-    in-out property <Config> config;
+    in-out property <DownloadConfig> download_config;
 
-    callback confirm(string, Config);
+    callback confirm(string, DownloadConfig);
     callback browse_folder();
     callback canceled();
 
     public function set_save_dir(dir: string) {
-        config.save-dir = dir;
+        download_config.save-dir = dir;
     }
 
     VerticalLayout {
@@ -67,7 +67,7 @@ export component TaskDialog inherits Window {
                     padding: 0px;
 
                     LineEdit {
-                        text <=> config.save-dir;
+                        text <=> download_config.save-dir;
                         placeholder-text: "留空默认为下载目录";
                     }
 
@@ -85,7 +85,7 @@ export component TaskDialog inherits Window {
 
                 NoScrollSpinBox {
                     minimum: 1;
-                    value <=> config.threads;
+                    value <=> download_config.threads;
                 }
 
                 HDivider { }
@@ -99,7 +99,7 @@ export component TaskDialog inherits Window {
                 }
 
                 TextEdit {
-                    text <=> config.headers;
+                    text <=> download_config.headers;
                     min-height: 150px;
                     placeholder-text: "Cookie: value\nUser-Agent: Mozilla/5.0";
                 }
@@ -109,7 +109,7 @@ export component TaskDialog inherits Window {
                 }
 
                 LineEdit {
-                    text <=> config.proxy;
+                    text <=> download_config.proxy;
                     placeholder-text: "留空为系统代理，输入 null 为不使用代理";
                 }
 
@@ -123,7 +123,7 @@ export component TaskDialog inherits Window {
 
                         NoScrollSpinBox {
                             minimum: 1;
-                            value <=> config.min-chunk-size;
+                            value <=> download_config.min-chunk-size;
                         }
                     }
 
@@ -134,7 +134,7 @@ export component TaskDialog inherits Window {
                         }
 
                         NoScrollSpinBox {
-                            value <=> config.write-buffer-size;
+                            value <=> download_config.write-buffer-size;
                         }
                     }
                 }
@@ -148,7 +148,7 @@ export component TaskDialog inherits Window {
                         }
 
                         NoScrollSpinBox {
-                            value <=> config.max-speculative;
+                            value <=> download_config.max-speculative;
                         }
                     }
 
@@ -160,7 +160,7 @@ export component TaskDialog inherits Window {
 
                         NoScrollSpinBox {
                             minimum: 1;
-                            value <=> config.write-queue-cap;
+                            value <=> download_config.write-queue-cap;
                         }
                     }
                 }
@@ -174,7 +174,7 @@ export component TaskDialog inherits Window {
                         }
 
                         NoScrollSpinBox {
-                            value <=> config.retry-gap-ms;
+                            value <=> download_config.retry-gap-ms;
                         }
                     }
 
@@ -185,7 +185,7 @@ export component TaskDialog inherits Window {
                         }
 
                         NoScrollSpinBox {
-                            value <=> config.pull-timeout-ms;
+                            value <=> download_config.pull-timeout-ms;
                         }
                     }
                 }
@@ -199,7 +199,7 @@ export component TaskDialog inherits Window {
                         }
 
                         NoScrollSpinBox {
-                            value <=> config.retry-times;
+                            value <=> download_config.retry-times;
                         }
                     }
 
@@ -210,7 +210,7 @@ export component TaskDialog inherits Window {
                         }
 
                         NoScrollSpinBox {
-                            value <=> config.chunk-window;
+                            value <=> download_config.chunk-window;
                         }
                     }
                 }
@@ -220,13 +220,13 @@ export component TaskDialog inherits Window {
                     CheckBox {
                         text: "接受无效证书";
                         horizontal-stretch: 1;
-                        checked <=> config.accept-invalid-certs;
+                        checked <=> download_config.accept-invalid-certs;
                     }
 
                     CheckBox {
                         text: "接受无效主机";
                         horizontal-stretch: 1;
-                        checked <=> config.accept-invalid-hostnames;
+                        checked <=> download_config.accept-invalid-hostnames;
                     }
                 }
 
@@ -236,7 +236,7 @@ export component TaskDialog inherits Window {
 
                 ComboBox {
                     model: ["内存映射文件 (推荐)", "标准库 (兼容性好)"];
-                    current-index <=> config.write-method;
+                    current-index <=> download_config.write-method;
                 }
 
                 Text {
@@ -244,7 +244,7 @@ export component TaskDialog inherits Window {
                 }
 
                 TextEdit {
-                    text <=> config.ips;
+                    text <=> download_config.ips;
                     min-height: 150px;
                     placeholder-text: "192.168.1.8\n192.168.1.9\n留空则使用默认网卡发送请求";
                 }
@@ -257,7 +257,7 @@ export component TaskDialog inherits Window {
                 text: type == DialogType.AddTask ? "立刻下载" : "保存";
                 primary: true;
                 clicked => {
-                    confirm(urls, config);
+                    confirm(urls, download_config);
                 }
             }
 

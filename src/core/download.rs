@@ -1,7 +1,7 @@
 use crate::{
     fmt::{format_size, format_time},
     persist::{self, DatabaseEntry, Status},
-    ui::Config,
+    ui::DownloadConfig,
     utils::sanitize,
 };
 use fast_down_ffi::{
@@ -36,7 +36,7 @@ pub struct ProgressInfo {
 
 pub async fn download(
     url: Url,
-    config: &Config,
+    config: &DownloadConfig,
     cancel_token: CancellationToken,
     mut entry: Option<DatabaseEntry>,
     mut on_event: impl FnMut(DownloadEvent) + Send + Sync + 'static,
@@ -46,7 +46,7 @@ pub async fn download(
         if !file_exists {
             entry = None
         }
-        let config: persist::Config = config.into();
+        let config: persist::DownloadConfig = config.into();
         let progress = entry
             .as_ref()
             .map(|e| e.progress.clone())

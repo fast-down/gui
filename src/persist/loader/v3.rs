@@ -12,7 +12,7 @@ use std::{
 use url::Url;
 
 #[derive(Deserialize, Debug)]
-pub struct Config {
+pub struct DownloadConfig {
     pub save_dir: PathBuf,
     pub threads: usize,
     pub proxy: Proxy<String>,
@@ -27,13 +27,18 @@ pub struct Config {
     pub local_address: Vec<IpAddr>,
     pub max_speculative: usize,
     pub write_method: WriteMethod,
-    pub max_concurrency: usize,
     pub retry_times: usize,
     pub chunk_window: u64,
 }
 
-impl From<Config> for crate::persist::DownloadConfig {
-    fn from(c: Config) -> Self {
+#[derive(Deserialize, Debug)]
+pub struct GeneralConfig {
+    pub max_concurrency: usize,
+    pub auto_start: bool,
+}
+
+impl From<DownloadConfig> for crate::persist::DownloadConfig {
+    fn from(c: DownloadConfig) -> Self {
         Self {
             proxy: c.proxy,
             retry_times: c.retry_times,
@@ -55,6 +60,15 @@ impl From<Config> for crate::persist::DownloadConfig {
     }
 }
 
+impl From<GeneralConfig> for crate::persist::GeneralConfig {
+    fn from(c: GeneralConfig) -> Self {
+        Self {
+            max_concurrency: c.max_concurrency,
+            auto_start: c.auto_start,
+        }
+    }
+}
+
 #[derive(Deserialize, Debug)]
 pub struct DatabaseEntry {
     pub file_name: String,
@@ -64,7 +78,7 @@ pub struct DatabaseEntry {
     pub progress: Vec<ProgressEntry>,
     pub elapsed: Duration,
     pub url: Url,
-    pub config: Config,
+    pub config: DownloadConfig,
     pub status: Status,
 }
 
@@ -104,29 +118,26 @@ impl From<Status> for crate::persist::Status {
 #[derive(Deserialize, Debug)]
 pub struct DatabaseInner {
     pub data: DashMap<i32, DatabaseEntry>,
-    pub config: Mutex<Config>,
+    pub download_config: Mutex<DownloadConfig>,
+    pub general_config: Mutex<GeneralConfig>,
     pub max_gid: AtomicI32,
 }
 
 impl From<DatabaseInner> for crate::persist::DatabaseInner {
     fn from(db: DatabaseInner) -> Self {
-        let max_concurrency = db.config.lock().max_concurrency;
         Self {
             data: db.data.into_iter().map(|(k, v)| (k, v.into())).collect(),
-            general_config: Mutex::new(crate::persist::GeneralConfig {
-                max_concurrency,
-                auto_start: false,
-            }),
-            download_config: Mutex::new(db.config.into_inner().into()),
+            download_config: Mutex::new(db.download_config.into_inner().into()),
+            general_config: Mutex::new(db.general_config.into_inner().into()),
             max_gid: db.max_gid,
         }
     }
 }
 
 #[derive(Debug, Clone)]
-pub struct V2Loader;
+pub struct V3Loader;
 
-impl Loader for V2Loader {
+impl Loader for V3Loader {
     fn load(&self, bytes: &[u8]) -> Option<crate::persist::DatabaseInner> {
         let db: DatabaseInner = bitcode::deserialize(bytes).ok()?;
         Some(db.into())

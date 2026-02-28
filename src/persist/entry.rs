@@ -1,6 +1,6 @@
 use crate::{
     fmt::{format_size, format_time},
-    persist::Config,
+    persist::DownloadConfig,
     ui::EntryData,
 };
 use fast_down_ffi::fast_down::{FileId, Total};
@@ -18,7 +18,7 @@ pub struct DatabaseEntry {
     pub progress: Vec<Range<u64>>,
     pub elapsed: Duration,
     pub url: Url,
-    pub config: Config,
+    pub config: DownloadConfig,
     pub status: Status,
 }
 

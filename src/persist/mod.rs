@@ -39,7 +39,8 @@ lazy_static::lazy_static! {
 #[derive(Serialize, Deserialize, Debug, Default)]
 pub struct DatabaseInner {
     pub data: DashMap<i32, DatabaseEntry>,
-    pub config: Mutex<Config>,
+    pub download_config: Mutex<DownloadConfig>,
+    pub general_config: Mutex<GeneralConfig>,
     pub max_gid: AtomicI32,
 }
 
@@ -60,6 +61,14 @@ impl DatabaseInner {
 
     pub fn next_gid(&self) -> i32 {
         self.max_gid.fetch_add(1, Ordering::SeqCst)
+    }
+
+    pub fn set_auto_start(&self, value: bool) {
+        self.general_config.lock().auto_start = value;
+    }
+
+    pub fn is_auto_start(&self) -> bool {
+        self.general_config.lock().auto_start
     }
 }
 
@@ -88,9 +97,11 @@ impl Database {
             let inner = inner.clone();
             let is_dirty = is_dirty.clone();
             async move {
+                info!("后台保存线程启动");
                 loop {
                     tokio::time::sleep(Duration::from_secs(5)).await;
                     if is_dirty.swap(false, Ordering::Relaxed) {
+                        info!("数据库自动保存中……");
                         let inner = inner.clone();
                         let res = tokio::task::spawn_blocking(move || inner.flush()).await;
                         match res {
@@ -115,16 +126,29 @@ impl Database {
         }
     }
 
-    pub fn get_config(&self) -> Config {
-        self.inner.config.lock().clone()
+    pub fn get_download_config(&self) -> DownloadConfig {
+        self.inner.download_config.lock().clone()
     }
 
-    pub fn get_ui_config(&self) -> crate::ui::Config {
-        self.inner.config.lock().to_ui_config()
+    pub fn get_ui_download_config(&self) -> crate::ui::DownloadConfig {
+        self.inner.download_config.lock().to_ui_download_config()
     }
 
-    pub fn set_config(&self, config: impl Into<Config>) {
-        *self.inner.config.lock() = config.into();
+    pub fn set_download_config(&self, config: impl Into<DownloadConfig>) {
+        *self.inner.download_config.lock() = config.into();
+        self.is_dirty.store(true, Ordering::Relaxed);
+    }
+
+    pub fn get_general_config(&self) -> GeneralConfig {
+        self.inner.general_config.lock().clone()
+    }
+
+    pub fn get_ui_general_config(&self) -> crate::ui::GeneralConfig {
+        self.inner.general_config.lock().to_ui_general_config()
+    }
+
+    pub fn set_general_config(&self, config: impl Into<GeneralConfig>) {
+        *self.inner.general_config.lock() = config.into();
         self.is_dirty.store(true, Ordering::Relaxed);
     }
 
@@ -171,6 +195,14 @@ impl Database {
             }
         }
         Ok(())
+    }
+
+    pub fn is_auto_start(&self) -> bool {
+        self.inner.is_auto_start()
+    }
+
+    pub fn set_auto_start(&self, value: bool) {
+        self.inner.set_auto_start(value);
     }
 }
 

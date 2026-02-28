@@ -1,7 +1,7 @@
 use crate::{
     core::{App, download},
     persist::{self, DatabaseEntry},
-    ui::{Config, EntryData, Status},
+    ui::{DownloadConfig, EntryData, Status},
     utils::{ForceSendExt, LogErr},
 };
 use fast_down_ffi::fast_down::FileId;
@@ -21,7 +21,7 @@ pub fn start_entry(app: &App, entry: &EntryData, list: &VecModel<EntryData>) -> 
         return false;
     };
     let url = db_entry.url.clone();
-    let config = db_entry.config.to_ui_config();
+    let config = db_entry.config.to_ui_download_config();
     if db_entry.status == persist::Status::Completed {
         start_new_entry(app, url, &config, list);
         return false;
@@ -45,7 +45,12 @@ pub fn start_entry(app: &App, entry: &EntryData, list: &VecModel<EntryData>) -> 
     true
 }
 
-pub fn start_new_entry(app: &App, url: Url, config: &Config, list_model: &VecModel<EntryData>) {
+pub fn start_new_entry(
+    app: &App,
+    url: Url,
+    config: &DownloadConfig,
+    list_model: &VecModel<EntryData>,
+) {
     let gid = app.db.next_gid();
     let entry = DatabaseEntry {
         file_name: url.to_string(),
