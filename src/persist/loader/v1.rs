@@ -30,7 +30,7 @@ pub struct Config {
     pub max_concurrency: usize,
 }
 
-impl From<Config> for crate::persist::Config {
+impl From<Config> for crate::persist::DownloadConfig {
     fn from(c: Config) -> Self {
         Self {
             proxy: match c.proxy {
@@ -53,7 +53,6 @@ impl From<Config> for crate::persist::Config {
             local_address: c.local_address,
             max_speculative: c.max_speculative,
             write_method: c.write_method,
-            max_concurrency: c.max_concurrency,
         }
     }
 }
@@ -113,9 +112,14 @@ pub struct DatabaseInner {
 
 impl From<DatabaseInner> for crate::persist::DatabaseInner {
     fn from(db: DatabaseInner) -> Self {
+        let max_concurrency = db.config.lock().max_concurrency;
         Self {
             data: db.data.into_iter().map(|(k, v)| (k, v.into())).collect(),
-            config: Mutex::new(db.config.into_inner().into()),
+            general_config: Mutex::new(crate::persist::GeneralConfig {
+                max_concurrency,
+                auto_start: false,
+            }),
+            download_config: Mutex::new(db.config.into_inner().into()),
             max_gid: db.max_gid,
         }
     }

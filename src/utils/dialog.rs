@@ -1,4 +1,4 @@
-use crate::ui::{Config, DialogType, TaskDialog};
+use crate::ui::{DialogType, DownloadConfig, TaskDialog};
 use crate::utils::LogErr;
 #[cfg(target_os = "macos")]
 use i_slint_backend_winit::WinitWindowAccessor;
@@ -11,13 +11,13 @@ use slint::{ComponentHandle, SharedString, ToSharedString};
 pub fn show_task_dialog(
     urls: SharedString,
     dialog_type: DialogType,
-    config: Config,
-    on_confirm: impl FnOnce(SharedString, Config) + 'static,
+    config: DownloadConfig,
+    on_confirm: impl FnOnce(SharedString, DownloadConfig) + 'static,
 ) -> color_eyre::Result<()> {
     let dialog = TaskDialog::new()?;
     dialog.set_urls(urls);
     dialog.set_type(dialog_type);
-    dialog.set_config(config);
+    dialog.set_download_config(config);
 
     let dialog_weak = dialog.as_weak();
 

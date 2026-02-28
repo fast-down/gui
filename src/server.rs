@@ -41,7 +41,7 @@ pub async fn start_server(
     let (tx, rx) = crossfire::mpsc::unbounded_async::<DownloadOptions>();
     slint::spawn_local(async move {
         while let Ok(e) = rx.recv().await {
-            let mut config = app_core.db.get_ui_config();
+            let mut config = app_core.db.get_ui_download_config();
             if let Some(s) = e.headers {
                 config.headers = s.into();
             }

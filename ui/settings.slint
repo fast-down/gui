@@ -8,12 +8,13 @@ import {
     TextEdit,
     CheckBox,
     ComboBox,
+    Switch,
 } from "std-widgets.slint";
 import { HDivider } from "divider.slint";
 import { NoScrollSpinBox } from "my-spin-box.slint";
 import { Header1, Header2 } from "headers.slint";
 
-export struct Config {
+export struct DownloadConfig {
     save_dir: string,
     threads: int,
     proxy: string,
@@ -28,22 +29,30 @@ export struct Config {
     ips: string,
     max_speculative: int,
     write_method: int,
-    max_concurrency: int,
     retry_times: int,
     chunk_window: int,
+}
+export struct GeneralConfig {
+    max_concurrency: int,
+    auto_start: bool,
 }
 
 export component Settings inherits VerticalLayout {
     horizontal-stretch: 1;
 
-    in-out property <Config> config;
+    in-out property <DownloadConfig> download_config;
+    in-out property <GeneralConfig> general_config;
 
     callback browse_folder();
-    callback config_change(Config);
+    callback config_change(DownloadConfig, GeneralConfig);
     callback view_log();
 
-    changed config => {
-        config_change(config);
+    changed download_config => {
+        config_change(download_config, general_config);
+    }
+
+    changed general_config => {
+        config_change(download_config, general_config);
     }
 
     HorizontalBox {
@@ -71,7 +80,7 @@ export component Settings inherits VerticalLayout {
                 padding: 0px;
 
                 LineEdit {
-                    text <=> config.save-dir;
+                    text <=> download_config.save-dir;
                     placeholder-text: "留空默认为下载目录";
                 }
 
@@ -93,7 +102,7 @@ export component Settings inherits VerticalLayout {
 
                     NoScrollSpinBox {
                         minimum: 1;
-                        value <=> config.threads;
+                        value <=> download_config.threads;
                     }
                 }
 
@@ -105,7 +114,7 @@ export component Settings inherits VerticalLayout {
 
                     NoScrollSpinBox {
                         minimum: 1;
-                        value <=> config.max-concurrency;
+                        value <=> general_config.max-concurrency;
                     }
                 }
             }
@@ -115,7 +124,7 @@ export component Settings inherits VerticalLayout {
             }
 
             LineEdit {
-                text <=> config.proxy;
+                text <=> download_config.proxy;
                 placeholder-text: "留空为系统代理，输入 null 为不使用代理";
             }
 
@@ -124,7 +133,7 @@ export component Settings inherits VerticalLayout {
             }
 
             TextEdit {
-                text <=> config.headers;
+                text <=> download_config.headers;
                 min-height: 150px;
                 placeholder-text: "Cookie: value\nUser-Agent: Mozilla/5.0";
             }
@@ -145,7 +154,7 @@ export component Settings inherits VerticalLayout {
 
                     NoScrollSpinBox {
                         minimum: 1;
-                        value <=> config.min-chunk-size;
+                        value <=> download_config.min-chunk-size;
                     }
                 }
 
@@ -156,7 +165,7 @@ export component Settings inherits VerticalLayout {
                     }
 
                     NoScrollSpinBox {
-                        value <=> config.write-buffer-size;
+                        value <=> download_config.write-buffer-size;
                     }
                 }
             }
@@ -170,7 +179,7 @@ export component Settings inherits VerticalLayout {
                     }
 
                     NoScrollSpinBox {
-                        value <=> config.max-speculative;
+                        value <=> download_config.max-speculative;
                     }
                 }
 
@@ -182,7 +191,7 @@ export component Settings inherits VerticalLayout {
 
                     NoScrollSpinBox {
                         minimum: 1;
-                        value <=> config.write-queue-cap;
+                        value <=> download_config.write-queue-cap;
                     }
                 }
             }
@@ -196,7 +205,7 @@ export component Settings inherits VerticalLayout {
                     }
 
                     NoScrollSpinBox {
-                        value <=> config.retry-gap-ms;
+                        value <=> download_config.retry-gap-ms;
                     }
                 }
 
@@ -207,7 +216,7 @@ export component Settings inherits VerticalLayout {
                     }
 
                     NoScrollSpinBox {
-                        value <=> config.pull-timeout-ms;
+                        value <=> download_config.pull-timeout-ms;
                     }
                 }
             }
@@ -221,7 +230,7 @@ export component Settings inherits VerticalLayout {
                     }
 
                     NoScrollSpinBox {
-                        value <=> config.retry-times;
+                        value <=> download_config.retry-times;
                     }
                 }
 
@@ -232,7 +241,7 @@ export component Settings inherits VerticalLayout {
                     }
 
                     NoScrollSpinBox {
-                        value <=> config.chunk-window;
+                        value <=> download_config.chunk-window;
                     }
                 }
             }
@@ -242,14 +251,20 @@ export component Settings inherits VerticalLayout {
                 CheckBox {
                     text: "接受无效证书";
                     horizontal-stretch: 1;
-                    checked <=> config.accept-invalid-certs;
+                    checked <=> download_config.accept-invalid-certs;
                 }
 
                 CheckBox {
                     text: "接受无效主机";
                     horizontal-stretch: 1;
-                    checked <=> config.accept-invalid-hostnames;
+                    checked <=> download_config.accept-invalid-hostnames;
                 }
+            }
+
+            CheckBox {
+                text: "开机自启动";
+                horizontal-stretch: 1;
+                checked <=> general_config.auto-start;
             }
 
             Text {
@@ -258,7 +273,7 @@ export component Settings inherits VerticalLayout {
 
             ComboBox {
                 model: ["内存映射文件 (推荐)", "标准库 (兼容性好)"];
-                current-index <=> config.write-method;
+                current-index <=> download_config.write-method;
             }
 
             Text {
@@ -266,7 +281,7 @@ export component Settings inherits VerticalLayout {
             }
 
             TextEdit {
-                text <=> config.ips;
+                text <=> download_config.ips;
                 min-height: 150px;
                 placeholder-text: "192.168.1.8\n192.168.1.9\n留空则使用默认网卡发送请求";
             }
