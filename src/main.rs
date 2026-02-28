@@ -73,6 +73,7 @@ async fn main() -> color_eyre::Result<()> {
     {
         let _ = auto.enable().log_err("启用开机自启失败");
     }
+    let args: Vec<_> = std::env::args().collect();
 
     let entries = db.inner.data.iter().map(|e| e.to_entry_data(*e.key()));
     let list_model = Rc::new(VecModel::from_iter(entries));
@@ -299,7 +300,9 @@ async fn main() -> color_eyre::Result<()> {
         let _ = open::that(DB_DIR.as_os_str()).log_err("打开日志文件夹失败");
     });
 
-    ui.show()?;
+    if args.iter().all(|s| s != "--hidden") {
+        ui.show()?;
+    }
     slint::run_event_loop_until_quit()?;
     Ok(())
 }
