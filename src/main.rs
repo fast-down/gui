@@ -266,7 +266,15 @@ async fn main() -> color_eyre::Result<()> {
     ui.on_open_entry(|path| {
         let _ = open::that(path).log_err("打开文件失败");
     });
-    ui.on_open_folder_entry(showfile::show_path_in_file_manager);
+    ui.on_open_folder_entry(|path| {
+        #[cfg(target_os = "macos")]
+        let _ = std::process::Command::new("open")
+            .arg("-R")
+            .arg(path)
+            .spawn();
+        #[cfg(not(target_os = "macos"))]
+        showfile::show_path_in_file_manager(path);
+    });
 
     ui.on_detail_entry({
         let db = app.db.clone();
