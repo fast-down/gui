@@ -1,10 +1,11 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use arboard::Clipboard;
+use color_eyre::eyre::Context;
 use fast_down_gui::{
     core::{App, TaskSet, start_entry, start_new_entry},
     ipc::{check_ipc, init_ipc},
-    os::{attach_console, get_auto_start},
+    os::{attach_console, get_auto_start, wakeup_window},
     persist::{DB_DIR, Database},
     server::start_server,
     ui::*,
@@ -19,6 +20,7 @@ use tracing_appender::{
     rolling::{RollingFileAppender, Rotation},
 };
 use tracing_subscriber::{EnvFilter, Registry, fmt, layer::SubscriberExt, util::SubscriberInitExt};
+use tray_icon::{TrayIconBuilder, TrayIconEvent};
 use url::Url;
 
 #[global_allocator]
@@ -55,14 +57,49 @@ async fn main() -> color_eyre::Result<()> {
     let _guard = init_tracing();
 
     let _ = check_ipc().await.log_err("检查 ipc 通道错误");
-    slint::BackendSelector::new()
-        .backend_name("winit".into())
-        .select()?;
     let ui = MainWindow::new()?;
     let _ = init_ipc(ui.as_weak()).await.log_err("初始化 ipc 通道错误");
 
     let db = Database::new().await;
     let task_set = TaskSet::new(db.inner.general_config.lock().max_concurrency);
+
+    let icon = {
+        let image = image::load_from_memory_with_format(
+            include_bytes!("../assets/icon.png"),
+            image::ImageFormat::Png,
+        )?
+        .into_rgba8();
+        let (width, height) = image.dimensions();
+        tray_icon::Icon::from_rgba(image.into_raw(), width, height)
+    }
+    .context("Failed to open icon")?;
+    let _tray_icon = TrayIconBuilder::new()
+        .with_tooltip("fast-down")
+        .with_icon(icon)
+        .build()?;
+    TrayIconEvent::set_event_handler(Some({
+        let ui = ui.as_weak();
+        move |event| {
+            if let TrayIconEvent::Click {
+                id: _,
+                position: _,
+                rect: _,
+                button: _,
+                button_state: _,
+            }
+            | TrayIconEvent::DoubleClick {
+                id: _,
+                position: _,
+                rect: _,
+                button: _,
+            } = event
+            {
+                let _ = ui.upgrade_in_event_loop(|ui| {
+                    wakeup_window(&ui);
+                });
+            }
+        }
+    }));
 
     let auto = get_auto_start()
         .log_err("初始化开机自启错误")
