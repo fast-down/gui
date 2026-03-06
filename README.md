@@ -26,7 +26,7 @@
 ## 特性
 
 - **⚡️ 极速下载**  
-  自研 [fast-steal](https://github.com/fast-down/fast-steal) 任务窃取算法，实测下载速度是 NDM 的 **2.43 倍**
+  自研 [fast-steal](https://github.com/fast-down/core/tree/main/crates/fast-pull) 任务窃取算法，实测下载速度是 NDM 的 **2.43 倍**
 - **🔄 超强重试**  
   下载时，切换 WiFi、关闭 WiFi、切换代理，都能保证**文件内容正确**
 - **⛓️‍💥 断点续传**  
