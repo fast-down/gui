@@ -1306,9 +1306,9 @@ checksum = "d0a5c400df2834b80a4c3327b3aad3a4c4cd4de0629063962b03235697506a28"
 
 [[package]]
 name = "crossfire"
-version = "3.1.4"
+version = "3.1.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3fb12e9c05ae4854f743f0acec2f817148ba59a902484f6aa298d4fc7df2fac4"
+checksum = "cf877d485f079160883c76912869ac04132035f7ea787712264d422793f808df"
 dependencies = [
  "crossbeam-utils",
  "futures-core",
@@ -1654,9 +1654,9 @@ dependencies = [
 
 [[package]]
 name = "fast-down"
-version = "3.8.1"
+version = "3.8.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d29a6191e6535530393da67216a6d12d87fbdad1e5963757b19275c566ccf8da"
+checksum = "1bf7206530888a4d41369829c723f27c2b0b7614b109fdae47fb87ea6da48dd6"
 dependencies = [
  "bytes",
  "fast-pull",
@@ -1674,9 +1674,9 @@ dependencies = [
 
 [[package]]
 name = "fast-down-ffi"
-version = "0.1.5"
+version = "0.1.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "391819fe02f1b956111423470590961d1f7779b0fe071a1a62f8b59fb5631cbf"
+checksum = "6ee0ad95bfdbba9d3050a5d47409bf712640a497fe4444e25e5ae600346fedab"
 dependencies = [
  "crossfire",
  "fast-down",
@@ -1708,6 +1708,7 @@ dependencies = [
  "itertools 0.14.0",
  "lazy_static",
  "mimalloc",
+ "mime_guess",
  "open",
  "parking_lot",
  "rfd",
@@ -3693,6 +3694,16 @@ name = "mime"
 version = "0.3.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6877bb514081ee2a7ff5ef9de3281f14a4dd4bceac4c09388074a6b5df8a139a"
+
+[[package]]
+name = "mime_guess"
+version = "2.0.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f7c44f8e672c00fe5308fa235f821cb4198414e1c77935c1ab6948d3fd78550e"
+dependencies = [
+ "mime",
+ "unicase",
+]
 
 [[package]]
 name = "minimal-lexical"
@@ -5935,12 +5946,12 @@ dependencies = [
 
 [[package]]
 name = "socket2"
-version = "0.6.2"
+version = "0.6.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "86f4aa3ad99f2088c990dfa82d367e19cb29268ed67c574d10d0a4bfe71f07e0"
+checksum = "3a766e1110788c36f4fa1c2b71b387a7815aa65f88ce0229841826633d93723e"
 dependencies = [
  "libc",
- "windows-sys 0.60.2",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
