@@ -2,7 +2,7 @@ use crate::{
     fmt::{format_size, format_time},
     persist::{self, DatabaseEntry, Status},
     ui::DownloadConfig,
-    utils::sanitize,
+    utils::{auto_ext, sanitize},
 };
 use fast_down_ffi::{
     Event, create_channel,
@@ -80,7 +80,10 @@ pub async fn download(
         {
             (entry.file_path.clone(), entry)
         } else {
-            let file_name = sanitize(task.info.raw_name.clone(), 248);
+            let file_name = sanitize(
+                auto_ext(&task.info.raw_name, task.info.content_type.as_deref()),
+                248,
+            );
             let save_dir = soft_canonicalize::soft_canonicalize(
                 if config.save_dir.to_string_lossy().is_empty() {
                     dirs::download_dir().unwrap_or_default()
