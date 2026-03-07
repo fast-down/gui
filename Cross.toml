@@ -8,6 +8,7 @@ pre-build = [
 [target.i686-unknown-linux-gnu]
 image = "ghcr.io/cross-rs/i686-unknown-linux-gnu:edge"
 pre-build = [
+  "echo 'deb [trusted=yes] http://deb.debian.org/debian bullseye main' >> /etc/apt/sources.list",
   "dpkg --add-architecture i386 && apt-get update",
   "apt-get install -y clang pkg-config:i386 libfontconfig1-dev:i386 libfreetype6-dev:i386 libgtk-3-dev:i386 libglib2.0-dev:i386 libxdo-dev:i386 libayatana-appindicator3-dev:i386"
 ]
