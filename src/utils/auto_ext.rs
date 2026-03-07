@@ -5,7 +5,15 @@ fn is_extension(ext: &str) -> bool {
     !ext.is_empty() && ext.len() <= 16 && ext.chars().all(|c| c.is_ascii_graphic())
 }
 
-fn best_ext<'a>(extensions: &[&'a str]) -> Option<&'a str> {
+fn best_ext(content_type: &str) -> Option<&str> {
+    let mime_type = content_type.split(';').next().map(|s| s.trim())?;
+    match mime_type {
+        "application/octet-stream" => None,
+        _ => mime_guess::get_mime_extensions_str(mime_type).and_then(min_ext),
+    }
+}
+
+fn min_ext<'a>(extensions: &[&'a str]) -> Option<&'a str> {
     extensions
         .iter()
         .copied()
@@ -21,9 +29,7 @@ pub fn auto_ext<'a>(file_name: &'a str, content_type: Option<&str>) -> Cow<'a, s
         return Cow::Borrowed(file_name);
     }
     if let Some(ct) = content_type
-        && let Some(mime_type) = ct.split(';').next().map(|s| s.trim())
-        && let Some(extensions) = mime_guess::get_mime_extensions_str(mime_type)
-        && let Some(ext) = best_ext(extensions)
+        && let Some(ext) = best_ext(ct)
     {
         return Cow::Owned(format!("{}.{}", file_name, ext));
     }
@@ -63,5 +69,13 @@ mod tests {
         // 测试用例 7：测试干扰文件名
         let res = auto_ext("1.这是一个视频", Some("video/mp4"));
         assert_eq!("1.这是一个视频.mp4", res);
+
+        // 测试用例 8：有后缀名，且 content_type 为 None
+        let res = auto_ext("视频.mp4", None);
+        assert_eq!("视频.mp4", res);
+
+        // 测试用例 9：无后缀名，且 content_type 为 application/octet-stream
+        let res = auto_ext("视频", Some("application/octet-stream"));
+        assert_eq!("视频", res);
     }
 }

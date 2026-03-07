@@ -1654,9 +1654,9 @@ dependencies = [
 
 [[package]]
 name = "fast-down"
-version = "3.8.3"
+version = "3.8.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "adfc1bb6a735e739d8f7be33cc6cb81c47e0cb07d014f48946cdbcfb7026701e"
+checksum = "7fb24cc0196b1d89cf44785d076dfc0d716b7d21a4401ecdbbea6596d1c5b06f"
 dependencies = [
  "bytes",
  "fast-pull",
@@ -1674,9 +1674,9 @@ dependencies = [
 
 [[package]]
 name = "fast-down-ffi"
-version = "0.1.7"
+version = "0.1.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e026c3f41d7581f88d463868843127465730668aaa6f4eacff7e6cb30445ee62"
+checksum = "507ca09adb4d7eeee0a0c8296156057df5a398909fd138a5460fb035d290e223"
 dependencies = [
  "crossfire",
  "fast-down",
@@ -1691,7 +1691,7 @@ dependencies = [
 
 [[package]]
 name = "fast-down-gui"
-version = "0.1.40"
+version = "0.1.41"
 dependencies = [
  "arboard",
  "auto-launch",
