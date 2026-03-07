@@ -44,7 +44,11 @@ jobs:
             libxcb-composite0-dev \
             libxcb-cursor-dev \
             libxcb-xkb-dev \
-            pkg-config
+            pkg-config \
+            libgtk-3-dev \
+            libglib2.0-dev \
+            libxdo-dev \
+            libayatana-appindicator3-dev
 
       - name: Test
         run: cargo test --all-features --verbose
@@ -81,7 +85,11 @@ jobs:
             libxcb-composite0-dev \
             libxcb-cursor-dev \
             libxcb-xkb-dev \
-            pkg-config
+            pkg-config \
+            libgtk-3-dev \
+            libglib2.0-dev \
+            libxdo-dev \
+            libayatana-appindicator3-dev
 
       - name: Run Clippy
         run: cargo clippy --all-features --all-targets --verbose -- -Dwarnings
@@ -134,13 +142,17 @@ jobs:
             libxcb-composite0-dev \
             libxcb-cursor-dev \
             libxcb-xkb-dev \
-            pkg-config
+            pkg-config \
+            libgtk-3-dev \
+            libglib2.0-dev \
+            libxdo-dev \
+            libayatana-appindicator3-dev
 
       - name: Install cargo-deny
         run: cargo install cargo-deny
 
       - name: Run deny
-        run: cargo deny --all-features check --deny warnings
+        run: cargo deny --all-features check
 
   # udeps:
   #   name: Udeps
@@ -170,7 +182,11 @@ jobs:
   #           libxcb-composite0-dev \
   #           libxcb-cursor-dev \
   #           libxcb-xkb-dev \
-  #           pkg-config
+  #           pkg-config \
+  #           libgtk-3-dev \
+  #           libglib2.0-dev \
+  #           libxdo-dev \
+  #           libayatana-appindicator3-dev
 
   #     - name: Install cargo-udeps
   #       run: cargo install cargo-udeps

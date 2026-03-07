@@ -29,6 +29,7 @@ dirs = "6.0.0"
 fast-down-ffi = { version = "0.1.5", features = ["serde"] }
 # fast-down-ffi = { path = "../ffi-core/", version = "0.1.4" }
 i-slint-backend-winit = "1.15.1"
+image = "0.25.9"
 interprocess = { version = "2.4.0", features = ["tokio"] }
 itertools = "0.14.0"
 lazy_static = "1.5.0"
@@ -39,11 +40,12 @@ rfd = "0.17.2"
 sanitize-filename = "0.6.0"
 serde = { version = "1.0.228", features = ["rc"] }
 soft-canonicalize = "0.5.4"
-tokio = { version = "1.49.0", features = ["rt-multi-thread"] }
+tokio = { version = "1.50.0", features = ["rt-multi-thread"] }
 tokio-util = "0.7.18"
 tracing = "0.1.44"
 tracing-appender = "0.2.4"
 tracing-subscriber = { version = "0.3.22", features = ["env-filter"] }
+tray-icon = "0.21.3"
 url = { version = "2.5.8", features = ["serde"] }
 
 [build-dependencies]
