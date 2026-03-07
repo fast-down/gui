@@ -1,6 +1,6 @@
 [package]
 name = "fast-down-gui"
-version = "0.1.39"
+version = "0.1.40"
 edition = "2024"
 license = "MIT"
 authors = ["share121 <2854631158@qq.com>"]
@@ -26,7 +26,7 @@ color-eyre = "0.6.5"
 crossfire = "3.1.5"
 dashmap = { version = "6.1.0", features = ["serde"] }
 dirs = "6.0.0"
-fast-down-ffi = { version = "0.1.6", features = ["serde"] }
+fast-down-ffi = { version = "0.1.7", features = ["serde"] }
 # fast-down-ffi = { path = "../ffi-core/", version = "0.1.4" }
 i-slint-backend-winit = "1.15.1"
 image = "0.25.9"
