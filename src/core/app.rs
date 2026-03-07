@@ -2,10 +2,12 @@ use crate::{
     core::{DownloadEvent, TaskSet, apply_progress_diff},
     fmt::format_size,
     persist::{self, Database},
-    ui::{self, EntryData, MainWindow},
+    ui::{self, DownloadConfig, EntryData, GeneralConfig, MainWindow},
     utils::LogErr,
 };
+use auto_launch::AutoLaunch;
 use slint::{Model, Weak};
+use std::process::exit;
 
 #[derive(Clone)]
 pub struct App {
@@ -82,5 +84,40 @@ impl App {
                 app.update_ui_row(gid, move |_, data| data.status = ui_status);
             }
         }
+    }
+
+    pub fn set_config(
+        &self,
+        download_config: DownloadConfig,
+        general_config: GeneralConfig,
+        auto: Option<&AutoLaunch>,
+    ) {
+        self.task_set
+            .set_concurrency(general_config.max_concurrency as usize);
+        self.db.set_download_config(&download_config);
+        self.db.set_general_config(&general_config);
+        if let Some(auto) = auto {
+            if general_config.auto_start {
+                let _ = auto.enable().log_err("启用开机自启失败");
+            } else {
+                let _ = auto.disable().log_err("禁用开机自启失败");
+            }
+        }
+        let _ = self.ui.upgrade_in_event_loop(move |ui| {
+            ui.set_download_config(download_config);
+            ui.set_general_config(general_config);
+        });
+    }
+
+    pub fn exit(&self) {
+        let db = self.db.clone();
+        let fut = tokio::task::spawn_blocking(move || db.flush_force_sync());
+        let task_set = self.task_set.clone();
+        task_set.cancel_all();
+        tokio::spawn(async move {
+            task_set.join().await;
+            fut.await.unwrap().unwrap();
+            exit(0);
+        });
     }
 }
