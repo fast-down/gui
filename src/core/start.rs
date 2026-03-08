@@ -5,7 +5,7 @@ use crate::{
     utils::{ForceSendExt, LogErr},
 };
 use fast_down_ffi::fast_down::FileId;
-use slint::{ToSharedString, VecModel};
+use slint::{SharedString, ToSharedString, VecModel};
 use std::{path::PathBuf, time::Duration};
 use tokio_util::sync::CancellationToken;
 use tracing::{error, info};
@@ -30,6 +30,7 @@ pub fn start_entry(app: &App, entry: &EntryData, list: &VecModel<EntryData>) -> 
     let cancel_token = CancellationToken::new();
     let token = cancel_token.clone();
     let fut = async move {
+        app_c.update_ui_row(gid, move |_, data| data.error = SharedString::new());
         let handler = app_c.create_download_handler(gid);
         match download(url, &config, token, Some(db_entry), handler).await {
             Ok(()) => info!(gid = gid, "任务下载完成"),
