@@ -7,11 +7,12 @@ use tray_icon::{
 
 pub fn setup_tray(app: App) -> color_eyre::Result<TrayIcon> {
     let icon = {
-        let image = image::load_from_memory_with_format(
-            include_bytes!("../../assets/icon.png"),
-            image::ImageFormat::Png,
-        )?
-        .into_rgba8();
+        #[cfg(target_os = "macos")]
+        let bytes = include_bytes!("../../assets/tray-icon-mac.png");
+        #[cfg(not(target_os = "macos"))]
+        let bytes = include_bytes!("../../assets/icon.png");
+        let image =
+            image::load_from_memory_with_format(bytes, image::ImageFormat::Png)?.into_rgba8();
         let (width, height) = image.dimensions();
         tray_icon::Icon::from_rgba(image.into_raw(), width, height)
     }
