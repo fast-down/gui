@@ -58,6 +58,7 @@ impl DatabaseEntry {
             },
             time: format_time(elapsed.as_secs()).into(),
             total: format_size(file_size as f64).into(),
+            error: SharedString::new(),
         }
     }
 }
