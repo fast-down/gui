@@ -5,7 +5,7 @@ use crate::{
     utils::{ForceSendExt, LogErr},
 };
 use fast_down_ffi::fast_down::FileId;
-use slint::VecModel;
+use slint::{ToSharedString, VecModel};
 use std::{path::PathBuf, time::Duration};
 use tokio_util::sync::CancellationToken;
 use tracing::{error, info};
@@ -36,7 +36,10 @@ pub fn start_entry(app: &App, entry: &EntryData, list: &VecModel<EntryData>) -> 
             Err(e) => {
                 error!(gid = gid, err = ?e, "下载任务出错");
                 app_c.db.update_status(gid, persist::Status::Error);
-                app_c.update_ui_row(gid, |_, data| data.status = Status::Error);
+                app_c.update_ui_row(gid, move |_, data| {
+                    data.status = Status::Error;
+                    data.error = e.to_shared_string();
+                });
             }
         }
     }
@@ -80,7 +83,10 @@ pub fn start_new_entry(
             Err(e) => {
                 error!(gid = gid, err = ?e, "下载任务出错");
                 app_c.db.update_status(gid, persist::Status::Error);
-                app_c.update_ui_row(gid, |_, data| data.status = Status::Error);
+                app_c.update_ui_row(gid, move |_, data| {
+                    data.status = Status::Error;
+                    data.error = e.to_shared_string();
+                });
             }
         }
     }

@@ -1,6 +1,8 @@
 import "../assets/fonts/HarmonyOS_Sans_SC.ttc";
+import { Palette } from "std-widgets.slint";
 
 export global Theme {
     out property <string> font-family: "HarmonyOS Sans SC";
     out property <image> app-icon: @image-url("../assets/icon.png");
+    out property <color> error-color: Palette.color-scheme == ColorScheme.dark ? #ff6666 : #cc0000;
 }
