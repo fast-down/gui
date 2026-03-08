@@ -2,11 +2,11 @@
 
 use arboard::Clipboard;
 use fast_down_gui::{
+    addons::{auto_register, handle_browser_request},
     core::{App, TaskSet, start_entry, start_new_entry},
-    ipc::{check_ipc, init_ipc},
+    ipc::{check_ipc_and_wake, init_ipc},
     os::{attach_console, get_auto_start, setup_tray},
     persist::{DB_DIR, Database},
-    server::start_server,
     ui::*,
     utils::{LogErr, show_task_dialog},
 };
@@ -52,14 +52,19 @@ fn init_tracing() -> WorkerGuard {
 #[tokio::main]
 async fn main() -> color_eyre::Result<()> {
     attach_console();
+    color_eyre::install()?;
+
+    let args: Vec<_> = std::env::args().collect();
+    if args.iter().any(|arg| arg.contains("extension")) {
+        return handle_browser_request().await;
+    }
     let _guard = init_tracing();
 
-    let _ = check_ipc().await.log_err("检查 ipc 通道错误");
+    let _ = check_ipc_and_wake().await.log_err("检查 ipc 通道错误");
+    let _ = auto_register().log_err("写入浏览器扩展通信配置失败");
     let ui = MainWindow::new()?;
-    let _ = init_ipc(ui.as_weak()).await.log_err("初始化 ipc 通道错误");
     let db = Database::new().await;
     let task_set = TaskSet::new(db.inner.general_config.lock().max_concurrency);
-    let args: Vec<_> = std::env::args().collect();
     let auto = get_auto_start()
         .log_err("初始化开机自启错误")
         .ok()
@@ -76,9 +81,11 @@ async fn main() -> color_eyre::Result<()> {
         task_set: task_set.clone(),
         ui: ui.as_weak(),
     };
+    let _ = init_ipc(app.clone(), list_model.clone())
+        .await
+        .log_err("初始化 ipc 通道错误");
 
     let _tray = setup_tray(app.clone())?;
-    start_server(app.clone(), list_model.clone(), ui.as_weak()).await?;
     setup_ui_lists(&ui, list_model.clone());
     ui.set_download_config(db.get_ui_download_config());
     ui.set_general_config(db.get_ui_general_config());
