@@ -5,7 +5,7 @@ use interprocess::local_socket::{
 };
 use std::{
     io::{ErrorKind, Read, Write},
-    process::{Command, Stdio, exit},
+    process::{Command, Stdio},
 };
 use tokio::io::AsyncWriteExt;
 
@@ -16,50 +16,74 @@ pub const FIREFOX_EXT_ID: &str = "fast-down@s121.top";
 /// 全平台自动注册 Native Messaging
 pub fn auto_register() -> color_eyre::Result<()> {
     let exe_path = std::env::current_exe()?;
-    let manifest_json = serde_json::json!({
+    let exe_path_str = exe_path.to_string_lossy();
+
+    // 基础通用的配置
+    let manifest_base = serde_json::json!({
         "name": "top.s121.fd",
         "description": "fast-down native messaging host",
-        "path": exe_path.to_string_lossy(),
-        "type": "stdio",
-        "allowed_origins": [
-            format!("chrome-extension://{}/", CHROME_EXT_ID),
-        ],
-        "allowed_extensions": [
-            FIREFOX_EXT_ID
-        ]
+        "path": exe_path_str,
+        "type": "stdio"
     });
-    let manifest_json = serde_json::to_string_pretty(&manifest_json)?;
+
+    // 1. 生成 Chrome/Edge 专属版本 (使用 allowed_origins)
+    let mut manifest_chrome = manifest_base.clone();
+    manifest_chrome["allowed_origins"] =
+        serde_json::json!([format!("chrome-extension://{}/", CHROME_EXT_ID),]);
+    let chrome_json = serde_json::to_string_pretty(&manifest_chrome)?;
+
+    // 2. 生成 Firefox 专属版本 (使用 allowed_extensions)
+    let mut manifest_firefox = manifest_base;
+    manifest_firefox["allowed_extensions"] = serde_json::json!([FIREFOX_EXT_ID]);
+    let firefox_json = serde_json::to_string_pretty(&manifest_firefox)?;
 
     #[cfg(target_os = "windows")]
     {
         use winreg::RegKey;
         use winreg::enums::HKEY_CURRENT_USER;
 
-        let manifest_path = crate::persist::DB_DIR.join("fd_nm_manifest.json");
-        std::fs::write(&manifest_path, &manifest_json)?;
-        let manifest_path = manifest_path.to_string_lossy();
+        // Windows 需要分别写入两个文件
+        let chrome_manifest_path = crate::persist::DB_DIR.join("fd_nm_manifest_chrome.json");
+        let firefox_manifest_path = crate::persist::DB_DIR.join("fd_nm_manifest_firefox.json");
+
+        std::fs::write(&chrome_manifest_path, &chrome_json)?;
+        std::fs::write(&firefox_manifest_path, &firefox_json)?;
+
         let hkcu = RegKey::predef(HKEY_CURRENT_USER);
-        let paths = [
+
+        // 为 Chrome 和 Edge 写入 Chrome 版本的 manifest 路径
+        let chrome_paths = [
             "Software\\Google\\Chrome\\NativeMessagingHosts\\top.s121.fd",
             "Software\\Microsoft\\Edge\\NativeMessagingHosts\\top.s121.fd",
-            "Software\\Mozilla\\NativeMessagingHosts\\top.s121.fd",
         ];
-        for path in paths {
+        for path in chrome_paths {
             if let Ok((key, _)) = hkcu.create_subkey(path) {
-                let _ = key.set_value("", &manifest_path.as_ref());
+                let _ = key.set_value("", &chrome_manifest_path.to_string_lossy().as_ref());
             }
         }
+
+        // 为 Firefox 写入 Firefox 版本的 manifest 路径
+        let firefox_path = "Software\\Mozilla\\NativeMessagingHosts\\top.s121.fd";
+        if let Ok((key, _)) = hkcu.create_subkey(firefox_path) {
+            let _ = key.set_value("", &firefox_manifest_path.to_string_lossy().as_ref());
+        }
     }
+
     #[cfg(target_os = "macos")]
     {
         if let Some(home) = dirs::home_dir() {
             let base = home.join("Library/Application Support");
-            let paths = [
+
+            // 写入 Chrome / Edge 目录
+            let chrome_paths = [
                 base.join("Google/Chrome/NativeMessagingHosts"),
                 base.join("Microsoft Edge/NativeMessagingHosts"),
-                base.join("Mozilla/NativeMessagingHosts"),
             ];
-            write_manifests_to_dirs(&paths, &manifest_json);
+            write_manifests_to_dirs(&chrome_paths, &chrome_json);
+
+            // 写入 Firefox 目录
+            let firefox_paths = [base.join("Mozilla/NativeMessagingHosts")];
+            write_manifests_to_dirs(&firefox_paths, &firefox_json);
         }
     }
 
@@ -67,13 +91,18 @@ pub fn auto_register() -> color_eyre::Result<()> {
     {
         if let Some(home) = dirs::home_dir() {
             let config = dirs::config_dir().unwrap_or_else(|| home.join(".config"));
-            let paths = [
+
+            // 写入 Chrome / Edge 目录
+            let chrome_paths = [
                 config.join("google-chrome/NativeMessagingHosts"),
                 config.join("chromium/NativeMessagingHosts"),
                 config.join("microsoft-edge/NativeMessagingHosts"),
-                home.join(".mozilla/native-messaging-hosts"),
             ];
-            write_manifests_to_dirs(&paths, &manifest_json);
+            write_manifests_to_dirs(&chrome_paths, &chrome_json);
+
+            // 写入 Firefox 目录
+            let firefox_paths = [home.join(".mozilla/native-messaging-hosts")];
+            write_manifests_to_dirs(&firefox_paths, &firefox_json);
         }
     }
 
@@ -125,12 +154,21 @@ pub async fn handle_browser_request() -> color_eyre::Result<()> {
             Err(e) if matches!(e.kind(), ErrorKind::ConnectionRefused | ErrorKind::NotFound) => {
                 if retries == 0 {
                     let exe_path = std::env::current_exe()?;
-                    Command::new(exe_path)
-                        .arg("--hidden")
+                    let mut cmd = Command::new(exe_path);
+                    cmd.arg("--hidden")
                         .stdin(Stdio::null())
                         .stdout(Stdio::null())
-                        .stderr(Stdio::null())
-                        .spawn()?;
+                        .stderr(Stdio::null());
+
+                    #[cfg(target_os = "windows")]
+                    {
+                        use std::os::windows::process::CommandExt;
+                        const CREATE_BREAKAWAY_FROM_JOB: u32 = 0x01000000;
+                        const DETACHED_PROCESS: u32 = 0x00000008;
+                        cmd.creation_flags(CREATE_BREAKAWAY_FROM_JOB | DETACHED_PROCESS);
+                    }
+
+                    cmd.spawn()?;
                 }
                 if retries > 10 {
                     return Err(e.into());
@@ -144,5 +182,5 @@ pub async fn handle_browser_request() -> color_eyre::Result<()> {
 
     stream.write_all(format!("{msg}\n").as_bytes()).await?;
     write_native_message(&serde_json::json!({"status": "success"}));
-    exit(0);
+    Ok(())
 }

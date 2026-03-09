@@ -2,7 +2,7 @@
 
 use arboard::Clipboard;
 use fast_down_gui::{
-    addons::{auto_register, handle_browser_request},
+    addons::{CHROME_EXT_ID, FIREFOX_EXT_ID, auto_register, handle_browser_request},
     core::{App, TaskSet, start_entry, start_new_entry},
     ipc::{check_ipc_and_wake, init_ipc},
     os::{attach_console, get_auto_start, setup_tray},
@@ -55,7 +55,10 @@ async fn main() -> color_eyre::Result<()> {
     color_eyre::install()?;
 
     let args: Vec<_> = std::env::args().collect();
-    if args.iter().any(|arg| arg.contains("extension")) {
+    if args
+        .iter()
+        .any(|arg| arg.contains(CHROME_EXT_ID) || arg.contains(FIREFOX_EXT_ID))
+    {
         return handle_browser_request().await;
     }
     let _guard = init_tracing();
