@@ -51,7 +51,6 @@ fn init_tracing() -> WorkerGuard {
 
 #[tokio::main]
 async fn main() -> color_eyre::Result<()> {
-    attach_console();
     color_eyre::install()?;
 
     let args: Vec<_> = std::env::args().collect();
@@ -61,6 +60,7 @@ async fn main() -> color_eyre::Result<()> {
     {
         return handle_browser_request().await;
     }
+    attach_console();
     let _guard = init_tracing();
 
     let _ = check_ipc_and_wake().await.log_err("检查 ipc 通道错误");
