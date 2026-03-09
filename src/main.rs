@@ -2,7 +2,7 @@
 
 use arboard::Clipboard;
 use fast_down_gui::{
-    addons::{CHROME_EXT_ID, FIREFOX_EXT_ID, auto_register, handle_browser_request},
+    addons::{CHROME_EXT_IDS, FIREFOX_EXT_ID, auto_register, handle_browser_request},
     core::{App, TaskSet, start_entry, start_new_entry},
     ipc::{check_ipc_and_wake, init_ipc},
     os::{attach_console, get_auto_start, setup_tray},
@@ -57,7 +57,7 @@ async fn main() -> color_eyre::Result<()> {
     let args: Vec<_> = std::env::args().collect();
     if args
         .iter()
-        .any(|arg| arg.contains(CHROME_EXT_ID) || arg.contains(FIREFOX_EXT_ID))
+        .any(|arg| arg.contains(FIREFOX_EXT_ID) || CHROME_EXT_IDS.iter().any(|id| arg.contains(id)))
     {
         return handle_browser_request().await;
     }
