@@ -299,15 +299,23 @@ async fn main() -> color_eyre::Result<()> {
         let _ = open::that(DB_DIR.as_os_str()).log_err("打开日志文件夹失败");
     });
 
-    ui.show()?;
-    if args.iter().any(|s| s == "--hidden") {
-        let ui = ui.as_weak();
-        let _ = slint::spawn_local(async move {
-            if let Some(ui) = ui.upgrade() {
-                let _ = ui.hide().log_err("隐藏窗口失败");
-            }
-        })
-        .log_err("隐藏窗口失败");
+    let is_hidden = args.iter().any(|s| s == "--hidden");
+    #[cfg(target_os = "linux")]
+    {
+        ui.show()?;
+        if is_hidden {
+            let ui = ui.as_weak();
+            let _ = slint::spawn_local(async move {
+                if let Some(ui) = ui.upgrade() {
+                    let _ = ui.hide().log_err("隐藏窗口失败");
+                }
+            })
+            .log_err("隐藏窗口失败");
+        }
+    }
+    #[cfg(not(target_os = "linux"))]
+    if !is_hidden {
+        ui.show()?;
     }
     slint::run_event_loop_until_quit()?;
     Ok(())
