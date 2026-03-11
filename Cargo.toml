@@ -48,6 +48,7 @@ tracing-appender = "0.2.4"
 tracing-subscriber = { version = "0.3.22", features = ["env-filter"] }
 tray-icon = "0.21.3"
 url = { version = "2.5.8", features = ["serde"] }
+gtk = "0.18.2"
 
 [build-dependencies]
 slint-build = "1.15.1"

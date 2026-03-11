@@ -1,12 +1,12 @@
-use crate::ipc::{IpcMessage, NS_NAME};
+use crate::{
+    ipc::{IpcMessage, NS_NAME},
+    os::spawn_self,
+};
 use interprocess::local_socket::{
     GenericNamespaced,
     tokio::{Stream, prelude::*},
 };
-use std::{
-    io::{ErrorKind, Read, Write},
-    process::{Command, Stdio},
-};
+use std::io::{ErrorKind, Read, Write};
 use tokio::io::AsyncWriteExt;
 
 pub const APP_NAME: &str = "top.s121.fd";
@@ -43,19 +43,12 @@ pub fn auto_register() -> color_eyre::Result<()> {
     manifest_firefox["allowed_extensions"] = serde_json::json!([FIREFOX_EXT_ID]);
     let firefox_json = serde_json::to_string_pretty(&manifest_firefox)?;
 
-    // 分发到各个操作系统的具体实现
-    #[cfg(target_os = "windows")]
-    register_windows(&chrome_json, &firefox_json)?;
-    #[cfg(target_os = "macos")]
-    register_macos(&chrome_json, &firefox_json)?;
-    #[cfg(target_os = "linux")]
-    register_linux(&chrome_json, &firefox_json)?;
-
+    register(&chrome_json, &firefox_json)?;
     Ok(())
 }
 
 #[cfg(target_os = "windows")]
-fn register_windows(chrome_json: &str, firefox_json: &str) -> color_eyre::Result<()> {
+fn register(chrome_json: &str, firefox_json: &str) -> color_eyre::Result<()> {
     use winreg::RegKey;
     use winreg::enums::HKEY_CURRENT_USER;
 
@@ -102,7 +95,7 @@ fn register_windows(chrome_json: &str, firefox_json: &str) -> color_eyre::Result
 }
 
 #[cfg(target_os = "macos")]
-fn register_macos(chrome_json: &str, firefox_json: &str) -> color_eyre::Result<()> {
+fn register(chrome_json: &str, firefox_json: &str) -> color_eyre::Result<()> {
     use color_eyre::eyre::ContextCompat;
 
     let home = dirs::home_dir().context("无法获取 home 目录")?;
@@ -127,7 +120,7 @@ fn register_macos(chrome_json: &str, firefox_json: &str) -> color_eyre::Result<(
 }
 
 #[cfg(target_os = "linux")]
-fn register_linux(chrome_json: &str, firefox_json: &str) -> color_eyre::Result<()> {
+fn register(chrome_json: &str, firefox_json: &str) -> color_eyre::Result<()> {
     use color_eyre::eyre::ContextCompat;
 
     let home = dirs::home_dir().context("无法获取 home 目录")?;
@@ -199,22 +192,7 @@ pub async fn handle_browser_request() -> color_eyre::Result<()> {
             Ok(s) => break s,
             Err(e) if matches!(e.kind(), ErrorKind::ConnectionRefused | ErrorKind::NotFound) => {
                 if retries == 0 {
-                    let exe_path = std::env::current_exe()?;
-                    let mut cmd = Command::new(exe_path);
-                    cmd.arg("--hidden")
-                        .stdin(Stdio::null())
-                        .stdout(Stdio::null())
-                        .stderr(Stdio::null());
-
-                    #[cfg(target_os = "windows")]
-                    {
-                        use std::os::windows::process::CommandExt;
-                        const CREATE_BREAKAWAY_FROM_JOB: u32 = 0x01000000;
-                        const DETACHED_PROCESS: u32 = 0x00000008;
-                        cmd.creation_flags(CREATE_BREAKAWAY_FROM_JOB | DETACHED_PROCESS);
-                    }
-
-                    cmd.spawn()?;
+                    spawn_self().await?;
                 }
 
                 if retries > 10 {
