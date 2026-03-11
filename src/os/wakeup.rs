@@ -3,6 +3,7 @@ use i_slint_backend_winit::{WinitWindowAccessor, winit::window::UserAttentionTyp
 use slint::ComponentHandle;
 
 pub fn wakeup_window(ui: &MainWindow) {
+    let _ = ui.show().log_err("显示窗口出错");
     let window = ui.window();
     let _ = window.show().log_err("显示窗口出错");
     window.set_minimized(false);

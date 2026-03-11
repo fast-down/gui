@@ -62,6 +62,21 @@ async fn main() -> color_eyre::Result<()> {
     }
     attach_console();
     let _guard = init_tracing();
+    #[cfg(target_os = "linux")]
+    let _gtk_timer = {
+        let _ = gtk::init().log_err("初始化 gtk 错误");
+        let timer = slint::Timer::default();
+        timer.start(
+            slint::TimerMode::Repeated,
+            std::time::Duration::from_millis(50),
+            move || {
+                while gtk::events_pending() {
+                    gtk::main_iteration_do(false);
+                }
+            },
+        );
+        timer
+    };
 
     let _ = check_ipc_and_wake().await.log_err("检查 ipc 通道错误");
     let _ = auto_register().log_err("写入浏览器扩展通信配置失败");
@@ -88,7 +103,7 @@ async fn main() -> color_eyre::Result<()> {
         .await
         .log_err("初始化 ipc 通道错误");
 
-    let _tray = setup_tray(app.clone())?;
+    let _tray = setup_tray(app.clone()).log_err("初始化托盘错误");
     setup_ui_lists(&ui, list_model.clone());
     ui.set_download_config(db.get_ui_download_config());
     ui.set_general_config(db.get_ui_general_config());
@@ -284,7 +299,22 @@ async fn main() -> color_eyre::Result<()> {
         let _ = open::that(DB_DIR.as_os_str()).log_err("打开日志文件夹失败");
     });
 
-    if args.iter().all(|s| s != "--hidden") {
+    let is_hidden = args.iter().any(|s| s == "--hidden");
+    #[cfg(target_os = "linux")]
+    {
+        ui.show()?;
+        if is_hidden {
+            let ui = ui.as_weak();
+            let _ = slint::spawn_local(async move {
+                if let Some(ui) = ui.upgrade() {
+                    let _ = ui.hide().log_err("隐藏窗口失败");
+                }
+            })
+            .log_err("隐藏窗口失败");
+        }
+    }
+    #[cfg(not(target_os = "linux"))]
+    if !is_hidden {
         ui.show()?;
     }
     slint::run_event_loop_until_quit()?;
