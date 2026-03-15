@@ -127,6 +127,7 @@ impl From<&crate::ui::DownloadConfig> for DownloadConfig {
 pub struct GeneralConfig {
     pub max_concurrency: usize,
     pub auto_start: bool,
+    pub exit_after_download: bool,
 }
 
 impl Default for GeneralConfig {
@@ -134,6 +135,7 @@ impl Default for GeneralConfig {
         Self {
             max_concurrency: 2,
             auto_start: false,
+            exit_after_download: false,
         }
     }
 }
@@ -143,6 +145,7 @@ impl From<&crate::ui::GeneralConfig> for GeneralConfig {
         Self {
             max_concurrency: value.max_concurrency as usize,
             auto_start: value.auto_start,
+            exit_after_download: value.exit_after_download,
         }
     }
 }
@@ -152,6 +155,7 @@ impl GeneralConfig {
         crate::ui::GeneralConfig {
             max_concurrency: self.max_concurrency as i32,
             auto_start: self.auto_start,
+            exit_after_download: self.exit_after_download,
         }
     }
 }

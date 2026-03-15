@@ -299,6 +299,23 @@ async fn main() -> color_eyre::Result<()> {
         let _ = open::that(DB_DIR.as_os_str()).log_err("打开日志文件夹失败");
     });
 
+    let _ = slint::spawn_local({
+        let app = app.clone();
+        async move {
+            loop {
+                app.task_set.wait_last().await;
+                let Some(ui) = app.ui.upgrade() else { break };
+                let visible = ui.window().is_visible();
+                info!(main_window_visible = visible, "所有任务已完成");
+                if !visible && app.db.is_exit_after_download() {
+                    break;
+                }
+            }
+            app.exit();
+        }
+    })
+    .log_err("无法检测程序下载状态");
+
     let is_hidden = args.iter().any(|s| s == "--hidden");
     #[cfg(target_os = "linux")]
     {

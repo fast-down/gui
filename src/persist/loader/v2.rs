@@ -116,6 +116,7 @@ impl From<DatabaseInner> for crate::persist::DatabaseInner {
             general_config: Mutex::new(crate::persist::GeneralConfig {
                 max_concurrency,
                 auto_start: false,
+                exit_after_download: false,
             }),
             download_config: Mutex::new(db.config.into_inner().into()),
             max_gid: db.max_gid,

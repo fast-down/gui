@@ -63,12 +63,12 @@ impl DatabaseInner {
         self.max_gid.fetch_add(1, Ordering::SeqCst)
     }
 
-    pub fn set_auto_start(&self, value: bool) {
-        self.general_config.lock().auto_start = value;
-    }
-
     pub fn is_auto_start(&self) -> bool {
         self.general_config.lock().auto_start
+    }
+
+    pub fn is_exit_after_download(&self) -> bool {
+        self.general_config.lock().exit_after_download
     }
 }
 
@@ -201,8 +201,8 @@ impl Database {
         self.inner.is_auto_start()
     }
 
-    pub fn set_auto_start(&self, value: bool) {
-        self.inner.set_auto_start(value);
+    pub fn is_exit_after_download(&self) -> bool {
+        self.inner.is_exit_after_download()
     }
 }
 
