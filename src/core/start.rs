@@ -4,7 +4,7 @@ use crate::{
     ui::{DownloadConfig, EntryData, Status},
     utils::{ForceSendExt, LogErr},
 };
-use fast_down_ffi::fast_down::FileId;
+use fast_down_ffi::FileId;
 use slint::{SharedString, ToSharedString, VecModel};
 use std::{path::PathBuf, time::Duration};
 use tokio_util::sync::CancellationToken;

@@ -4,11 +4,7 @@ use crate::{
     ui::DownloadConfig,
     utils::{auto_ext, sanitize},
 };
-use fast_down_ffi::{
-    Event, create_channel,
-    fast_down::{Merge, Total, utils::gen_unique_path},
-    prefetch,
-};
+use fast_down_ffi::{Event, Merge, Total, create_channel, prefetch, unique_path::gen_unique_path};
 use slint::SharedString;
 use std::{ops::Range, time::Duration};
 use tokio::{fs, time::Instant};
