@@ -1,9 +1,6 @@
 use crate::persist::loader::Loader;
 use dashmap::DashMap;
-use fast_down_ffi::{
-    WriteMethod,
-    fast_down::{FileId, ProgressEntry, utils::Proxy},
-};
+use fast_down_ffi::{FileId, ProgressEntry, Proxy, WriteMethod};
 use parking_lot::Mutex;
 use serde::Deserialize;
 use std::{
