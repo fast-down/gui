@@ -307,7 +307,7 @@ async fn main() -> color_eyre::Result<()> {
                 let Some(ui) = app.ui.upgrade() else { break };
                 let visible = ui.window().is_visible();
                 info!(main_window_visible = visible, "所有任务已完成");
-                if !visible {
+                if !visible && app.db.is_exit_after_download() {
                     break;
                 }
             }
