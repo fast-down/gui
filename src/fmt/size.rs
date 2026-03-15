@@ -1,4 +1,7 @@
 pub fn format_size(mut size: f64) -> String {
+    if !size.is_finite() {
+        size = 0.;
+    }
     const UNITS: &[&str] = &["B", "KiB", "MiB", "GiB", "TiB", "PiB", "EiB", "ZiB", "YiB"];
     const LEN: usize = UNITS.len();
 
