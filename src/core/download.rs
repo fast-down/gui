@@ -4,9 +4,10 @@ use crate::{
     ui::DownloadConfig,
     utils::{auto_ext, sanitize},
 };
-use fast_down_ffi::{Event, Merge, Total, create_channel, prefetch, unique_path::gen_unique_path};
+use fast_down_ffi::{Event, Total, create_channel, prefetch, unique_path::gen_unique_path};
+use parking_lot::Mutex;
 use slint::SharedString;
-use std::{ops::Range, time::Duration};
+use std::{ops::Range, sync::Arc, time::Duration};
 use tokio::{fs, time::Instant};
 use tokio_util::sync::CancellationToken;
 use tracing::{error, info, warn};
@@ -44,10 +45,12 @@ pub async fn download(
             entry = None
         }
         let config: persist::DownloadConfig = config.into();
-        let progress = entry
-            .as_ref()
-            .map(|e| e.progress.clone())
-            .unwrap_or_default();
+        let progress = Arc::new(Mutex::new(
+            entry
+                .as_ref()
+                .map(|e| e.progress.clone())
+                .unwrap_or_default(),
+        ));
         let download_config = fast_down_ffi::Config {
             retry_times: config.retry_times,
             threads: config.threads,
@@ -106,26 +109,36 @@ pub async fn download(
             )
         };
         on_event(DownloadEvent::Info(Box::new(entry)));
-        let fut = task.start(save_path, cancel_token.clone());
-        Ok::<_, color_eyre::Report>((fut, progress, elapsed, total_size, rx))
+        Ok::<_, color_eyre::Report>((
+            task,
+            save_path,
+            cancel_token.clone(),
+            elapsed,
+            total_size,
+            rx,
+        ))
     };
-    let (fut, mut progress, elapsed, total_size, rx) = tokio::select! {
+    let (task, save_path, cancel_token, elapsed, total_size, rx) = tokio::select! {
         _ = cancel_token.cancelled() => {
             on_event(DownloadEvent::End { is_cancelled: true });
             return Ok(());
         },
         res = result => res?,
     };
-    tokio::pin!(fut);
+    tokio::pin! {
+        let fut = task.start(save_path, cancel_token.clone());
+    };
+
+    let progress = &task.config.downloaded_chunk;
     let mut smoothed_speed = 0.;
     let alpha = 0.3;
-    let mut last_bytes = progress.total();
+    let mut last_bytes = progress.lock().total();
     let mut last_update = Instant::now();
     let mut start = last_update - elapsed;
 
     macro_rules! update_progress {
         ($now:expr, $elapsed:expr, $total_elapsed:expr) => {{
-            let downloaded = progress.total();
+            let downloaded = progress.lock().total();
             let bytes_diff = downloaded - last_bytes;
             let instant_speed = bytes_diff as f64 / $elapsed;
             smoothed_speed = if smoothed_speed == 0. {
@@ -146,7 +159,7 @@ pub async fn download(
                 remaining_size: format_size(remaining_size as f64).into(),
                 percentage: percentage.into(),
                 elapsed: $total_elapsed,
-                progress: progress.clone(),
+                progress: progress.lock().clone(),
             }));
             downloaded
         }};
@@ -169,18 +182,18 @@ pub async fn download(
                     Event::PullProgress(_, _) => {}
                     Event::PullError(id, e) => warn!(err = e, id = id, "下载数据出错"),
                     Event::PullTimeout(id) => warn!("拉取数据超时 {id}"),
-                    Event::PushError(id, e) => error!(err = e, id = id, "写入数据出错"),
+                    Event::Pushing(_, _) => {},
+                    Event::PushError(id, r, e) => error!(err = e, id = id, start = r.start, end = r.end, "写入数据出错"),
+                    Event::Flushing => info!("开始刷写磁盘"),
                     Event::FlushError(e) => error!(err = e, "磁盘刷写失败"),
                     Event::Finished(id) => info!(id = id, "下载完成"),
                     Event::PushProgress(_, p) => {
                         if p.start == 0 {
-                            progress.clear();
                             smoothed_speed = 0.;
                             last_update = Instant::now();
                             start = last_update;
                             last_bytes = 0;
                         }
-                        progress.merge_progress(p);
                         let now = Instant::now();
                         let elapsed = (now - last_update).as_secs_f64();
                         let total_elapsed = now - start;

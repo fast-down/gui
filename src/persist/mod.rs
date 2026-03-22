@@ -15,7 +15,7 @@ use std::{
     ops::Range,
     path::PathBuf,
     sync::{
-        Arc,
+        Arc, LazyLock,
         atomic::{AtomicBool, AtomicI32, Ordering},
     },
     time::Duration,
@@ -24,17 +24,15 @@ use tokio::{fs, task::JoinHandle};
 use tracing::{error, info};
 
 pub const DB_NAME: &str = "fd-state-gui.fdb";
-lazy_static::lazy_static! {
-    pub static ref DB_DIR: PathBuf = {
-        let db_dir = dirs::data_dir()
-            .and_then(|p| soft_canonicalize::soft_canonicalize(p).ok())
-            .map(|p| p.join("fast-down-gui"))
-            .unwrap_or_default();
-        let _ = std::fs::create_dir_all(&db_dir);
-        db_dir
-    };
-    pub static ref DB_PATH: PathBuf = DB_DIR.join(DB_NAME);
-}
+pub static DB_DIR: LazyLock<PathBuf> = LazyLock::new(|| {
+    let db_dir = dirs::data_dir()
+        .and_then(|p| soft_canonicalize::soft_canonicalize(p).ok())
+        .map(|p| p.join("fast-down-gui"))
+        .unwrap_or_default();
+    let _ = std::fs::create_dir_all(&db_dir);
+    db_dir
+});
+pub static DB_PATH: LazyLock<PathBuf> = LazyLock::new(|| DB_DIR.join(DB_NAME));
 
 #[derive(Serialize, Deserialize, Debug, Default)]
 pub struct DatabaseInner {
