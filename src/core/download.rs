@@ -7,8 +7,12 @@ use crate::{
 use fast_down_ffi::{Event, Total, create_channel, prefetch, unique_path::gen_unique_path};
 use parking_lot::Mutex;
 use slint::SharedString;
-use std::{ops::Range, sync::Arc, time::Duration};
-use tokio::{fs, time::Instant};
+use std::{
+    ops::Range,
+    sync::Arc,
+    time::{Duration, Instant},
+};
+use tokio::fs;
 use tokio_util::sync::CancellationToken;
 use tracing::{error, info, warn};
 use url::Url;
@@ -16,6 +20,8 @@ use url::Url;
 pub enum DownloadEvent {
     Info(Box<DatabaseEntry>),
     Progress(ProgressInfo),
+    Flushing,
+    FlushError(SharedString),
     End { is_cancelled: bool },
 }
 
@@ -165,6 +171,7 @@ pub async fn download(
         }};
     }
 
+    let mut is_first = true;
     loop {
         tokio::select! {
             res = &mut fut => {
@@ -184,8 +191,21 @@ pub async fn download(
                     Event::PullTimeout(id) => warn!("拉取数据超时 {id}"),
                     Event::Pushing(_, _) => {},
                     Event::PushError(id, r, e) => error!(err = e, id = id, start = r.start, end = r.end, "写入数据出错"),
-                    Event::Flushing => info!("开始刷写磁盘"),
-                    Event::FlushError(e) => error!(err = e, "磁盘刷写失败"),
+                    Event::Flushing => {
+                        info!("开始刷写磁盘");
+                        if is_first {
+                            is_first = false;
+                            let now = Instant::now();
+                            let elapsed = (now - last_update).as_secs_f64();
+                            let total_elapsed = now - start;
+                            update_progress!(now, elapsed, total_elapsed);
+                        }
+                        on_event(DownloadEvent::Flushing);
+                    },
+                    Event::FlushError(e) => {
+                        error!(err = e, "磁盘刷写失败");
+                        on_event(DownloadEvent::FlushError(e.into()));
+                    },
                     Event::Finished(id) => info!(id = id, "下载完成"),
                     Event::PushProgress(_, p) => {
                         if p.start == 0 {
@@ -206,11 +226,6 @@ pub async fn download(
             }
         }
     }
-
-    let now = Instant::now();
-    let elapsed = (now - last_update).as_secs_f64();
-    let total_elapsed = now - start;
-    update_progress!(now, elapsed, total_elapsed);
     on_event(DownloadEvent::End {
         is_cancelled: cancel_token.is_cancelled(),
     });

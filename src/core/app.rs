@@ -6,7 +6,7 @@ use crate::{
     utils::LogErr,
 };
 use auto_launch::AutoLaunch;
-use slint::{Model, Weak};
+use slint::{Model, SharedString, Weak};
 use std::process::exit;
 
 #[derive(Clone)]
@@ -69,6 +69,17 @@ impl App {
                     }
                 });
             }
+            DownloadEvent::Flushing => {
+                app.update_ui_row(gid, move |_, data| {
+                    data.error = "文件内容已可用，但请勿关机，等待落盘中".into();
+                });
+            }
+            DownloadEvent::FlushError(e) => {
+                app.update_ui_row(gid, move |_, data| {
+                    data.status = ui::Status::Error;
+                    data.error = e;
+                });
+            }
             DownloadEvent::End { is_cancelled } => {
                 let db_status = if is_cancelled {
                     persist::Status::Paused
@@ -81,7 +92,10 @@ impl App {
                     ui::Status::Completed
                 };
                 app.db.update_status(gid, db_status);
-                app.update_ui_row(gid, move |_, data| data.status = ui_status);
+                app.update_ui_row(gid, move |_, data| {
+                    data.status = ui_status;
+                    data.error = SharedString::default();
+                });
             }
         }
     }
