@@ -186,12 +186,16 @@ async fn main() -> color_eyre::Result<()> {
         move |gid| task_set.cancel_task(&gid)
     });
 
-    ui.on_remove_all({
+    ui.on_remove_completed({
         let task_set = task_set.clone();
         let list_model = list_model.clone();
         let db = db.clone();
         move |list| {
-            let ids_to_remove: HashSet<_> = list.iter().map(|e| e.gid).collect();
+            let ids_to_remove: HashSet<_> = list
+                .iter()
+                .filter(|e| e.status == Status::Completed)
+                .map(|e| e.gid)
+                .collect();
             let mut kept_items = Vec::new();
             for item in list_model.iter() {
                 if !ids_to_remove.contains(&item.gid) {

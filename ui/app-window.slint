@@ -33,7 +33,7 @@ export component MainWindow inherits Window {
 
     callback start_all([EntryData]);
     callback pause_all([EntryData]);
-    callback remove_all([EntryData]);
+    callback remove_completed([EntryData]);
 
     in property <string> version;
     in-out property <DownloadConfig> download_config;
@@ -77,8 +77,8 @@ export component MainWindow inherits Window {
             pause_all => {
                 root.pause_all(active_list);
             }
-            remove_all => {
-                root.remove_all(active_list);
+            remove_completed => {
+                root.remove_completed(active_list);
             }
             start(entry) => {
                 start_entry(entry)

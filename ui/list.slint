@@ -20,7 +20,7 @@ export component List inherits Rectangle {
 
     callback start_all();
     callback pause_all();
-    callback remove_all();
+    callback remove_completed();
 
     VerticalLayout {
         VerticalLayout {
@@ -42,9 +42,9 @@ export component List inherits Rectangle {
                 }
 
                 Button {
-                    text: "全部删除";
+                    text: "移除已完成";
                     clicked => {
-                        remove_all()
+                        remove_completed()
                     }
                 }
             }
