@@ -10,6 +10,7 @@ use fast_down_gui::{
     ui::*,
     utils::{LogErr, show_task_dialog},
 };
+use file_alloc::init_fast_alloc;
 use rfd::FileDialog;
 use slint::{Model, ModelRc, ToSharedString, VecModel};
 use std::{collections::HashSet, rc::Rc, sync::Arc};
@@ -81,6 +82,7 @@ async fn main() -> color_eyre::Result<()> {
     let _ = check_ipc_and_wake().await.log_err("检查 ipc 通道错误");
     let _ = auto_register().log_err("写入浏览器扩展通信配置失败");
     let ui = MainWindow::new()?;
+    init_fast_alloc();
     let db = Database::new().await;
     let task_set = TaskSet::new(db.inner.general_config.lock().max_concurrency);
     let auto = get_auto_start()

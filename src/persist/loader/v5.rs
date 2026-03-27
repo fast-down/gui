@@ -26,12 +26,14 @@ pub struct DownloadConfig {
     pub write_method: WriteMethod,
     pub retry_times: usize,
     pub chunk_window: u64,
+    pub pre_allocate: bool,
 }
 
 #[derive(Deserialize, Debug)]
 pub struct GeneralConfig {
     pub max_concurrency: usize,
     pub auto_start: bool,
+    pub exit_after_download: bool,
 }
 
 impl From<DownloadConfig> for crate::persist::DownloadConfig {
@@ -53,7 +55,7 @@ impl From<DownloadConfig> for crate::persist::DownloadConfig {
             local_address: c.local_address,
             max_speculative: c.max_speculative,
             write_method: c.write_method,
-            pre_allocate: false,
+            pre_allocate: c.pre_allocate,
         }
     }
 }
@@ -63,7 +65,7 @@ impl From<GeneralConfig> for crate::persist::GeneralConfig {
         Self {
             max_concurrency: c.max_concurrency,
             auto_start: c.auto_start,
-            exit_after_download: false,
+            exit_after_download: c.exit_after_download,
         }
     }
 }
@@ -134,9 +136,9 @@ impl From<DatabaseInner> for crate::persist::DatabaseInner {
 }
 
 #[derive(Debug, Clone)]
-pub struct V3Loader;
+pub struct V5Loader;
 
-impl Loader for V3Loader {
+impl Loader for V5Loader {
     fn load(&self, bytes: &[u8]) -> Option<crate::persist::DatabaseInner> {
         let db: DatabaseInner = bitcode::deserialize(bytes).ok()?;
         Some(db.into())

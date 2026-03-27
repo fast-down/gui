@@ -48,6 +48,7 @@ impl From<Config> for crate::persist::DownloadConfig {
             local_address: c.local_address,
             max_speculative: c.max_speculative,
             write_method: c.write_method,
+            pre_allocate: false,
         }
     }
 }

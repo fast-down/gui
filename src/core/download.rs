@@ -5,6 +5,7 @@ use crate::{
     utils::{auto_ext, sanitize},
 };
 use fast_down_ffi::{Event, Total, create_channel, prefetch, unique_path::gen_unique_path};
+use file_alloc::FileAlloc;
 use parking_lot::Mutex;
 use slint::SharedString;
 use std::{
@@ -12,7 +13,7 @@ use std::{
     sync::Arc,
     time::{Duration, Instant},
 };
-use tokio::fs;
+use tokio::fs::{self, OpenOptions};
 use tokio_util::sync::CancellationToken;
 use tracing::{error, info, warn};
 use url::Url;
@@ -57,6 +58,7 @@ pub async fn download(
                 .map(|e| e.progress.clone())
                 .unwrap_or_default(),
         ));
+        let pre_allocate = config.pre_allocate;
         let download_config = fast_down_ffi::Config {
             retry_times: config.retry_times,
             threads: config.threads,
@@ -115,6 +117,15 @@ pub async fn download(
             )
         };
         on_event(DownloadEvent::Info(Box::new(entry)));
+        if pre_allocate && total_size > 1024 * 1024 && progress.lock().is_empty() {
+            let mut file = OpenOptions::new()
+                .write(true)
+                .create(true)
+                .truncate(false)
+                .open(&save_path)
+                .await?;
+            file.allocate(total_size).await?;
+        }
         Ok::<_, color_eyre::Report>((
             task,
             save_path,
