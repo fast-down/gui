@@ -11,6 +11,7 @@ export component List inherits Rectangle {
     horizontal-stretch: 1;
 
     in property <[EntryData]> list;
+    in property <bool> only-remove-completed;
     callback start(int);
     callback pause(int);
     callback detail(int);
@@ -28,21 +29,21 @@ export component List inherits Rectangle {
             HorizontalBox {
                 alignment: LayoutAlignment.start;
                 Button {
-                    text: "全部开始";
+                    text: "开始列表";
                     clicked => {
                         start_all()
                     }
                 }
 
                 Button {
-                    text: "全部暂停";
+                    text: "暂停列表";
                     clicked => {
                         pause_all()
                     }
                 }
 
                 Button {
-                    text: "全部删除";
+                    text: only-remove-completed ? "移除已完成" : "清空列表";
                     clicked => {
                         remove_all()
                     }
