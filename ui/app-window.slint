@@ -71,14 +71,15 @@ export component MainWindow inherits Window {
 
         if aside.current_page < 6: List {
             list: active_list;
+            only-remove-completed: aside.current_page == 0;
             start_all => {
-                root.start_all(active_list);
+                start_all(active_list);
             }
             pause_all => {
-                root.pause_all(active_list);
+                pause_all(active_list);
             }
             remove_all => {
-                root.remove_all(active_list);
+                remove_all(aside.current_page == 0 ? completed_list : active_list);
             }
             start(entry) => {
                 start_entry(entry)
