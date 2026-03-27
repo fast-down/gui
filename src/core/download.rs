@@ -58,6 +58,7 @@ pub async fn download(
                 .map(|e| e.progress.clone())
                 .unwrap_or_default(),
         ));
+        let pre_allocate = config.pre_allocate;
         let download_config = fast_down_ffi::Config {
             retry_times: config.retry_times,
             threads: config.threads,
@@ -116,7 +117,7 @@ pub async fn download(
             )
         };
         on_event(DownloadEvent::Info(Box::new(entry)));
-        if total_size > 0 && progress.lock().is_empty() {
+        if pre_allocate && total_size > 1024 * 1024 && progress.lock().is_empty() {
             let mut file = OpenOptions::new()
                 .write(true)
                 .create(true)

@@ -31,6 +31,7 @@ export struct DownloadConfig {
     write_method: int,
     retry_times: int,
     chunk_window: int,
+    pre_allocate: bool,
 }
 export struct GeneralConfig {
     max_concurrency: int,
@@ -274,6 +275,16 @@ export component Settings inherits VerticalLayout {
                     text: "完成后退出";
                     horizontal-stretch: 1;
                     checked <=> general_config.exit-after-download;
+                }
+            }
+
+            HorizontalBox {
+                padding: 0px;
+
+                CheckBox {
+                    text: "文件预分配";
+                    horizontal-stretch: 1;
+                    checked <=> download_config.pre-allocate;
                 }
             }
 

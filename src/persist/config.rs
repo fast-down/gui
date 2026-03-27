@@ -22,6 +22,7 @@ pub struct DownloadConfig {
     pub write_method: WriteMethod,
     pub retry_times: usize,
     pub chunk_window: u64,
+    pub pre_allocate: bool,
 }
 
 impl Default for DownloadConfig {
@@ -43,6 +44,7 @@ impl Default for DownloadConfig {
             write_method: WriteMethod::Mmap,
             retry_times: 3,
             chunk_window: 8 * 1024,
+            pre_allocate: false,
         }
     }
 }
@@ -84,6 +86,7 @@ impl DownloadConfig {
             write_queue_cap: self.write_queue_cap as i32,
             retry_times: self.retry_times as i32,
             chunk_window: self.chunk_window as i32,
+            pre_allocate: self.pre_allocate,
         }
     }
 }
@@ -119,6 +122,7 @@ impl From<&crate::ui::DownloadConfig> for DownloadConfig {
             },
             retry_times: value.retry_times as usize,
             chunk_window: value.chunk_window as u64,
+            pre_allocate: value.pre_allocate,
         }
     }
 }
