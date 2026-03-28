@@ -79,6 +79,15 @@ export component TaskDialog inherits Window {
                     }
                 }
 
+                Text {
+                    text: "自定义文件名";
+                }
+
+                LineEdit {
+                    text <=> download_config.file-name;
+                    placeholder-text: "留空默认为自动获取";
+                }
+
                 Help {
                     tooltip: "线程越多不意味着越快\n推荐值 32 / 16 / 8";
                     alignment: left;

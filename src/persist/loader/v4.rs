@@ -38,6 +38,7 @@ pub struct GeneralConfig {
 impl From<DownloadConfig> for crate::persist::DownloadConfig {
     fn from(c: DownloadConfig) -> Self {
         Self {
+            file_name: String::new(),
             proxy: c.proxy,
             retry_times: c.retry_times,
             chunk_window: c.chunk_window,
