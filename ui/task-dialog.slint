@@ -1,9 +1,7 @@
 import {
     Button,
     LineEdit,
-    VerticalBox,
     ScrollView,
-    HorizontalBox,
     StandardButton,
     TextEdit,
     CheckBox,
@@ -16,6 +14,7 @@ import { NoScrollSpinBox } from "my-spin-box.slint";
 import { DownloadConfig } from "settings.slint";
 import { Theme } from "theme.slint";
 import { Header2 } from "headers.slint";
+import { Help } from "info.slint";
 
 export enum DialogType {
     AddTask,
@@ -43,8 +42,9 @@ export component TaskDialog inherits Window {
 
     VerticalLayout {
         ScrollView {
-            VerticalBox {
+            VerticalLayout {
                 padding: 16px;
+                spacing: 8px;
                 Header2 {
                     text: "基础选项";
                 }
@@ -63,8 +63,8 @@ export component TaskDialog inherits Window {
                     text: "保存文件夹";
                 }
 
-                HorizontalBox {
-                    padding: 0px;
+                HorizontalLayout {
+                    spacing: 8px;
 
                     LineEdit {
                         text <=> download_config.save-dir;
@@ -79,8 +79,13 @@ export component TaskDialog inherits Window {
                     }
                 }
 
-                Text {
-                    text: "线程数";
+                Help {
+                    tooltip: "线程越多不意味着越快\n推荐值 32 / 16 / 8";
+                    alignment: left;
+
+                    Text {
+                        text: "线程数";
+                    }
                 }
 
                 NoScrollSpinBox {
@@ -104,8 +109,13 @@ export component TaskDialog inherits Window {
                     placeholder-text: "Cookie: value\nUser-Agent: Mozilla/5.0";
                 }
 
-                Text {
-                    text: "代理";
+                Help {
+                    tooltip: "支持 https、http、socks5 代理";
+                    alignment: left;
+
+                    Text {
+                        text: "代理";
+                    }
                 }
 
                 LineEdit {
@@ -113,12 +123,17 @@ export component TaskDialog inherits Window {
                     placeholder-text: "留空为系统代理，输入 null 为不使用代理";
                 }
 
-                HorizontalBox {
-                    padding: 0px;
-                    VerticalBox {
-                        padding: 0px;
-                        Text {
-                            text: "最小分片大小 (字节)";
+                HorizontalLayout {
+                    spacing: 8px;
+                    VerticalLayout {
+                        spacing: 8px;
+
+                        Help {
+                            tooltip: "任务窃取时会保证每个分片的大小 ≥ 该值\n推荐值 8 MiB\n分片太小容易造成强烈竞争\n当无法分片的时候会进入冗余竞争模式";
+
+                            Text {
+                                text: "最小分片大小 (字节)";
+                            }
                         }
 
                         NoScrollSpinBox {
@@ -127,10 +142,16 @@ export component TaskDialog inherits Window {
                         }
                     }
 
-                    VerticalBox {
-                        padding: 0px;
-                        Text {
-                            text: "写入缓冲区大小 (字节)";
+                    VerticalLayout {
+                        spacing: 8px;
+
+                        Help {
+                            tooltip: "有利于将随机写入转换为顺序写入，提高写入速度\n推荐值 16 MiB\n该值越大越好";
+                            alignment: right;
+
+                            Text {
+                                text: "写入缓冲区大小 (字节)";
+                            }
                         }
 
                         NoScrollSpinBox {
@@ -139,12 +160,18 @@ export component TaskDialog inherits Window {
                     }
                 }
 
-                HorizontalBox {
-                    padding: 0px;
-                    VerticalBox {
-                        padding: 0px;
-                        Text {
-                            text: "投机线程数";
+                HorizontalLayout {
+                    spacing: 8px;
+                    VerticalLayout {
+                        spacing: 8px;
+
+                        Help {
+                            tooltip: "当分片大小太小后，进入冗余竞争模式。\n该值决定了最多有多少个线程在同一分片上竞争下载，以解决下载卡进度 99% 的问题\n推荐值 3";
+                            alignment: left;
+
+                            Text {
+                                text: "冗余线程数";
+                            }
                         }
 
                         NoScrollSpinBox {
@@ -152,10 +179,15 @@ export component TaskDialog inherits Window {
                         }
                     }
 
-                    VerticalBox {
-                        padding: 0px;
-                        Text {
-                            text: "写入队列大小";
+                    VerticalLayout {
+                        spacing: 8px;
+
+                        Help {
+                            tooltip: "如果下载线程太快，填满了写入队列，会触发压背，降低下载速度，防止内存占用过大\n推荐值 10240\n如果内存占用过大，应该调小该值";
+
+                            Text {
+                                text: "写入队列大小";
+                            }
                         }
 
                         NoScrollSpinBox {
@@ -165,12 +197,18 @@ export component TaskDialog inherits Window {
                     }
                 }
 
-                HorizontalBox {
-                    padding: 0px;
-                    VerticalBox {
-                        padding: 0px;
-                        Text {
-                            text: "重试间隔 (毫秒)";
+                HorizontalLayout {
+                    spacing: 8px;
+                    VerticalLayout {
+                        spacing: 8px;
+
+                        Help {
+                            tooltip: "请求失败后的默认重试间隔\n推荐值 500ms\n如果服务器返回中有 Retry-After 头，则遵循服务器返回的设定";
+                            alignment: left;
+
+                            Text {
+                                text: "重试间隔 (毫秒)";
+                            }
                         }
 
                         NoScrollSpinBox {
@@ -178,10 +216,15 @@ export component TaskDialog inherits Window {
                         }
                     }
 
-                    VerticalBox {
-                        padding: 0px;
-                        Text {
-                            text: "拉取超时 (毫秒)";
+                    VerticalLayout {
+                        spacing: 8px;
+
+                        Help {
+                            tooltip: "推荐值 5000ms\n请求发出后，接收字节中，如果在 pull_timeout 这一段时间内一个字节也没收到，则中断连接，重新请求。\n有利于触发 TCP 重新检测拥塞状态，提高下载速度";
+
+                            Text {
+                                text: "拉取超时 (毫秒)";
+                            }
                         }
 
                         NoScrollSpinBox {
@@ -190,12 +233,18 @@ export component TaskDialog inherits Window {
                     }
                 }
 
-                HorizontalBox {
-                    padding: 0px;
-                    VerticalBox {
-                        padding: 0px;
-                        Text {
-                            text: "重试次数";
+                HorizontalLayout {
+                    spacing: 8px;
+                    VerticalLayout {
+                        spacing: 8px;
+
+                        Help {
+                            tooltip: "设置获取元数据的重试次数\n推荐值 10\n注意，这不是下载中的重试次数，下载中会无限重试";
+                            alignment: left;
+
+                            Text {
+                                text: "重试次数";
+                            }
                         }
 
                         NoScrollSpinBox {
@@ -203,10 +252,15 @@ export component TaskDialog inherits Window {
                         }
                     }
 
-                    VerticalBox {
-                        padding: 0px;
-                        Text {
-                            text: "块平滑窗口";
+                    VerticalLayout {
+                        spacing: 8px;
+
+                        Help {
+                            tooltip: "推荐值 8 KiB\n它会过滤掉小于该值的小空洞，并合成一个大范围，以减小 HTTP 请求数量";
+
+                            Text {
+                                text: "块平滑窗口";
+                            }
                         }
 
                         NoScrollSpinBox {
@@ -215,18 +269,46 @@ export component TaskDialog inherits Window {
                     }
                 }
 
-                HorizontalBox {
-                    padding: 0px;
-                    CheckBox {
-                        text: "接受无效证书";
-                        horizontal-stretch: 1;
-                        checked <=> download_config.accept-invalid-certs;
+                HorizontalLayout {
+                    spacing: 8px;
+
+                    Help {
+                        tooltip: "不安全，极度不建议开启";
+
+                        CheckBox {
+                            text: "接受无效证书";
+                            horizontal-stretch: 1;
+                            checked <=> download_config.accept-invalid-certs;
+                        }
                     }
 
-                    CheckBox {
-                        text: "接受无效主机";
-                        horizontal-stretch: 1;
-                        checked <=> download_config.accept-invalid-hostnames;
+                    Help {
+                        tooltip: "不安全，极度不建议开启";
+
+                        CheckBox {
+                            text: "接受无效主机";
+                            horizontal-stretch: 1;
+                            checked <=> download_config.accept-invalid-hostnames;
+                        }
+                    }
+                }
+
+                HorizontalLayout {
+                    spacing: 8px;
+
+                    Help {
+                        tooltip: "在下载前预分配文件大小\n如果你的设备支持快速分配，那么强烈推荐开启此选项";
+                        alignment: left;
+
+                        CheckBox {
+                            text: "文件预分配";
+                            checked <=> download_config.pre-allocate;
+                        }
+                    }
+
+                    HorizontalLayout {
+                        spacing: 8px;
+                        alignment: start;
                     }
                 }
 
@@ -239,8 +321,13 @@ export component TaskDialog inherits Window {
                     current-index <=> download_config.write-method;
                 }
 
-                Text {
-                    text: "网卡池";
+                Help {
+                    tooltip: "使用哪些地址来发送请求\n如果你有多个网卡可用，可以填写他们的对外 IP 地址，请求会在这些 IP 地址上轮换，下载不一定会更快，还会与 VPN 软件冲突";
+                    alignment: left;
+
+                    Text {
+                        text: "网卡池";
+                    }
                 }
 
                 TextEdit {
@@ -251,7 +338,9 @@ export component TaskDialog inherits Window {
             }
         }
 
-        HorizontalBox {
+        HorizontalLayout {
+            padding: 8px;
+            spacing: 8px;
             alignment: LayoutAlignment.end;
             Button {
                 text: type == DialogType.AddTask ? "立刻下载" : "保存";

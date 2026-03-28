@@ -1,0 +1,63 @@
+export enum TooltipAlignment {
+    center,
+    right,
+    left,
+}
+
+export component Tooltip inherits Rectangle {
+    in property <string> tooltip;
+    in property <TooltipAlignment> alignment: center;
+    in property <duration> delay: 500ms;
+    in property <duration> animation-duration: 200ms;
+    in property <length> tooltip-max-width: 250px;
+
+    content_layout := HorizontalLayout {
+        @children
+    }
+
+    area := TouchArea {
+        width: 100%;
+        height: 100%;
+        z: -1;
+    }
+
+    Rectangle {
+        width: min(txt.preferred-width + 16px, tooltip-max-width);
+        height: txt.preferred-height + 16px;
+        x: alignment == TooltipAlignment.right ? parent.width - self.width : (alignment == TooltipAlignment.left ? 0px : (parent.width - self.width) / 2);
+        y: - self.height - 8px;
+        z: 100;
+        opacity: 0;
+        background: #333333e6;
+        border-radius: 4px;
+
+        txt := Text {
+            x: 8px;
+            y: 8px;
+            text: tooltip;
+            color: white;
+            font-size: 14px;
+            wrap: word-wrap;
+            width: parent.width - 16px;
+        }
+
+        states [
+            visible when area.has-hover: {
+                opacity: 1;
+                in {
+                    animate opacity {
+                        delay: delay;
+                        duration: animation-duration;
+                        easing: ease-in;
+                    }
+                }
+                out {
+                    animate opacity {
+                        duration: animation-duration;
+                        easing: ease-out;
+                    }
+                }
+            }
+        ]
+    }
+}
