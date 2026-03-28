@@ -1,7 +1,5 @@
 import {
-    VerticalBox,
     Button,
-    HorizontalBox,
     ListView,
 } from "std-widgets.slint";
 import { EntryData, Entry } from "entry.slint";
@@ -26,7 +24,9 @@ export component List inherits Rectangle {
     VerticalLayout {
         VerticalLayout {
             vertical-stretch: 0;
-            HorizontalBox {
+            HorizontalLayout {
+                padding: 8px;
+                spacing: 8px;
                 alignment: LayoutAlignment.start;
                 Button {
                     text: "开始列表";

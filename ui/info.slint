@@ -1,0 +1,40 @@
+import { Palette } from "std-widgets.slint";
+import { Tooltip, TooltipAlignment } from "tooltip.slint";
+
+export component InfoIcon inherits Rectangle {
+    width: 13px;
+    height: 13px;
+    border-color: Palette.foreground;
+    border-radius: self.width;
+    border-width: 1px;
+
+    Text {
+        font-size: 10px;
+        x: parent.width / 2 - 1px;
+        text: "i";
+    }
+}
+
+export component Help {
+    in property <TooltipAlignment> alignment: center;
+    in property <string> tooltip;
+
+    HorizontalLayout {
+        spacing: 8px;
+        alignment: start;
+
+        VerticalLayout {
+            alignment: center;
+            @children
+        }
+
+        VerticalLayout {
+            alignment: center;
+            Tooltip {
+                tooltip: tooltip;
+                alignment: alignment;
+                InfoIcon { }
+            }
+        }
+    }
+}

@@ -1,6 +1,4 @@
 import {
-    VerticalBox,
-    HorizontalBox,
     StandardTableView,
     Button,
     ProgressIndicator,
@@ -65,8 +63,9 @@ export component Entry inherits Rectangle {
     callback open_folder();
     callback remove();
 
-    VerticalBox {
+    VerticalLayout {
         padding: 16px;
+        spacing: 8px;
 
         Header2 {
             text: data.filename.is-empty ? "空文件名" : data.filename;
@@ -79,8 +78,8 @@ export component Entry inherits Rectangle {
             font-size: 14px;
         }
 
-        HorizontalBox {
-            padding: 0px;
+        HorizontalLayout {
+            spacing: 8px;
 
             StatItem {
                 label: "瞬时速度";
@@ -143,8 +142,8 @@ export component Entry inherits Rectangle {
             horizontal-stretch: 1;
         }
 
-        HorizontalBox {
-            padding: 0px;
+        HorizontalLayout {
+            spacing: 8px;
 
             Button {
                 text: data.status == Status.Running ? "暂停" : data.status == Status.Waiting ? "取消" : data.status == Status.Paused ? "开始" : data.status == Status.Completed ? "重下" : "重试";
