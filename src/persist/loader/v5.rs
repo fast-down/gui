@@ -11,6 +11,7 @@ use url::Url;
 #[derive(Deserialize, Debug)]
 pub struct DownloadConfig {
     pub save_dir: PathBuf,
+    pub file_name: String,
     pub threads: usize,
     pub proxy: Proxy<String>,
     pub headers: HashMap<String, String>,
@@ -39,6 +40,7 @@ pub struct GeneralConfig {
 impl From<DownloadConfig> for crate::persist::DownloadConfig {
     fn from(c: DownloadConfig) -> Self {
         Self {
+            file_name: c.file_name,
             proxy: c.proxy,
             retry_times: c.retry_times,
             chunk_window: c.chunk_window,

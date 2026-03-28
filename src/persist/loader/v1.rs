@@ -30,6 +30,7 @@ pub struct Config {
 impl From<Config> for crate::persist::DownloadConfig {
     fn from(c: Config) -> Self {
         Self {
+            file_name: String::new(),
             proxy: match c.proxy {
                 Some(p) if p.is_empty() => Proxy::No,
                 Some(p) => Proxy::Custom(p),

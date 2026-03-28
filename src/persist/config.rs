@@ -2,11 +2,13 @@ use crate::utils::parse_header_hashmap;
 use fast_down_ffi::{Proxy, WriteMethod};
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
+use slint::ToSharedString;
 use std::{collections::HashMap, net::IpAddr, path::PathBuf, time::Duration};
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct DownloadConfig {
     pub save_dir: PathBuf,
+    pub file_name: String,
     pub threads: usize,
     pub proxy: Proxy<String>,
     pub headers: HashMap<String, String>,
@@ -29,6 +31,7 @@ impl Default for DownloadConfig {
     fn default() -> Self {
         Self {
             save_dir: dirs::download_dir().unwrap_or_default(),
+            file_name: String::new(),
             threads: 32,
             proxy: Proxy::System,
             headers: HashMap::new(),
@@ -87,6 +90,7 @@ impl DownloadConfig {
             retry_times: self.retry_times as i32,
             chunk_window: self.chunk_window as i32,
             pre_allocate: self.pre_allocate,
+            file_name: self.file_name.to_shared_string(),
         }
     }
 }
@@ -95,6 +99,7 @@ impl From<&crate::ui::DownloadConfig> for DownloadConfig {
     fn from(value: &crate::ui::DownloadConfig) -> Self {
         Self {
             save_dir: value.save_dir.as_str().into(),
+            file_name: value.file_name.to_string(),
             threads: value.threads as usize,
             proxy: match value.proxy.as_str() {
                 "" => Proxy::System,

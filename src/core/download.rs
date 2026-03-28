@@ -9,6 +9,7 @@ use file_alloc::FileAlloc;
 use parking_lot::Mutex;
 use slint::SharedString;
 use std::{
+    borrow::Cow,
     ops::Range,
     sync::Arc,
     time::{Duration, Instant},
@@ -88,7 +89,11 @@ pub async fn download(
             (entry.file_path.clone(), entry)
         } else {
             let file_name = sanitize(
-                auto_ext(&task.info.raw_name, task.info.content_type.as_deref()),
+                if config.file_name.is_empty() {
+                    auto_ext(&task.info.raw_name, task.info.content_type.as_deref())
+                } else {
+                    Cow::Borrowed(config.file_name.as_str())
+                },
                 248,
             );
             let save_dir = soft_canonicalize::soft_canonicalize(
