@@ -25,7 +25,7 @@ color-eyre = "0.6.5"
 crossfire = "3.1.7"
 dashmap = { version = "6.1.0", features = ["serde"] }
 dirs = "6.0.0"
-fast-down-ffi = { version = "0.2.1", features = ["file", "reqwest-tls", "serde"] }
+fast-down-ffi = { version = "0.2.3", features = ["file", "reqwest-tls", "serde"] }
 # fast-down-ffi = { path = "../ffi/", features = ["file", "reqwest-tls", "serde"] }
 i-slint-backend-winit = "1.15.1"
 image = "0.25.10"
