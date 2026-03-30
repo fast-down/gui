@@ -5,6 +5,7 @@ $BASE_URL = "https://fast-down-update.s121.top/gui/download/latest"
 $DOWNLOAD_URL = "$BASE_URL/windows/$ARCH"
 $INSTALL_DIR = "$env:LOCALAPPDATA\Programs\fast-down-gui"
 $BIN_NAME = "fast-down.exe"
+$EXE_PATH = "$INSTALL_DIR\$BIN_NAME"
 $TMP_FILE = [System.IO.Path]::GetTempFileName()
 
 Write-Host "✨ Downloading $DOWNLOAD_URL"
@@ -14,7 +15,10 @@ try
 } catch
 {
     Write-Host "❌ Error: Failed to download the file: $_"
-    Remove-Item -Path $TMP_FILE
+    if (Test-Path $TMP_FILE)
+    {
+        Remove-Item -Path $TMP_FILE
+    }
     exit 1
 }
 
@@ -22,34 +26,24 @@ if (-not (Test-Path -Path $INSTALL_DIR))
 {
     New-Item -ItemType Directory -Force -Path $INSTALL_DIR | Out-Null
 }
-Move-Item -Path $TMP_FILE -Destination "$INSTALL_DIR\$BIN_NAME" -Force
-Write-Host "🎉 Installed to $INSTALL_DIR\$BIN_NAME"
+Move-Item -Path $TMP_FILE -Destination $EXE_PATH -Force
+Write-Host "🎉 Installed to $EXE_PATH"
 
-$UserPath = [System.Environment]::GetEnvironmentVariable("Path", "User")
-if ($UserPath -split ';' -notcontains $INSTALL_DIR)
+try
 {
-    Write-Host "🔧 Adding $INSTALL_DIR to User PATH"
-    $NewPath = if ([string]::IsNullOrWhiteSpace($UserPath))
-    {
-        $INSTALL_DIR
-    } else
-    {
-        "$UserPath;$INSTALL_DIR"
-    }
+    Write-Host "🔗 Creating desktop shortcut..."
+    $DesktopPath = [Environment]::GetFolderPath("Desktop")
+    $ShortcutPath = Join-Path $DesktopPath "fast-down.lnk"
 
-    try
-    {
-        [System.Environment]::SetEnvironmentVariable("Path", $NewPath, "User")
-        $env:PATH += ";$INSTALL_DIR"
-        Write-Host "🔔 Please restart your terminal (or VS Code) for the changes to take full effect"
-    } catch
-    {
-        Write-Host "❌ Error: Failed to update environment variables: $_"
-        Write-Host "🔔 Please manually add $INSTALL_DIR to your PATH"
-    }
-} else
+    $WshShell = New-Object -ComObject WScript.Shell
+    $Shortcut = $WshShell.CreateShortcut($ShortcutPath)
+    $Shortcut.TargetPath = $EXE_PATH
+    $Shortcut.WorkingDirectory = $INSTALL_DIR
+    $Shortcut.Description = "Fast Down GUI Client"
+    $Shortcut.Save()
+
+    Write-Host "✅ Shortcut created on Desktop: $ShortcutPath"
+} catch
 {
-    Write-Host "🔔 $INSTALL_DIR is already in your PATH"
+    Write-Host "❌ Warning: Failed to create shortcut: $_"
 }
-
-Write-Host "🚀 Installation complete! You can now run '$BIN_NAME'"
