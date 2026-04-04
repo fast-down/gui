@@ -311,14 +311,20 @@ export component TaskDialog inherits Window {
                         alignment: left;
 
                         CheckBox {
-                            text: "文件预分配";
+                            text: "文件预分配　";
                             checked <=> download_config.pre-allocate;
                         }
                     }
 
-                    HorizontalLayout {
-                        spacing: 8px;
-                        alignment: start;
+                    Help {
+                        tooltip: "开启后会把 URL 的 path 提取并自动创建目录";
+                        alignment: right;
+
+                        CheckBox {
+                            text: "保持目录结构";
+                            horizontal-stretch: 1;
+                            checked <=> download_config.keep-folder-structure;
+                        }
                     }
                 }
 

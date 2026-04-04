@@ -28,6 +28,7 @@ pub struct DownloadConfig {
     pub retry_times: usize,
     pub chunk_window: u64,
     pub pre_allocate: bool,
+    pub keep_folder_structure: bool,
 }
 
 #[derive(Deserialize, Debug)]
@@ -59,6 +60,7 @@ impl From<DownloadConfig> for crate::persist::DownloadConfig {
             max_speculative: c.max_speculative,
             write_method: c.write_method,
             pre_allocate: c.pre_allocate,
+            keep_folder_structure: c.keep_folder_structure,
         }
     }
 }

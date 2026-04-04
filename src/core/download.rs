@@ -11,6 +11,7 @@ use slint::SharedString;
 use std::{
     borrow::Cow,
     ops::Range,
+    path::PathBuf,
     sync::Arc,
     time::{Duration, Instant},
 };
@@ -96,13 +97,28 @@ pub async fn download(
                 },
                 248,
             );
-            let save_dir = soft_canonicalize::soft_canonicalize(
+            let mut save_dir = soft_canonicalize::soft_canonicalize(
                 if config.save_dir.to_string_lossy().is_empty() {
                     dirs::download_dir().unwrap_or_default()
                 } else {
                     config.save_dir.clone()
                 },
             )?;
+            if config.keep_folder_structure
+                && let Some(segments) = url.path_segments()
+            {
+                let mut relative_path: PathBuf = segments
+                    .map(|s| {
+                        let s = urlencoding::decode_binary(s.as_bytes());
+                        String::from_utf8_lossy(&s).into_owned()
+                    })
+                    .collect();
+                relative_path.pop();
+                let new_path = soft_canonicalize::soft_canonicalize(save_dir.join(relative_path))?;
+                if new_path.starts_with(&save_dir) {
+                    save_dir = new_path;
+                }
+            }
             let _ = fs::create_dir_all(&save_dir).await;
             let save_path = gen_unique_path(&save_dir.join(&file_name)).await?;
             let file_name = save_path.file_name().unwrap().to_string_lossy().to_string();
