@@ -1,10 +1,5 @@
 use crate::ui::{DialogType, DownloadConfig, TaskDialog};
 use crate::utils::LogErr;
-#[cfg(target_os = "macos")]
-use i_slint_backend_winit::WinitWindowAccessor;
-use rfd::FileDialog;
-#[cfg(target_os = "macos")]
-use slint::CloseRequestResponse;
 use slint::{ComponentHandle, SharedString, ToSharedString};
 
 /// 显示添加任务对话框
@@ -20,52 +15,22 @@ pub fn show_task_dialog(
     dialog.set_download_config(config);
 
     let dialog_weak = dialog.as_weak();
-
-    #[cfg(not(target_os = "macos"))]
     let hide_dialog = move || {
-        let _ = dialog_weak.upgrade_in_event_loop(|d| {
+        if let Some(d) = dialog_weak.upgrade() {
             let _ = d.hide().log_err("隐藏窗口失败");
-        });
+        }
     };
-    #[cfg(target_os = "macos")]
-    // TaskDialog.hide 方法在有 TouchBar 的 MacBook Pro 机型上调用会 remove 不存在的 Observer 导致程序崩溃
-    let hide_dialog = move || {
-        let _ = dialog_weak.upgrade_in_event_loop(move |d| {
-            let _ = slint::spawn_local(async move {
-                if let Ok(window) = d
-                    .window()
-                    .winit_window()
-                    .await
-                    .log_err("隐藏窗口失败 - 获取窗口失败")
-                {
-                    window.set_visible(false);
-                }
-            })
-            .log_err("隐藏窗口失败 - 执行任务失败");
-        });
-    };
-
-    #[cfg(target_os = "macos")]
-    {
-        let hide_dialog_clone = hide_dialog.clone();
-        dialog.window().on_close_requested(move || {
-            hide_dialog_clone();
-            // 返回保持展示仅是为了绕过 slint 内置的隐藏策略 窗体由 hide_dialog_clone 隐藏
-            CloseRequestResponse::KeepWindowShown
-        });
-    }
-
     dialog.on_canceled(hide_dialog.clone());
 
     dialog.on_browse_folder({
-        let dialog = dialog.as_weak();
+        let dialog_weak = dialog.as_weak();
         move || {
-            let dialog = dialog.clone();
-            std::thread::spawn(move || {
-                if let Some(folder) = FileDialog::new().pick_folder() {
-                    let _ = dialog.upgrade_in_event_loop(move |d| {
-                        d.invoke_set_save_dir(folder.to_string_lossy().to_shared_string());
-                    });
+            let dialog_weak = dialog_weak.clone();
+            let _ = slint::spawn_local(async move {
+                if let Some(folder) = rfd::AsyncFileDialog::new().pick_folder().await
+                    && let Some(d) = dialog_weak.upgrade()
+                {
+                    d.invoke_set_save_dir(folder.path().to_string_lossy().to_shared_string());
                 }
             });
         }
