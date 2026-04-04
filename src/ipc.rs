@@ -1,8 +1,8 @@
 use crate::{
     core::{App, start_new_entry},
     os::wakeup_window,
-    ui::EntryData,
-    utils::LogErr,
+    ui::{DialogType, EntryData},
+    utils::{LogErr, show_task_dialog},
 };
 use crossfire::mpsc;
 use interprocess::local_socket::{
@@ -10,7 +10,7 @@ use interprocess::local_socket::{
     tokio::{Stream, prelude::*},
 };
 use serde::{Deserialize, Serialize};
-use slint::VecModel;
+use slint::{ToSharedString, VecModel};
 use std::{process::exit, rc::Rc};
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 use url::Url;
@@ -22,7 +22,6 @@ pub const NS_NAME: &str = "top.s121.fd.sock";
 pub struct DownloadOptions {
     pub url: Url,
     pub headers: Option<String>,
-    pub save_dir: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -70,10 +69,32 @@ pub async fn init_ipc(app: App, list_model: Rc<VecModel<EntryData>>) -> color_ey
                     if let Some(s) = e.headers {
                         config.headers = s.into();
                     }
-                    if let Some(s) = e.save_dir {
-                        config.save_dir = s.into();
+                    if app.db.is_ask_before_download() {
+                        let app = app.clone();
+                        let list_model = list_model.clone();
+                        let _ = show_task_dialog(
+                            e.url.to_shared_string(),
+                            DialogType::AddTask,
+                            config,
+                            true,
+                            move |urls, config, bg_download| {
+                                let valid_urls = urls.lines().filter_map(|s| {
+                                    Url::parse(s)
+                                        .ok()
+                                        .filter(|u| matches!(u.scheme(), "http" | "https"))
+                                });
+                                for url in valid_urls {
+                                    start_new_entry(&app, url, &config, &list_model);
+                                }
+                                if !bg_download && let Some(ui) = app.ui.upgrade() {
+                                    wakeup_window(&ui);
+                                }
+                            },
+                        )
+                        .log_err("任务对话框失败");
+                    } else {
+                        start_new_entry(&app, e.url, &config, &list_model);
                     }
-                    start_new_entry(&app, e.url, &config, &list_model);
                 }
             }
         }
