@@ -29,10 +29,11 @@ export component TaskDialog inherits Window {
     default-font-family: Theme.font-family;
 
     in property <DialogType> type;
+    in property <bool> show-bg-download;
     in-out property <string> urls;
     in-out property <DownloadConfig> download_config;
 
-    callback confirm(string, DownloadConfig);
+    callback confirm(string, DownloadConfig, bool);
     callback browse_folder();
     callback canceled();
 
@@ -355,7 +356,14 @@ export component TaskDialog inherits Window {
                 text: type == DialogType.AddTask ? "立刻下载" : "保存";
                 primary: true;
                 clicked => {
-                    confirm(urls, download_config);
+                    confirm(urls, download_config, false);
+                }
+            }
+
+            if show-bg-download && type == DialogType.AddTask:  Button {
+                text: "后台下载";
+                clicked => {
+                    confirm(urls, download_config, true);
                 }
             }
 

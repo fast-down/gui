@@ -241,7 +241,8 @@ async fn main() -> color_eyre::Result<()> {
                 url.into(),
                 DialogType::AddTask,
                 db.get_ui_download_config(),
-                move |urls, config| {
+                false,
+                move |urls, config, _| {
                     let valid_urls = urls.lines().filter_map(|s| {
                         Url::parse(s)
                             .ok()
@@ -280,7 +281,8 @@ async fn main() -> color_eyre::Result<()> {
                 entry.url.to_shared_string(),
                 DialogType::EditTask,
                 entry.config.to_ui_download_config(),
-                move |urls, config| {
+                false,
+                move |urls, config, _| {
                     let mut valid_urls = urls.lines().filter_map(|s| {
                         Url::parse(s)
                             .ok()

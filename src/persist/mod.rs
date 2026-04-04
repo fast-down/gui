@@ -68,6 +68,10 @@ impl DatabaseInner {
     pub fn is_exit_after_download(&self) -> bool {
         self.general_config.lock().exit_after_download
     }
+
+    pub fn is_ask_before_download(&self) -> bool {
+        self.general_config.lock().ask_before_download
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -201,6 +205,10 @@ impl Database {
 
     pub fn is_exit_after_download(&self) -> bool {
         self.inner.is_exit_after_download()
+    }
+
+    pub fn is_ask_before_download(&self) -> bool {
+        self.inner.is_ask_before_download()
     }
 }
 

@@ -12,11 +12,13 @@ pub fn show_task_dialog(
     urls: SharedString,
     dialog_type: DialogType,
     config: DownloadConfig,
-    on_confirm: impl FnOnce(SharedString, DownloadConfig) + 'static,
+    show_bg_download: bool,
+    on_confirm: impl FnOnce(SharedString, DownloadConfig, bool) + 'static,
 ) -> color_eyre::Result<()> {
     let dialog = TaskDialog::new()?;
     dialog.set_urls(urls);
     dialog.set_type(dialog_type);
+    dialog.set_show_bg_download(show_bg_download);
     dialog.set_download_config(config);
 
     let dialog_weak = dialog.as_weak();
@@ -72,10 +74,10 @@ pub fn show_task_dialog(
     });
 
     let mut handle = Some(on_confirm);
-    dialog.on_confirm(move |urls, config| {
+    dialog.on_confirm(move |urls, config, bg_download| {
         hide_dialog();
         if let Some(h) = handle.take() {
-            h(urls, config);
+            h(urls, config, bg_download);
         }
     });
 

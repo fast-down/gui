@@ -65,6 +65,7 @@ impl From<GeneralConfig> for crate::persist::GeneralConfig {
             max_concurrency: c.max_concurrency,
             auto_start: c.auto_start,
             exit_after_download: false,
+            ask_before_download: false,
         }
     }
 }

@@ -11,6 +11,7 @@ use url::Url;
 #[derive(Deserialize, Debug)]
 pub struct DownloadConfig {
     pub save_dir: PathBuf,
+    pub file_name: String,
     pub threads: usize,
     pub proxy: Proxy<String>,
     pub headers: HashMap<String, String>,
@@ -26,6 +27,7 @@ pub struct DownloadConfig {
     pub write_method: WriteMethod,
     pub retry_times: usize,
     pub chunk_window: u64,
+    pub pre_allocate: bool,
 }
 
 #[derive(Deserialize, Debug)]
@@ -33,12 +35,13 @@ pub struct GeneralConfig {
     pub max_concurrency: usize,
     pub auto_start: bool,
     pub exit_after_download: bool,
+    pub ask_before_download: bool,
 }
 
 impl From<DownloadConfig> for crate::persist::DownloadConfig {
     fn from(c: DownloadConfig) -> Self {
         Self {
-            file_name: String::new(),
+            file_name: c.file_name,
             proxy: c.proxy,
             retry_times: c.retry_times,
             chunk_window: c.chunk_window,
@@ -55,7 +58,7 @@ impl From<DownloadConfig> for crate::persist::DownloadConfig {
             local_address: c.local_address,
             max_speculative: c.max_speculative,
             write_method: c.write_method,
-            pre_allocate: false,
+            pre_allocate: c.pre_allocate,
         }
     }
 }
@@ -66,7 +69,7 @@ impl From<GeneralConfig> for crate::persist::GeneralConfig {
             max_concurrency: c.max_concurrency,
             auto_start: c.auto_start,
             exit_after_download: c.exit_after_download,
-            ask_before_download: false,
+            ask_before_download: c.ask_before_download,
         }
     }
 }
@@ -137,9 +140,9 @@ impl From<DatabaseInner> for crate::persist::DatabaseInner {
 }
 
 #[derive(Debug, Clone)]
-pub struct V4Loader;
+pub struct V6Loader;
 
-impl Loader for V4Loader {
+impl Loader for V6Loader {
     fn load(&self, bytes: &[u8]) -> Option<crate::persist::DatabaseInner> {
         let db: DatabaseInner = bitcode::deserialize(bytes).ok()?;
         Some(db.into())
