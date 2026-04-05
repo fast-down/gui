@@ -1642,6 +1642,7 @@ dependencies = [
  "arboard",
  "auto-launch",
  "bitcode",
+ "chrono",
  "color-eyre",
  "crossfire",
  "dashmap",

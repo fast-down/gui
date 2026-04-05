@@ -2,8 +2,9 @@ use crate::{
     fmt::{format_size, format_time},
     persist::{self, DatabaseEntry, Status},
     ui::DownloadConfig,
-    utils::{auto_ext, sanitize},
+    utils::{auto_ext, sanitize, sanitize_path},
 };
+use chrono::Local;
 use fast_down_ffi::{Event, Total, create_channel, prefetch, unique_path::gen_unique_path};
 use file_alloc::FileAlloc;
 use parking_lot::Mutex;
@@ -12,6 +13,7 @@ use soft_canonicalize::soft_canonicalize;
 use std::{
     borrow::Cow,
     ops::Range,
+    panic,
     path::PathBuf,
     sync::Arc,
     time::{Duration, Instant},
@@ -91,10 +93,10 @@ pub async fn download(
             (entry.file_path.clone(), entry)
         } else {
             let mut save_dir =
-                soft_canonicalize(if config.save_dir.to_string_lossy().is_empty() {
-                    dirs::download_dir().unwrap_or_default()
+                soft_canonicalize(&if config.save_dir.to_string_lossy().is_empty() {
+                    sanitize_path(&dirs::download_dir().unwrap_or_default())
                 } else {
-                    config.save_dir.clone()
+                    sanitize_path(&config.save_dir)
                 })?;
             let mut file_name = sanitize(
                 if config.file_name.is_empty() || config.parse_filename {
@@ -111,7 +113,8 @@ pub async fn download(
                     file_name = sanitize(s.to_string_lossy(), 248);
                 }
                 if let Some(parent_path) = path.parent()
-                    && let Ok(new_save_dir) = soft_canonicalize(save_dir.join(parent_path))
+                    && let Ok(new_save_dir) =
+                        soft_canonicalize(save_dir.join(sanitize_path(parent_path)))
                     && new_save_dir.starts_with(&save_dir)
                 {
                     save_dir = new_save_dir;
@@ -263,6 +266,8 @@ pub async fn download(
 }
 
 fn parse_filename_template(template: &str, url: &Url, filename: &str) -> String {
+    let template = panic::catch_unwind(|| Local::now().format(template).to_string())
+        .unwrap_or_else(|_| template.to_string());
     let host = sanitize(url.host_str().unwrap_or("unknown"), 255);
     let mut parent_path: Vec<_> = url
         .path_segments()
