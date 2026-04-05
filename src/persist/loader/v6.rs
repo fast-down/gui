@@ -4,7 +4,11 @@ use fast_down_ffi::{FileId, ProgressEntry, Proxy, WriteMethod};
 use parking_lot::Mutex;
 use serde::Deserialize;
 use std::{
-    collections::HashMap, net::IpAddr, path::PathBuf, sync::atomic::AtomicI32, time::Duration,
+    collections::{HashMap, HashSet},
+    net::IpAddr,
+    path::PathBuf,
+    sync::atomic::AtomicI32,
+    time::Duration,
 };
 use url::Url;
 
@@ -37,6 +41,7 @@ pub struct GeneralConfig {
     pub auto_start: bool,
     pub exit_after_download: bool,
     pub ask_before_download: bool,
+    pub skip_headers: HashSet<String>,
 }
 
 impl From<DownloadConfig> for crate::persist::DownloadConfig {
@@ -72,6 +77,7 @@ impl From<GeneralConfig> for crate::persist::GeneralConfig {
             auto_start: c.auto_start,
             exit_after_download: c.exit_after_download,
             ask_before_download: c.ask_before_download,
+            skip_headers: c.skip_headers,
         }
     }
 }

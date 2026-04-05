@@ -39,6 +39,7 @@ export struct GeneralConfig {
     auto_start: bool,
     exit_after_download: bool,
     ask_before_download: bool,
+    skip_headers: string,
 }
 
 export component Settings inherits VerticalLayout {
@@ -410,6 +411,21 @@ export component Settings inherits VerticalLayout {
             ComboBox {
                 model: ["内存映射文件 (推荐)", "标准库 (兼容性好)"];
                 current-index <=> download_config.write-method;
+            }
+
+            Help {
+                tooltip: "外部调用下载时，会自动去除掉这些请求头";
+                alignment: left;
+
+                Text {
+                    text: "跳过请求头";
+                }
+            }
+
+            TextEdit {
+                text <=> general_config.skip-headers;
+                min-height: 100px;
+                placeholder-text: "Accept\nCookie\n一行一个";
             }
 
             Help {

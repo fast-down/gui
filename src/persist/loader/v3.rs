@@ -4,7 +4,11 @@ use fast_down_ffi::{FileId, ProgressEntry, Proxy, WriteMethod};
 use parking_lot::Mutex;
 use serde::Deserialize;
 use std::{
-    collections::HashMap, net::IpAddr, path::PathBuf, sync::atomic::AtomicI32, time::Duration,
+    collections::{HashMap, HashSet},
+    net::IpAddr,
+    path::PathBuf,
+    sync::atomic::AtomicI32,
+    time::Duration,
 };
 use url::Url;
 
@@ -67,6 +71,7 @@ impl From<GeneralConfig> for crate::persist::GeneralConfig {
             auto_start: c.auto_start,
             exit_after_download: false,
             ask_before_download: false,
+            skip_headers: HashSet::new(),
         }
     }
 }
