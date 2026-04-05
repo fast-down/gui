@@ -2,13 +2,14 @@ use crate::{
     core::{App, start_new_entry},
     os::wakeup_window,
     ui::{DialogType, EntryData},
-    utils::{LogErr, show_task_dialog},
+    utils::{LogErr, parse_header, show_task_dialog},
 };
 use crossfire::mpsc;
 use interprocess::local_socket::{
     GenericNamespaced, ListenerOptions,
     tokio::{Stream, prelude::*},
 };
+use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 use slint::{ToSharedString, VecModel};
 use std::{process::exit, rc::Rc};
@@ -67,7 +68,12 @@ pub async fn init_ipc(app: App, list_model: Rc<VecModel<EntryData>>) -> color_ey
                     tracing::info!("收到外部下载请求: {}", e.url);
                     let mut config = app.db.get_ui_download_config();
                     if let Some(s) = e.headers {
-                        config.headers = s.into();
+                        let skip_headers = &app.db.inner.general_config.lock().skip_headers;
+                        config.headers = parse_header(&s)
+                            .filter(|x| !skip_headers.contains(&x.0.to_lowercase()))
+                            .map(|x| format!("{}:{}", x.0, x.1))
+                            .join("\n")
+                            .into();
                     }
                     if app.db.is_ask_before_download() {
                         let app = app.clone();

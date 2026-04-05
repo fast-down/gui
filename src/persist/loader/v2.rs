@@ -4,7 +4,11 @@ use fast_down_ffi::{FileId, ProgressEntry, Proxy, WriteMethod};
 use parking_lot::Mutex;
 use serde::Deserialize;
 use std::{
-    collections::HashMap, net::IpAddr, path::PathBuf, sync::atomic::AtomicI32, time::Duration,
+    collections::{HashMap, HashSet},
+    net::IpAddr,
+    path::PathBuf,
+    sync::atomic::AtomicI32,
+    time::Duration,
 };
 use url::Url;
 
@@ -118,6 +122,7 @@ impl From<DatabaseInner> for crate::persist::DatabaseInner {
                 auto_start: false,
                 exit_after_download: false,
                 ask_before_download: false,
+                skip_headers: HashSet::new(),
             }),
             download_config: Mutex::new(db.config.into_inner().into()),
             max_gid: db.max_gid,

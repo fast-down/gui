@@ -3,7 +3,12 @@ use fast_down_ffi::{Proxy, WriteMethod};
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 use slint::ToSharedString;
-use std::{collections::HashMap, net::IpAddr, path::PathBuf, time::Duration};
+use std::{
+    collections::{HashMap, HashSet},
+    net::IpAddr,
+    path::PathBuf,
+    time::Duration,
+};
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct DownloadConfig {
@@ -142,6 +147,7 @@ pub struct GeneralConfig {
     pub auto_start: bool,
     pub exit_after_download: bool,
     pub ask_before_download: bool,
+    pub skip_headers: HashSet<String>,
 }
 
 impl Default for GeneralConfig {
@@ -151,6 +157,7 @@ impl Default for GeneralConfig {
             auto_start: false,
             exit_after_download: false,
             ask_before_download: false,
+            skip_headers: HashSet::new(),
         }
     }
 }
@@ -162,6 +169,12 @@ impl From<&crate::ui::GeneralConfig> for GeneralConfig {
             auto_start: value.auto_start,
             exit_after_download: value.exit_after_download,
             ask_before_download: value.ask_before_download,
+            skip_headers: value
+                .skip_headers
+                .split('\n')
+                .map(|s| s.trim().to_lowercase().to_string())
+                .filter(|s| !s.is_empty())
+                .collect(),
         }
     }
 }
@@ -173,6 +186,7 @@ impl GeneralConfig {
             auto_start: self.auto_start,
             exit_after_download: self.exit_after_download,
             ask_before_download: self.ask_before_download,
+            skip_headers: self.skip_headers.iter().join("\n").into(),
         }
     }
 }
