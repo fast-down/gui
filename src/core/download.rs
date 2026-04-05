@@ -8,6 +8,7 @@ use fast_down_ffi::{Event, Total, create_channel, prefetch, unique_path::gen_uni
 use file_alloc::FileAlloc;
 use parking_lot::Mutex;
 use slint::SharedString;
+use soft_canonicalize::soft_canonicalize;
 use std::{
     borrow::Cow,
     ops::Range,
@@ -89,34 +90,31 @@ pub async fn download(
         {
             (entry.file_path.clone(), entry)
         } else {
-            let file_name = sanitize(
-                if config.file_name.is_empty() {
+            let mut save_dir =
+                soft_canonicalize(if config.save_dir.to_string_lossy().is_empty() {
+                    dirs::download_dir().unwrap_or_default()
+                } else {
+                    config.save_dir.clone()
+                })?;
+            let mut file_name = sanitize(
+                if config.file_name.is_empty() || config.parse_filename {
                     auto_ext(&task.info.raw_name, task.info.content_type.as_deref())
                 } else {
                     Cow::Borrowed(config.file_name.as_str())
                 },
                 248,
             );
-            let mut save_dir = soft_canonicalize::soft_canonicalize(
-                if config.save_dir.to_string_lossy().is_empty() {
-                    dirs::download_dir().unwrap_or_default()
-                } else {
-                    config.save_dir.clone()
-                },
-            )?;
-            if config.keep_folder_structure
-                && let Some(segments) = url.path_segments()
-            {
-                let mut relative_path: PathBuf = segments
-                    .map(|s| {
-                        let s = urlencoding::decode_binary(s.as_bytes());
-                        String::from_utf8_lossy(&s).into_owned()
-                    })
-                    .collect();
-                relative_path.pop();
-                let new_path = soft_canonicalize::soft_canonicalize(save_dir.join(relative_path))?;
-                if new_path.starts_with(&save_dir) {
-                    save_dir = new_path;
+            if config.parse_filename && !config.file_name.is_empty() {
+                let path =
+                    PathBuf::from(parse_filename_template(&config.file_name, &url, &file_name));
+                if let Some(s) = path.file_name() {
+                    file_name = sanitize(s.to_string_lossy(), 248);
+                }
+                if let Some(parent_path) = path.parent()
+                    && let Ok(new_save_dir) = soft_canonicalize(save_dir.join(parent_path))
+                    && new_save_dir.starts_with(&save_dir)
+                {
+                    save_dir = new_save_dir;
                 }
             }
             let _ = fs::create_dir_all(&save_dir).await;
@@ -262,4 +260,34 @@ pub async fn download(
         is_cancelled: cancel_token.is_cancelled(),
     });
     Ok(())
+}
+
+fn parse_filename_template(template: &str, url: &Url, filename: &str) -> String {
+    let host = sanitize(url.host_str().unwrap_or("unknown"), 255);
+    let mut parent_path: Vec<_> = url
+        .path_segments()
+        .into_iter()
+        .flat_map(|segments| {
+            segments.map(|seg| {
+                let decoded = urlencoding::decode_binary(seg.as_bytes());
+                sanitize(String::from_utf8_lossy(&decoded), 255)
+            })
+        })
+        .collect();
+    parent_path.pop();
+    let parent_path = if parent_path.is_empty() {
+        ".".to_string()
+    } else {
+        parent_path.join(std::path::MAIN_SEPARATOR_STR)
+    };
+    let (file_stem, file_ext) = match filename.rfind('.') {
+        Some(pos) => (&filename[..pos], &filename[pos..]),
+        None => (filename, ""),
+    };
+    template
+        .replace("{host}", &host)
+        .replace("{parent_path}", &parent_path)
+        .replace("{file_name}", filename)
+        .replace("{file_stem}", file_stem)
+        .replace("{file_ext}", file_ext)
 }

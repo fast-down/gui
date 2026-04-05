@@ -32,7 +32,7 @@ export struct DownloadConfig {
     retry_times: int,
     chunk_window: int,
     pre_allocate: bool,
-    keep_folder_structure: bool,
+    parse_filename: bool,
 }
 export struct GeneralConfig {
     max_concurrency: int,
@@ -96,6 +96,15 @@ export component Settings inherits VerticalLayout {
                         browse_folder();
                     }
                 }
+            }
+
+            Text {
+                text: "自定义文件名";
+            }
+
+            LineEdit {
+                text <=> download_config.file-name;
+                placeholder-text: "留空默认为自动获取，开启解析文件名和可以使用占位符";
             }
 
             HorizontalLayout {
@@ -343,18 +352,18 @@ export component Settings inherits VerticalLayout {
                     alignment: left;
 
                     CheckBox {
-                        text: "文件预分配　";
+                        text: "文件预分配";
                         checked <=> download_config.pre-allocate;
                     }
                 }
 
                 Help {
-                    tooltip: "开启后会把 URL 的 path 提取并自动创建目录";
+                    tooltip: "开启后你可以在自定义文件名中使用占位符\n{host} 替换为域名或 IP 地址\n{parent_path} 替换为 URL path 中的父路径\n{file_name} 替换为完整的文件名\n{file_stem} 替换为文件名的前缀\n{file_ext} 替换为文件扩展名，含 '.'";
 
                     CheckBox {
-                        text: "保持目录结构";
+                        text: "解析文件名";
                         horizontal-stretch: 1;
-                        checked <=> download_config.keep-folder-structure;
+                        checked <=> download_config.parse_filename;
                     }
                 }
             }
@@ -363,9 +372,9 @@ export component Settings inherits VerticalLayout {
                 spacing: 8px;
 
                 Help {
-                    tooltip: "在下载前确认\n此时可以临时修改很多配置";
+                    tooltip: "开启后从其他地方调用 fast-down 时会弹出添加任务界面来确认\n此时可以临时修改很多配置";
                     CheckBox {
-                        text: "下载前确认　";
+                        text: "下载前确认";
                         checked <=> general_config.ask-before-download;
                     }
                 }
@@ -374,7 +383,7 @@ export component Settings inherits VerticalLayout {
                     tooltip: "在下载任务完成后，如果检测到软件处于托盘，则会自动退出软件";
 
                     CheckBox {
-                        text: "完成后退出　";
+                        text: "完成后退出";
                         horizontal-stretch: 1;
                         checked <=> general_config.exit-after-download;
                     }
@@ -387,7 +396,7 @@ export component Settings inherits VerticalLayout {
                     tooltip: "开启后会随系统自动启动";
 
                     CheckBox {
-                        text: "开机自启动　";
+                        text: "开机自启动";
                         horizontal-stretch: 1;
                         checked <=> general_config.auto-start;
                     }

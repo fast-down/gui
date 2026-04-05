@@ -86,7 +86,7 @@ export component TaskDialog inherits Window {
 
                 LineEdit {
                     text <=> download_config.file-name;
-                    placeholder-text: "留空默认为自动获取";
+                    placeholder-text: "留空默认为自动获取，开启解析文件名和可以使用占位符";
                 }
 
                 Help {
@@ -311,19 +311,18 @@ export component TaskDialog inherits Window {
                         alignment: left;
 
                         CheckBox {
-                            text: "文件预分配　";
+                            text: "文件预分配";
                             checked <=> download_config.pre-allocate;
                         }
                     }
 
                     Help {
-                        tooltip: "开启后会把 URL 的 path 提取并自动创建目录";
-                        alignment: right;
+                        tooltip: "开启后你可以在自定义文件名中使用占位符\n{host} 替换为域名或 IP 地址\n{parent_path} 替换为 URL path 中的父路径\n{file_name} 替换为完整的文件名\n{file_stem} 替换为文件名的前缀\n{file_ext} 替换为文件扩展名，含 '.'";
 
                         CheckBox {
-                            text: "保持目录结构";
+                            text: "解析文件名";
                             horizontal-stretch: 1;
-                            checked <=> download_config.keep-folder-structure;
+                            checked <=> download_config.parse_filename;
                         }
                     }
                 }

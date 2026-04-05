@@ -58,7 +58,7 @@ impl From<DownloadConfig> for crate::persist::DownloadConfig {
             max_speculative: c.max_speculative,
             write_method: c.write_method,
             pre_allocate: c.pre_allocate,
-            keep_folder_structure: false,
+            parse_filename: false,
         }
     }
 }
