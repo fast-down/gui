@@ -25,6 +25,7 @@ pub struct DownloadConfig {
     pub retry_times: usize,
     pub chunk_window: u64,
     pub pre_allocate: bool,
+    pub parse_filename: bool,
 }
 
 impl Default for DownloadConfig {
@@ -48,6 +49,7 @@ impl Default for DownloadConfig {
             retry_times: 3,
             chunk_window: 8 * 1024,
             pre_allocate: false,
+            parse_filename: false,
         }
     }
 }
@@ -91,6 +93,7 @@ impl DownloadConfig {
             chunk_window: self.chunk_window as i32,
             pre_allocate: self.pre_allocate,
             file_name: self.file_name.to_shared_string(),
+            parse_filename: self.parse_filename,
         }
     }
 }
@@ -128,6 +131,7 @@ impl From<&crate::ui::DownloadConfig> for DownloadConfig {
             retry_times: value.retry_times as usize,
             chunk_window: value.chunk_window as u64,
             pre_allocate: value.pre_allocate,
+            parse_filename: value.parse_filename,
         }
     }
 }

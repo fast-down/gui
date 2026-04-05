@@ -86,7 +86,7 @@ export component TaskDialog inherits Window {
 
                 LineEdit {
                     text <=> download_config.file-name;
-                    placeholder-text: "留空默认为自动获取";
+                    placeholder-text: "留空默认为自动获取，开启解析文件名和可以使用占位符";
                 }
 
                 Help {
@@ -316,9 +316,14 @@ export component TaskDialog inherits Window {
                         }
                     }
 
-                    HorizontalLayout {
-                        spacing: 8px;
-                        alignment: start;
+                    Help {
+                        tooltip: "开启后你可以在自定义文件名中使用占位符\n{host} -> 域名或 IP 地址\n{parent_path} -> URL path 中的父路径\n{file_name} -> 完整的文件名\n{file_stem} -> 文件名的前缀\n{file_ext} -> 文件扩展名，含 '.'\n并且支持 strftime 语法，%%、%Y、%m……完整语法请自行查询";
+
+                        CheckBox {
+                            text: "解析文件名";
+                            horizontal-stretch: 1;
+                            checked <=> download_config.parse_filename;
+                        }
                     }
                 }
 

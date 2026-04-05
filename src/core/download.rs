@@ -2,15 +2,19 @@ use crate::{
     fmt::{format_size, format_time},
     persist::{self, DatabaseEntry, Status},
     ui::DownloadConfig,
-    utils::{auto_ext, sanitize},
+    utils::{auto_ext, sanitize, sanitize_path},
 };
+use chrono::Local;
 use fast_down_ffi::{Event, Total, create_channel, prefetch, unique_path::gen_unique_path};
 use file_alloc::FileAlloc;
 use parking_lot::Mutex;
 use slint::SharedString;
+use soft_canonicalize::soft_canonicalize;
 use std::{
     borrow::Cow,
     ops::Range,
+    panic,
+    path::PathBuf,
     sync::Arc,
     time::{Duration, Instant},
 };
@@ -88,21 +92,34 @@ pub async fn download(
         {
             (entry.file_path.clone(), entry)
         } else {
-            let file_name = sanitize(
-                if config.file_name.is_empty() {
+            let mut save_dir =
+                soft_canonicalize(&if config.save_dir.to_string_lossy().is_empty() {
+                    sanitize_path(&dirs::download_dir().unwrap_or_default())
+                } else {
+                    sanitize_path(&config.save_dir)
+                })?;
+            let mut file_name = sanitize(
+                if config.file_name.is_empty() || config.parse_filename {
                     auto_ext(&task.info.raw_name, task.info.content_type.as_deref())
                 } else {
                     Cow::Borrowed(config.file_name.as_str())
                 },
                 248,
             );
-            let save_dir = soft_canonicalize::soft_canonicalize(
-                if config.save_dir.to_string_lossy().is_empty() {
-                    dirs::download_dir().unwrap_or_default()
-                } else {
-                    config.save_dir.clone()
-                },
-            )?;
+            if config.parse_filename && !config.file_name.is_empty() {
+                let path =
+                    PathBuf::from(parse_filename_template(&config.file_name, &url, &file_name));
+                if let Some(s) = path.file_name() {
+                    file_name = sanitize(s.to_string_lossy(), 248);
+                }
+                if let Some(parent_path) = path.parent()
+                    && let Ok(new_save_dir) =
+                        soft_canonicalize(save_dir.join(sanitize_path(parent_path)))
+                    && new_save_dir.starts_with(&save_dir)
+                {
+                    save_dir = new_save_dir;
+                }
+            }
             let _ = fs::create_dir_all(&save_dir).await;
             let save_path = gen_unique_path(&save_dir.join(&file_name)).await?;
             let file_name = save_path.file_name().unwrap().to_string_lossy().to_string();
@@ -246,4 +263,36 @@ pub async fn download(
         is_cancelled: cancel_token.is_cancelled(),
     });
     Ok(())
+}
+
+fn parse_filename_template(template: &str, url: &Url, filename: &str) -> String {
+    let template = panic::catch_unwind(|| Local::now().format(template).to_string())
+        .unwrap_or_else(|_| template.to_string());
+    let host = sanitize(url.host_str().unwrap_or("unknown"), 255);
+    let mut parent_path: Vec<_> = url
+        .path_segments()
+        .into_iter()
+        .flat_map(|segments| {
+            segments.map(|seg| {
+                let decoded = urlencoding::decode_binary(seg.as_bytes());
+                sanitize(String::from_utf8_lossy(&decoded), 255)
+            })
+        })
+        .collect();
+    parent_path.pop();
+    let parent_path = if parent_path.is_empty() {
+        ".".to_string()
+    } else {
+        parent_path.join(std::path::MAIN_SEPARATOR_STR)
+    };
+    let (file_stem, file_ext) = match filename.rfind('.') {
+        Some(pos) => (&filename[..pos], &filename[pos..]),
+        None => (filename, ""),
+    };
+    template
+        .replace("{host}", &host)
+        .replace("{parent_path}", &parent_path)
+        .replace("{file_name}", filename)
+        .replace("{file_stem}", file_stem)
+        .replace("{file_ext}", file_ext)
 }
