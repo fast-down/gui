@@ -49,6 +49,7 @@ pub async fn check_ipc_and_wake() -> color_eyre::Result<()> {
 /// 监听其他实例（或浏览器代理进程）发来的 IPC 请求
 pub async fn init_ipc(app: App, list_model: Rc<VecModel<EntryData>>) -> color_eyre::Result<()> {
     let ns_name = NS_NAME.to_ns_name::<GenericNamespaced>()?;
+    #[allow(unused_mut)]
     let mut options = ListenerOptions::new().name(ns_name).try_overwrite(true);
     #[cfg(windows)]
     {

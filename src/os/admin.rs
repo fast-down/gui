@@ -1,3 +1,5 @@
+use color_eyre::eyre::bail;
+
 /// 检查当前是否以管理员权限运行
 #[cfg(target_os = "windows")]
 pub fn is_admin() -> bool {
@@ -35,7 +37,6 @@ pub fn is_admin() -> bool {
 /// 以管理员身份重启当前程序
 #[cfg(target_os = "windows")]
 pub fn restart_as_admin() -> color_eyre::Result<()> {
-    use color_eyre::eyre::bail;
     use itertools::Itertools;
     use std::ffi::OsStr;
     use std::os::windows::ffi::OsStrExt;
@@ -84,6 +85,7 @@ pub fn restart_as_admin() -> color_eyre::Result<()> {
 }
 
 /// 尝试以管理员身份重启（如果需要）
+#[allow(unused_variables)]
 pub fn try_restart_as_admin(run_as_admin: bool) -> color_eyre::Result<()> {
     #[cfg(target_os = "windows")]
     if run_as_admin && !is_admin() {
