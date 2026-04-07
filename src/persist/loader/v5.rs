@@ -75,6 +75,7 @@ impl From<GeneralConfig> for crate::persist::GeneralConfig {
             exit_after_download: c.exit_after_download,
             ask_before_download: false,
             skip_headers: HashSet::new(),
+            run_as_admin: false,
         }
     }
 }

@@ -40,6 +40,7 @@ export struct GeneralConfig {
     exit_after_download: bool,
     ask_before_download: bool,
     skip_headers: string,
+    run_as_admin: bool,
 }
 
 export component Settings inherits VerticalLayout {
@@ -400,6 +401,16 @@ export component Settings inherits VerticalLayout {
                         text: "开机自启动";
                         horizontal-stretch: 1;
                         checked <=> general_config.auto-start;
+                    }
+                }
+
+                Help {
+                    tooltip: "下次启动时以管理员身份运行，只在 Windows 上生效";
+
+                    CheckBox {
+                        text: "管理员运行";
+                        horizontal-stretch: 1;
+                        checked <=> general_config.run-as-admin;
                     }
                 }
             }

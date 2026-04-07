@@ -5,7 +5,7 @@ use fast_down_gui::{
     addons::{CHROME_EXT_IDS, FIREFOX_EXT_ID, auto_register, handle_browser_request},
     core::{App, TaskSet, start_entry, start_new_entry},
     ipc::{check_ipc_and_wake, init_ipc},
-    os::{attach_console, get_auto_start, setup_tray},
+    os::{attach_console, get_auto_start, is_admin, setup_tray, try_restart_as_admin},
     persist::{DB_DIR, Database},
     ui::*,
     utils::{LogErr, show_task_dialog},
@@ -82,8 +82,10 @@ async fn main() -> color_eyre::Result<()> {
     let _ = check_ipc_and_wake().await.log_err("检查 ipc 通道错误");
     let _ = auto_register().log_err("写入浏览器扩展通信配置失败");
     let ui = MainWindow::new()?;
-    init_fast_alloc();
     let db = Database::new().await;
+    let run_as_admin = db.inner.general_config.lock().run_as_admin;
+    let _ = try_restart_as_admin(run_as_admin).log_err("以管理员身份重启失败");
+    init_fast_alloc();
     let task_set = TaskSet::new(db.inner.general_config.lock().max_concurrency);
     let auto = get_auto_start()
         .log_err("初始化开机自启错误")
@@ -110,6 +112,7 @@ async fn main() -> color_eyre::Result<()> {
     ui.set_download_config(db.get_ui_download_config());
     ui.set_general_config(db.get_ui_general_config());
     ui.set_version(VERSION.into());
+    ui.set_admin(is_admin());
 
     ui.on_exit({
         let app = app.clone();

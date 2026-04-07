@@ -50,7 +50,7 @@ pub fn auto_register() -> color_eyre::Result<()> {
 #[cfg(target_os = "windows")]
 fn register(chrome_json: &str, firefox_json: &str) -> color_eyre::Result<()> {
     use winreg::RegKey;
-    use winreg::enums::HKEY_CURRENT_USER;
+    use winreg::enums::{HKEY_CURRENT_USER, HKEY_LOCAL_MACHINE};
 
     // 1. 将 manifest 写入到磁盘
     let chrome_manifest_path = crate::persist::DB_DIR.join("fd_nm_manifest_chrome.json");
@@ -58,10 +58,33 @@ fn register(chrome_json: &str, firefox_json: &str) -> color_eyre::Result<()> {
     std::fs::write(&chrome_manifest_path, chrome_json)?;
     std::fs::write(&firefox_manifest_path, firefox_json)?;
 
-    // 2. 写入注册表
+    // 2. 检测是否以管理员权限运行 - 通过尝试写入 HKLM 测试
+    let is_admin = RegKey::predef(HKEY_LOCAL_MACHINE)
+        .open_subkey("Software")
+        .is_ok();
+
+    // 3. 如果是管理员权限，将 manifest 复制到 ProgramData 目录（对所有用户可访问）
+    let (chrome_reg_path, firefox_reg_path) = if is_admin {
+        if let Ok(program_data_dir) = std::env::var("PROGRAMDATA") {
+            let program_data_path = std::path::PathBuf::from(program_data_dir);
+            let fd_dir = program_data_path.join("fast-down-gui");
+            let _ = std::fs::create_dir_all(&fd_dir);
+            let chrome_program_data_path = fd_dir.join("fd_nm_manifest_chrome.json");
+            let firefox_program_data_path = fd_dir.join("fd_nm_manifest_firefox.json");
+            let _ = std::fs::copy(&chrome_manifest_path, &chrome_program_data_path);
+            let _ = std::fs::copy(&firefox_manifest_path, &firefox_program_data_path);
+            (chrome_program_data_path, firefox_program_data_path)
+        } else {
+            (chrome_manifest_path, firefox_manifest_path)
+        }
+    } else {
+        (chrome_manifest_path, firefox_manifest_path)
+    };
+
+    // 4. 始终写入 HKEY_CURRENT_USER（当前用户的注册表）
     let hkcu = RegKey::predef(HKEY_CURRENT_USER);
 
-    // 所有 Chromium 内核浏览器
+    // Chromium 浏览器路径
     let chrome_paths = [
         "Software\\Google\\Chrome\\NativeMessagingHosts",
         "Software\\Microsoft\\Edge\\NativeMessagingHosts",
@@ -70,24 +93,40 @@ fn register(chrome_json: &str, firefox_json: &str) -> color_eyre::Result<()> {
         "Software\\Vivaldi\\NativeMessagingHosts",
     ];
 
-    for path in chrome_paths {
-        let full_path = format!("{}\\{}", path, APP_NAME);
-        if let Ok((key, _)) = hkcu.create_subkey(&full_path) {
-            let _ = key.set_value("", &chrome_manifest_path.to_string_lossy().as_ref());
-        }
-    }
-
-    // 所有 Firefox 内核浏览器
+    // Firefox 浏览器路径
     let firefox_paths = [
         "Software\\Mozilla\\NativeMessagingHosts",
         "Software\\Waterfox\\NativeMessagingHosts",
         "Software\\LibreWolf\\NativeMessagingHosts",
     ];
 
-    for path in firefox_paths {
+    // 写入 HKEY_CURRENT_USER
+    for path in chrome_paths.iter() {
         let full_path = format!("{}\\{}", path, APP_NAME);
         if let Ok((key, _)) = hkcu.create_subkey(&full_path) {
-            let _ = key.set_value("", &firefox_manifest_path.to_string_lossy().as_ref());
+            let _ = key.set_value("", &chrome_reg_path.to_string_lossy().as_ref());
+        }
+    }
+    for path in firefox_paths.iter() {
+        let full_path = format!("{}\\{}", path, APP_NAME);
+        if let Ok((key, _)) = hkcu.create_subkey(&full_path) {
+            let _ = key.set_value("", &firefox_reg_path.to_string_lossy().as_ref());
+        }
+    }
+
+    // 4. 如果是管理员权限，尝试写入 HKEY_LOCAL_MACHINE（对所有用户生效）
+    if is_admin && let Ok(hklm) = RegKey::predef(HKEY_LOCAL_MACHINE).open_subkey("") {
+        for path in chrome_paths.iter() {
+            let full_path = format!("{}\\{}", path, APP_NAME);
+            if let Ok((key, _)) = hklm.create_subkey(&full_path) {
+                let _ = key.set_value("", &chrome_reg_path.to_string_lossy().as_ref());
+            }
+        }
+        for path in firefox_paths.iter() {
+            let full_path = format!("{}\\{}", path, APP_NAME);
+            if let Ok((key, _)) = hklm.create_subkey(&full_path) {
+                let _ = key.set_value("", &firefox_reg_path.to_string_lossy().as_ref());
+            }
         }
     }
 

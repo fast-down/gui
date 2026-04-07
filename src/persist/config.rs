@@ -148,6 +148,7 @@ pub struct GeneralConfig {
     pub exit_after_download: bool,
     pub ask_before_download: bool,
     pub skip_headers: HashSet<String>,
+    pub run_as_admin: bool,
 }
 
 impl Default for GeneralConfig {
@@ -158,6 +159,7 @@ impl Default for GeneralConfig {
             exit_after_download: false,
             ask_before_download: false,
             skip_headers: HashSet::new(),
+            run_as_admin: false,
         }
     }
 }
@@ -175,6 +177,7 @@ impl From<&crate::ui::GeneralConfig> for GeneralConfig {
                 .map(|s| s.trim().to_lowercase().to_string())
                 .filter(|s| !s.is_empty())
                 .collect(),
+            run_as_admin: value.run_as_admin,
         }
     }
 }
@@ -187,6 +190,7 @@ impl GeneralConfig {
             exit_after_download: self.exit_after_download,
             ask_before_download: self.ask_before_download,
             skip_headers: self.skip_headers.iter().join("\n").into(),
+            run_as_admin: self.run_as_admin,
         }
     }
 }

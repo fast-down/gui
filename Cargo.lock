@@ -1674,6 +1674,7 @@ dependencies = [
  "tray-icon",
  "url",
  "urlencoding",
+ "widestring",
  "windows 0.62.2",
  "winreg",
  "winresource",
