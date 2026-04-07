@@ -12,7 +12,7 @@ export {
 }
 
 export component MainWindow inherits Window {
-    title: "fast-down v" + version;
+    title: "fast-down v" + version + (admin ? " (管理员)" : "");
     icon: Theme.app-icon;
     min-width: 800px;
     min-height: 600px;
@@ -36,6 +36,7 @@ export component MainWindow inherits Window {
     callback remove_all([EntryData]);
 
     in property <string> version;
+    in property <bool> admin;
     in-out property <DownloadConfig> download_config;
     in-out property <GeneralConfig> general_config;
     public function set_save_dir(dir: string) {

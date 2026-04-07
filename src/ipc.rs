@@ -49,10 +49,18 @@ pub async fn check_ipc_and_wake() -> color_eyre::Result<()> {
 /// 监听其他实例（或浏览器代理进程）发来的 IPC 请求
 pub async fn init_ipc(app: App, list_model: Rc<VecModel<EntryData>>) -> color_eyre::Result<()> {
     let ns_name = NS_NAME.to_ns_name::<GenericNamespaced>()?;
-    let listener = ListenerOptions::new()
-        .name(ns_name)
-        .try_overwrite(true)
-        .create_tokio()?;
+    let mut options = ListenerOptions::new().name(ns_name).try_overwrite(true);
+    #[cfg(windows)]
+    {
+        use interprocess::os::windows::{
+            local_socket::ListenerOptionsExt, security_descriptor::SecurityDescriptor,
+        };
+        use widestring::U16CString;
+        let sddl = U16CString::from_str("D:(A;;GA;;;WD)")?;
+        let sd = SecurityDescriptor::deserialize(&sddl)?;
+        options = options.security_descriptor(sd);
+    }
+    let listener = options.create_tokio()?;
 
     let (tx, rx) = mpsc::unbounded_async::<IpcMessage>();
 

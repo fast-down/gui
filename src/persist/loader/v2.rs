@@ -123,6 +123,7 @@ impl From<DatabaseInner> for crate::persist::DatabaseInner {
                 exit_after_download: false,
                 ask_before_download: false,
                 skip_headers: HashSet::new(),
+                run_as_admin: false,
             }),
             download_config: Mutex::new(db.config.into_inner().into()),
             max_gid: db.max_gid,

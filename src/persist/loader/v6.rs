@@ -42,6 +42,7 @@ pub struct GeneralConfig {
     pub exit_after_download: bool,
     pub ask_before_download: bool,
     pub skip_headers: HashSet<String>,
+    pub run_as_admin: bool,
 }
 
 impl From<DownloadConfig> for crate::persist::DownloadConfig {
@@ -78,6 +79,7 @@ impl From<GeneralConfig> for crate::persist::GeneralConfig {
             exit_after_download: c.exit_after_download,
             ask_before_download: c.ask_before_download,
             skip_headers: c.skip_headers,
+            run_as_admin: c.run_as_admin,
         }
     }
 }
