@@ -10,68 +10,36 @@ permissions:
   contents: read
 
 jobs:
-  test:
-    name: Tests
+  format:
+    name: Format Check
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        channel:
-          - stable
-          - beta
-          # - nightly
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v6
-
-      - name: Install Rust Toolchain
-        uses: dtolnay/rust-toolchain@stable
+      - uses: actions/checkout@v6
+      - uses: dtolnay/rust-toolchain@stable
         with:
-          toolchain: ${{ matrix.channel }}
-
-      - name: Rust Cache
-        uses: swatinem/rust-cache@v2
-
-      - name: Install Slint dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            libfontconfig1-dev \
-            libxcb-shape0-dev \
-            libxcb-xfixes0-dev \
-            libxkbcommon-dev \
-            libxcb1-dev \
-            libxcb-render0-dev \
-            libxcb-composite0-dev \
-            libxcb-cursor-dev \
-            libxcb-xkb-dev \
-            pkg-config \
-            libgtk-3-dev \
-            libglib2.0-dev \
-            libxdo-dev \
-            libayatana-appindicator3-dev
-
-      - name: Test
-        run: cargo test --all-features --verbose
-
-      - name: Test (no-default-features)
-        run: cargo test --no-default-features --verbose
+          components: rustfmt
+      - run: cargo fmt --all -- --check
 
   clippy:
     name: Clippy
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v6
-
-      - name: Install Rust Toolchain
-        uses: dtolnay/rust-toolchain@stable
+      - uses: actions/checkout@v6
+      - uses: dtolnay/rust-toolchain@nightly
         with:
-          toolchain: stable
           components: clippy
-
-      - name: Rust Cache
-        uses: swatinem/rust-cache@v2
-
+      - uses: swatinem/rust-cache@v2
+        with:
+          shared-key: "ubuntu-nightly"
+          add-job-id-key: "false"
+          cache-on-failure: "true"
+          cache-all-crates: "true"
+          cache-workspace-crates: "true"
+          save-if: ${{ github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' }}
+      - name: Install cargo-hack
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-hack
       - name: Install Slint dependencies
         run: |
           sudo apt-get update
@@ -90,45 +58,76 @@ jobs:
             libglib2.0-dev \
             libxdo-dev \
             libayatana-appindicator3-dev
-
       - name: Run Clippy
-        run: cargo clippy --all-features --all-targets --verbose -- -Dwarnings
+        env:
+          RUSTFLAGS: "-D warnings"
+        run: cargo hack clippy --feature-powerset
 
-      # - name: Run Clippy (minimal-versions)
-      #   run: cargo clippy --all-features --all-targets -Z minimal-versions --verbose -- -Dwarnings
-
-      - name: Run Clippy (no-default-features)
-        run: cargo clippy --no-default-features --all-targets --verbose -- -Dwarnings
-
-  format:
-    name: Format
-    runs-on: ubuntu-latest
+  test:
+    name: Test (${{ matrix.os }} - ${{ matrix.channel }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        channel: [stable, beta, nightly]
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v6
-
-      - name: Install latest stable
-        uses: dtolnay/rust-toolchain@stable
+      - uses: actions/checkout@v6
+      - uses: dtolnay/rust-toolchain@master
         with:
-          toolchain: stable
-          components: rustfmt
-
-      - name: Run rustfmt
-        run: cargo fmt --check
+          toolchain: ${{ matrix.channel }}
+      - uses: swatinem/rust-cache@v2
+        with:
+          shared-key: "${{ matrix.os }}-${{ matrix.channel }}"
+          add-job-id-key: "false"
+          cache-on-failure: "true"
+          cache-all-crates: "true"
+          cache-workspace-crates: "true"
+          save-if: ${{ github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' }}
+      - name: Install cargo-hack
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-hack
+      - name: Install Slint dependencies
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libfontconfig1-dev \
+            libxcb-shape0-dev \
+            libxcb-xfixes0-dev \
+            libxkbcommon-dev \
+            libxcb1-dev \
+            libxcb-render0-dev \
+            libxcb-composite0-dev \
+            libxcb-cursor-dev \
+            libxcb-xkb-dev \
+            pkg-config \
+            libgtk-3-dev \
+            libglib2.0-dev \
+            libxdo-dev \
+            libayatana-appindicator3-dev
+      - name: Run Tests
+        run: cargo hack test --feature-powerset --depth 1 --verbose
 
   deny:
-    name: Deny
+    name: Cargo Deny
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v6
-
-      - name: Install latest stable
-        uses: dtolnay/rust-toolchain@stable
-
-      - name: Rust Cache
-        uses: swatinem/rust-cache@v2
-
+      - uses: actions/checkout@v6
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: swatinem/rust-cache@v2
+        with:
+          shared-key: "ubuntu-stable"
+          add-job-id-key: "false"
+          cache-on-failure: "true"
+          cache-all-crates: "true"
+          cache-workspace-crates: "true"
+          save-if: ${{ github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' }}
+      - name: Install cargo-deny
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-deny
       - name: Install Slint dependencies
         run: |
           sudo apt-get update
@@ -147,49 +146,44 @@ jobs:
             libglib2.0-dev \
             libxdo-dev \
             libayatana-appindicator3-dev
-
-      - name: Install cargo-deny
-        run: cargo install cargo-deny
-
-      - name: Run deny
+      - name: Run Deny
         run: cargo deny --all-features check
 
-  # udeps:
-  #   name: Udeps
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - name: Checkout repository
-  #       uses: actions/checkout@v6
-
-  #     - name: Install Rust Toolchain
-  #       uses: dtolnay/rust-toolchain@stable
-  #       with:
-  #         toolchain: nightly
-
-  #     - name: Rust Cache
-  #       uses: swatinem/rust-cache@v2
-
-  #     - name: Install Slint dependencies
-  #       run: |
-  #         sudo apt-get update
-  #         sudo apt-get install -y \
-  #           libfontconfig1-dev \
-  #           libxcb-shape0-dev \
-  #           libxcb-xfixes0-dev \
-  #           libxkbcommon-dev \
-  #           libxcb1-dev \
-  #           libxcb-render0-dev \
-  #           libxcb-composite0-dev \
-  #           libxcb-cursor-dev \
-  #           libxcb-xkb-dev \
-  #           pkg-config \
-  #           libgtk-3-dev \
-  #           libglib2.0-dev \
-  #           libxdo-dev \
-  #           libayatana-appindicator3-dev
-
-  #     - name: Install cargo-udeps
-  #       run: cargo install cargo-udeps
-
-  #     - name: Run Udeps
-  #       run: cargo udeps
+  udeps:
+    name: Unused Deps
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dtolnay/rust-toolchain@nightly
+      - uses: swatinem/rust-cache@v2
+        with:
+          shared-key: "ubuntu-nightly"
+          add-job-id-key: "false"
+          cache-on-failure: "true"
+          cache-all-crates: "true"
+          cache-workspace-crates: "true"
+          save-if: ${{ github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' }}
+      - name: Install cargo-hack & cargo-udeps
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-hack,cargo-udeps
+      - name: Install Slint dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libfontconfig1-dev \
+            libxcb-shape0-dev \
+            libxcb-xfixes0-dev \
+            libxkbcommon-dev \
+            libxcb1-dev \
+            libxcb-render0-dev \
+            libxcb-composite0-dev \
+            libxcb-cursor-dev \
+            libxcb-xkb-dev \
+            pkg-config \
+            libgtk-3-dev \
+            libglib2.0-dev \
+            libxdo-dev \
+            libayatana-appindicator3-dev
+      - name: Run Udeps
+        run: cargo hack udeps --feature-powerset

@@ -86,7 +86,12 @@ jobs:
       - name: Rust cache
         uses: swatinem/rust-cache@v2
         with:
-          key: ${{ matrix.target }}
+          shared-key: "${{ matrix.build }}"
+          add-job-id-key: "false"
+          cache-on-failure: "true"
+          cache-all-crates: "true"
+          cache-workspace-crates: "true"
+          save-if: ${{ github.ref_type == 'tag' && startsWith(github.ref, 'refs/tags/v') }}
 
       - name: Install NASM
         if: startsWith(matrix.build, 'windows-')
@@ -100,7 +105,9 @@ jobs:
 
       - name: Install Cross
         if: matrix.use-cross
-        uses: taiki-e/install-action@cross
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cross
 
       - name: Set up Node.js
         if: contains(matrix.build, 'macos')
@@ -117,7 +124,9 @@ jobs:
 
       - name: Install cargo-bundle
         if: contains(matrix.build, 'macos')
-        run: cargo install cargo-bundle
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-bundle
 
       - name: Build binary
         shell: bash
