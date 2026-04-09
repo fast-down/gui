@@ -6,36 +6,8 @@ import {
 } from "std-widgets.slint";
 import { Header2 } from "headers.slint";
 import { Theme } from "theme.slint";
-
-export enum Status {
-    Running,
-    Waiting,
-    Paused,
-    Completed,
-    Error,
-}
-
-export struct Progress {
-    start: float,
-    width: float,
-}
-
-export struct EntryData {
-    gid: int,
-    filename: string,
-    path: string,
-    status: Status,
-    speed: string,
-    avg_speed: string,
-    time: string,
-    remaining_time: string,
-    downloaded: string,
-    total: string,
-    percentage: string,
-    remaining_size: string,
-    error: string,
-    progress: [Progress]
-}
+import { Logic } from "logic.slint";
+import { Status, EntryData } from "types.slint";
 
 component StatItem {
     in property <string> label;
@@ -56,12 +28,6 @@ component StatItem {
 
 export component Entry inherits Rectangle {
     in property <EntryData> data;
-    callback start();
-    callback pause();
-    callback detail();
-    callback open();
-    callback open_folder();
-    callback remove();
 
     VerticalLayout {
         padding: 16px;
@@ -150,9 +116,9 @@ export component Entry inherits Rectangle {
                 primary: data.status == Status.Running || data.status == Status.Waiting;
                 clicked => {
                     if data.status == Status.Running || data.status == Status.Waiting {
-                        pause()
+                        Logic.pause_entry(data.gid)
                     } else {
-                        start()
+                        Logic.start_entry(data.gid)
                     }
                 }
             }
@@ -160,7 +126,7 @@ export component Entry inherits Rectangle {
             Button {
                 text: "详情";
                 clicked => {
-                    detail()
+                    Logic.detail_entry(data.gid)
                 }
             }
 
@@ -168,7 +134,7 @@ export component Entry inherits Rectangle {
                 text: "打开";
                 enabled: !data.path.is-empty;
                 clicked => {
-                    open()
+                    Logic.open_file(data.path)
                 }
             }
 
@@ -176,14 +142,14 @@ export component Entry inherits Rectangle {
                 text: "定位文件";
                 enabled: !data.path.is-empty;
                 clicked => {
-                    open_folder()
+                    Logic.locate_file(data.path)
                 }
             }
 
             Button {
                 text: "移除";
                 clicked => {
-                    remove()
+                    Logic.remove_entry(data.gid)
                 }
             }
         }

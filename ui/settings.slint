@@ -12,36 +12,8 @@ import { HDivider } from "divider.slint";
 import { NoScrollSpinBox } from "my-spin-box.slint";
 import { Header1, Header2 } from "headers.slint";
 import { Help } from "info.slint";
-
-export struct DownloadConfig {
-    save_dir: string,
-    file_name: string,
-    threads: int,
-    proxy: string,
-    headers: string,
-    min_chunk_size: int,
-    write_buffer_size: int,
-    write_queue_cap: int,
-    retry_gap_ms: int,
-    pull_timeout_ms: int,
-    accept_invalid_certs: bool,
-    accept_invalid_hostnames: bool,
-    ips: string,
-    max_speculative: int,
-    write_method: int,
-    retry_times: int,
-    chunk_window: int,
-    pre_allocate: bool,
-    parse_filename: bool,
-}
-export struct GeneralConfig {
-    max_concurrency: int,
-    auto_start: bool,
-    exit_after_download: bool,
-    ask_before_download: bool,
-    skip_headers: string,
-    run_as_admin: bool,
-}
+import { DownloadConfig, GeneralConfig } from "types.slint";
+import { Logic } from "logic.slint";
 
 export component Settings inherits VerticalLayout {
     horizontal-stretch: 1;
@@ -50,15 +22,13 @@ export component Settings inherits VerticalLayout {
     in-out property <GeneralConfig> general_config;
 
     callback browse_folder();
-    callback config_change(DownloadConfig, GeneralConfig);
-    callback view_log();
 
     changed download_config => {
-        config_change(download_config, general_config);
+        Logic.config_change(download_config, general_config);
     }
 
     changed general_config => {
-        config_change(download_config, general_config);
+        Logic.config_change(download_config, general_config);
     }
 
     HorizontalLayout {
@@ -457,7 +427,7 @@ export component Settings inherits VerticalLayout {
             Button {
                 text: "查看日志";
                 clicked => {
-                    view_log()
+                    Logic.view_log()
                 }
             }
         }
