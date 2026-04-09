@@ -2,7 +2,8 @@ import {
     Button,
     ListView,
 } from "std-widgets.slint";
-import { EntryData, Entry } from "entry.slint";
+import { EntryData } from "types.slint";
+import { Entry } from "entry.slint";
 import { HDivider } from "divider.slint";
 
 export component List inherits Rectangle {
@@ -10,12 +11,6 @@ export component List inherits Rectangle {
 
     in property <[EntryData]> list;
     in property <bool> only-remove-completed;
-    callback start(int);
-    callback pause(int);
-    callback detail(int);
-    callback open(string);
-    callback open_folder(string);
-    callback remove(int);
 
     callback start_all();
     callback pause_all();
@@ -59,24 +54,6 @@ export component List inherits Rectangle {
             for entry[i] in list: VerticalLayout {
                 Entry {
                     data: entry;
-                    start => {
-                        start(entry.gid)
-                    }
-                    pause => {
-                        pause(entry.gid)
-                    }
-                    detail => {
-                        detail(entry.gid)
-                    }
-                    open => {
-                        open(entry.path)
-                    }
-                    open_folder => {
-                        open_folder(entry.path)
-                    }
-                    remove => {
-                        remove(entry.gid)
-                    }
                 }
 
                 HDivider { }

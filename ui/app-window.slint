@@ -1,14 +1,16 @@
 import { Aside } from "aside.slint";
 import { List } from "list.slint";
 import { VDivider } from "divider.slint";
-import { Status, EntryData } from "entry.slint";
+import { Status, EntryData, DownloadConfig, GeneralConfig } from "types.slint";
 import { TaskDialog } from "task-dialog.slint";
-import { Settings, DownloadConfig, GeneralConfig } from "settings.slint";
+import { Settings } from "settings.slint";
 import { TaskDialog } from "task-dialog.slint";
 import { Theme } from "theme.slint";
+import { Logic } from "logic.slint";
 
 export {
     TaskDialog,
+    Logic
 }
 
 export component MainWindow inherits Window {
@@ -18,22 +20,7 @@ export component MainWindow inherits Window {
     min-height: 600px;
     default-font-family: Theme.font-family;
 
-    callback start_entry(int);
-    callback pause_entry(int);
-    callback detail_entry(int);
-    callback open_entry(string);
-    callback open_folder_entry(string);
-    callback remove_entry(int);
-
-    callback add_task();
-    callback exit();
     callback browse_folder();
-    callback config_change(DownloadConfig, GeneralConfig);
-    callback view_log();
-
-    callback start_all([EntryData]);
-    callback pause_all([EntryData]);
-    callback remove_all([EntryData]);
 
     in property <string> version;
     in property <bool> admin;
@@ -60,12 +47,6 @@ export component MainWindow inherits Window {
             paused_count: paused_list.length;
             completed_count: completed_list.length;
             error_count: error_list.length;
-            add_task => {
-                add_task();
-            }
-            exit => {
-                exit()
-            }
         }
 
         VDivider { }
@@ -74,31 +55,13 @@ export component MainWindow inherits Window {
             list: active_list;
             only-remove-completed: aside.current_page == 0;
             start_all => {
-                start_all(active_list);
+                Logic.start_all(active_list);
             }
             pause_all => {
-                pause_all(active_list);
+                Logic.pause_all(active_list);
             }
             remove_all => {
-                remove_all(aside.current_page == 0 ? completed_list : active_list);
-            }
-            start(entry) => {
-                start_entry(entry)
-            }
-            pause(entry) => {
-                pause_entry(entry)
-            }
-            detail(entry) => {
-                detail_entry(entry)
-            }
-            open(entry) => {
-                open_entry(entry)
-            }
-            open_folder(entry) => {
-                open_folder_entry(entry)
-            }
-            remove(entry) => {
-                remove_entry(entry)
+                Logic.remove_all(aside.current_page == 0 ? completed_list : active_list);
             }
         }
         if aside.current_page == 6: Settings {
@@ -106,12 +69,6 @@ export component MainWindow inherits Window {
             general_config <=> general_config;
             browse_folder => {
                 browse_folder()
-            }
-            config_change(download_config, general_config) => {
-                config_change(download_config, general_config)
-            }
-            view_log => {
-                view_log()
             }
         }
     }

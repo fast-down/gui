@@ -1,0 +1,59 @@
+export enum Status {
+    Running,
+    Waiting,
+    Paused,
+    Completed,
+    Error,
+}
+
+export struct Progress {
+    start: float,
+    width: float,
+}
+
+export struct EntryData {
+    gid: int,
+    filename: string,
+    path: string,
+    status: Status,
+    speed: string,
+    avg_speed: string,
+    time: string,
+    remaining_time: string,
+    downloaded: string,
+    total: string,
+    percentage: string,
+    remaining_size: string,
+    error: string,
+    progress: [Progress]
+}
+
+export struct DownloadConfig {
+    save_dir: string,
+    file_name: string,
+    threads: int,
+    proxy: string,
+    headers: string,
+    min_chunk_size: int,
+    write_buffer_size: int,
+    write_queue_cap: int,
+    retry_gap_ms: int,
+    pull_timeout_ms: int,
+    accept_invalid_certs: bool,
+    accept_invalid_hostnames: bool,
+    ips: string,
+    max_speculative: int,
+    write_method: int,
+    retry_times: int,
+    chunk_window: int,
+    pre_allocate: bool,
+    parse_filename: bool,
+}
+export struct GeneralConfig {
+    max_concurrency: int,
+    auto_start: bool,
+    exit_after_download: bool,
+    ask_before_download: bool,
+    skip_headers: string,
+    run_as_admin: bool,
+}

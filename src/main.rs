@@ -114,7 +114,7 @@ async fn main() -> color_eyre::Result<()> {
     ui.set_version(VERSION.into());
     ui.set_admin(is_admin());
 
-    ui.on_exit({
+    ui.global::<Logic>().on_exit({
         let app = app.clone();
         move || app.exit()
     });
@@ -133,7 +133,7 @@ async fn main() -> color_eyre::Result<()> {
         }
     });
 
-    ui.on_config_change({
+    ui.global::<Logic>().on_config_change({
         let app = app.clone();
         let auto = auto.clone();
         move |download_config, general_config| {
@@ -142,7 +142,7 @@ async fn main() -> color_eyre::Result<()> {
         }
     });
 
-    ui.on_start_all({
+    ui.global::<Logic>().on_start_all({
         let app = app.clone();
         let list_model = list_model.clone();
         move |list| {
@@ -158,7 +158,7 @@ async fn main() -> color_eyre::Result<()> {
             }
         }
     });
-    ui.on_start_entry({
+    ui.global::<Logic>().on_start_entry({
         let app = app.clone();
         let list_model = list_model.clone();
         move |gid| {
@@ -178,7 +178,7 @@ async fn main() -> color_eyre::Result<()> {
         }
     });
 
-    ui.on_pause_all({
+    ui.global::<Logic>().on_pause_all({
         let task_set = task_set.clone();
         move |list| {
             for entry in list.iter() {
@@ -186,12 +186,12 @@ async fn main() -> color_eyre::Result<()> {
             }
         }
     });
-    ui.on_pause_entry({
+    ui.global::<Logic>().on_pause_entry({
         let task_set = task_set.clone();
         move |gid| task_set.cancel_task(&gid)
     });
 
-    ui.on_remove_all({
+    ui.global::<Logic>().on_remove_all({
         let task_set = task_set.clone();
         let list_model = list_model.clone();
         let db = db.clone();
@@ -210,7 +210,7 @@ async fn main() -> color_eyre::Result<()> {
             }
         }
     });
-    ui.on_remove_entry({
+    ui.global::<Logic>().on_remove_entry({
         let task_set = task_set.clone();
         let list_model = list_model.clone();
         move |gid| {
@@ -228,7 +228,7 @@ async fn main() -> color_eyre::Result<()> {
         }
     });
 
-    ui.on_add_task({
+    ui.global::<Logic>().on_add_task({
         let app = app.clone();
         let list_model = list_model.clone();
         let db = app.db.clone();
@@ -260,10 +260,10 @@ async fn main() -> color_eyre::Result<()> {
         }
     });
 
-    ui.on_open_entry(|path| {
+    ui.global::<Logic>().on_open_file(|path| {
         let _ = open::that(path).log_err("打开文件失败");
     });
-    ui.on_open_folder_entry(|path| {
+    ui.global::<Logic>().on_locate_file(|path| {
         #[cfg(target_os = "macos")]
         let _ = std::process::Command::new("open")
             .arg("-R")
@@ -273,7 +273,7 @@ async fn main() -> color_eyre::Result<()> {
         showfile::show_path_in_file_manager(path);
     });
 
-    ui.on_detail_entry({
+    ui.global::<Logic>().on_detail_entry({
         let db = app.db.clone();
         move |gid| {
             let Some(mut entry) = db.inner.data.get(&gid).map(|e| e.clone()) else {
@@ -302,7 +302,7 @@ async fn main() -> color_eyre::Result<()> {
         }
     });
 
-    ui.on_view_log(|| {
+    ui.global::<Logic>().on_view_log(|| {
         let _ = open::that(DB_DIR.as_os_str()).log_err("打开日志文件夹失败");
     });
 

@@ -1,0 +1,19 @@
+import { EntryData, DownloadConfig, GeneralConfig } from "types.slint";
+
+export global Logic {
+    callback start_entry(int);
+    callback pause_entry(int);
+    callback detail_entry(int);
+    callback remove_entry(int);
+
+    callback start_all([EntryData]);
+    callback pause_all([EntryData]);
+    callback remove_all([EntryData]);
+
+    callback open_file(string);
+    callback locate_file(string);
+    callback add_task();
+    callback exit();
+    callback config_change(DownloadConfig, GeneralConfig);
+    callback view_log();
+}

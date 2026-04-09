@@ -1,5 +1,6 @@
 import { Button } from "std-widgets.slint";
 import { HDivider } from "divider.slint";
+import { Logic } from "logic.slint";
 
 struct NavItem {
     name: string,
@@ -15,8 +16,6 @@ export component Aside inherits Rectangle {
     in property <int> completed_count: 0;
     in property <int> error_count: 0;
     in-out property <int> current_page: 0;
-    callback add_task();
-    callback exit();
 
     horizontal-stretch: 0;
     property <[NavItem]> items: [
@@ -48,7 +47,7 @@ export component Aside inherits Rectangle {
         Button {
             text: "新建任务";
             clicked => {
-                add_task()
+                Logic.add_task()
             }
         }
 
@@ -67,7 +66,7 @@ export component Aside inherits Rectangle {
         Button {
             text: "退出";
             clicked => {
-                exit()
+                Logic.exit()
             }
         }
     }
