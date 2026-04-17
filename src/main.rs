@@ -11,7 +11,6 @@ use fast_down_gui::{
     utils::{LogErr, show_task_dialog},
 };
 use file_alloc::init_fast_alloc;
-use rfd::FileDialog;
 use slint::{Model, ModelRc, ToSharedString, VecModel};
 use std::{collections::HashSet, rc::Rc, sync::Arc};
 use tracing::{info, level_filters::LevelFilter};
@@ -21,9 +20,6 @@ use tracing_appender::{
 };
 use tracing_subscriber::{EnvFilter, Registry, fmt, layer::SubscriberExt, util::SubscriberInitExt};
 use url::Url;
-
-#[global_allocator]
-static GLOBAL_ALLOCATOR: mimalloc::MiMalloc = mimalloc::MiMalloc;
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 
@@ -123,13 +119,14 @@ async fn main() -> color_eyre::Result<()> {
         let ui = ui.as_weak();
         move || {
             let ui = ui.clone();
-            std::thread::spawn(move || {
-                if let Some(folder) = FileDialog::new().pick_folder() {
-                    let _ = ui.upgrade_in_event_loop(move |ui| {
-                        ui.invoke_set_save_dir(folder.to_string_lossy().to_shared_string());
-                    });
+            slint::spawn_local(async move {
+                if let Some(folder) = rfd::AsyncFileDialog::new().pick_folder().await
+                    && let Some(ui) = ui.upgrade()
+                {
+                    ui.invoke_set_save_dir(folder.path().to_string_lossy().to_shared_string());
                 }
-            });
+            })
+            .unwrap();
         }
     });
 

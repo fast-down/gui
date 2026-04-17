@@ -31,7 +31,6 @@ i-slint-backend-winit = "1.15.1"
 image = "0.25.10"
 interprocess = { version = "2.4.0", features = ["tokio"] }
 itertools = "0.14.0"
-mimalloc = "0.1.48"
 mime_guess = "2.0.5"
 open = "5.3.3"
 parking_lot = { version = "0.12.5", features = ["serde"] }
